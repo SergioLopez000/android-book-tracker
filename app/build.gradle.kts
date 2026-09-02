@@ -99,6 +99,10 @@ dependencies {
     testImplementation(libs.androidx.test.runner)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.androidx.room.testing)
+    // Real org.json implementation for plain-JVM unit tests: the Android
+    // SDK stub jar throws at runtime outside Robolectric (Phase 4 adapters
+    // are pure-JVM tests, see data/remote runtime harness).
+    testImplementation(libs.org.json)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
