@@ -12,11 +12,15 @@ import androidx.compose.ui.Modifier
  * covered indirectly by [BookListViewModelTest] and [BookListScreenTest].
  *
  * `viewModel` is constructor-injected rather than looked up from
- * `AppContainer`: real DI wiring is Phase 7.
+ * `AppContainer`: real DI wiring is Phase 7. [onAddRequested] and
+ * [onBookClicked] are navigation callbacks (task 7.2) — this route has no
+ * NavHost to call back into on its own.
  */
 @Composable
 fun BookListRoute(
     viewModel: BookListViewModel,
+    onAddRequested: () -> Unit = {},
+    onBookClicked: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -27,6 +31,8 @@ fun BookListRoute(
         onDeleteRequested = viewModel::onDeleteRequested,
         onDeleteConfirmed = viewModel::onDeleteConfirmed,
         onDeleteCancelled = viewModel::onDeleteCancelled,
+        onAddRequested = onAddRequested,
+        onBookClicked = onBookClicked,
         modifier = modifier,
     )
 }

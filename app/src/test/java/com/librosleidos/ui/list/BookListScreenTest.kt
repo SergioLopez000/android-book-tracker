@@ -120,4 +120,44 @@ class BookListScreenTest {
 
         assert(cancelled) { "expected onDeleteCancelled to be invoked" }
     }
+
+    @Test
+    fun addBookButton_invokesOnAddRequested() {
+        var addRequested = false
+        composeTestRule.setContent {
+            BookListScreen(
+                state = BookListUiState(books = emptyList(), isLoading = false, isEmpty = true),
+                onSortSelected = {},
+                onMinRatingSelected = {},
+                onDeleteRequested = {},
+                onDeleteConfirmed = {},
+                onDeleteCancelled = {},
+                onAddRequested = { addRequested = true },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Add book").performClick()
+
+        assert(addRequested) { "expected onAddRequested to be invoked" }
+    }
+
+    @Test
+    fun clickingBookRow_invokesOnBookClickedWithId() {
+        var clickedId: Long? = null
+        composeTestRule.setContent {
+            BookListScreen(
+                state = BookListUiState(books = listOf(dune), isLoading = false, isEmpty = false),
+                onSortSelected = {},
+                onMinRatingSelected = {},
+                onDeleteRequested = {},
+                onDeleteConfirmed = {},
+                onDeleteCancelled = {},
+                onBookClicked = { clickedId = it },
+            )
+        }
+
+        composeTestRule.onNodeWithText("Dune").performClick()
+
+        assert(clickedId == 1L) { "expected onBookClicked to be invoked with id 1" }
+    }
 }

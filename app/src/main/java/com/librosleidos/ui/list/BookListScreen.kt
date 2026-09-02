@@ -1,8 +1,10 @@
 package com.librosleidos.ui.list
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +24,11 @@ import com.librosleidos.domain.model.BookSort
  * container [BookListRoute] binds [BookListViewModel] to this composable.
  * Spec: "Books present", "Empty library", "Delete confirmed",
  * "Delete cancelled".
+ *
+ * [onAddRequested] and [onBookClicked] (task 7.2: list<->add<->edit
+ * navigation) default to no-ops — pure event forwarding with no branching
+ * logic, TDD-exempt scaffold, same as [BookListRoute]. `MainActivity`'s
+ * NavHost supplies the real navigation callbacks.
  */
 @Composable
 fun BookListScreen(
@@ -31,18 +38,28 @@ fun BookListScreen(
     onDeleteRequested: (Long) -> Unit,
     onDeleteConfirmed: () -> Unit,
     onDeleteCancelled: () -> Unit,
+    onAddRequested: () -> Unit = {},
+    onBookClicked: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
-        when {
-            state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            state.isEmpty -> Text(
-                text = "No books yet. Add one to get started.",
-                modifier = Modifier.align(Alignment.Center),
-            )
-            else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(items = state.books, key = { it.id ?: 0L }) { book ->
-                    BookListItem(book = book, onRemoveRequested = onDeleteRequested)
+    Column(modifier = modifier.fillMaxSize()) {
+        TextButton(onClick = onAddRequested) { Text("Add book") }
+
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            when {
+                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                state.isEmpty -> Text(
+                    text = "No books yet. Add one to get started.",
+                    modifier = Modifier.align(Alignment.Center),
+                )
+                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(items = state.books, key = { it.id ?: 0L }) { book ->
+                        BookListItem(
+                            book = book,
+                            onRemoveRequested = onDeleteRequested,
+                            onClicked = onBookClicked,
+                        )
+                    }
                 }
             }
         }
@@ -67,8 +84,17 @@ fun BookListScreen(
 }
 
 @Composable
-private fun BookListItem(book: Book, onRemoveRequested: (Long) -> Unit) {
-    Column(modifier = Modifier.padding(16.dp)) {
+private fun BookListItem(
+    book: Book,
+    onRemoveRequested: (Long) -> Unit,
+    onClicked: (Long) -> Unit = {},
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = book.id != null) { book.id?.let(onClicked) }
+            .padding(16.dp),
+    ) {
         Text(text = book.title)
         Text(text = book.author)
         Text(text = "${book.rating.value}")
