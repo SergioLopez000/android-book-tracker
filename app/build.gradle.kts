@@ -103,6 +103,9 @@ dependencies {
     // SDK stub jar throws at runtime outside Robolectric (Phase 4 adapters
     // are pure-JVM tests, see data/remote runtime harness).
     testImplementation(libs.org.json)
+    // ViewModel state-flow assertions (Phase 5, design: ViewModel tests use
+    // coroutines-test + Turbine + fakes).
+    testImplementation(libs.turbine)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
