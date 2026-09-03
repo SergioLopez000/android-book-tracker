@@ -1,8 +1,10 @@
 package com.librosleidos.ui.list
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.librosleidos.domain.model.Book
 import com.librosleidos.domain.model.BookSort
+import com.librosleidos.domain.model.DateRangeFilter
 import com.librosleidos.ui.components.BookCoverImage
 import com.librosleidos.ui.components.StarRating
 
@@ -41,12 +44,34 @@ fun BookListScreen(
     onDeleteRequested: (Long) -> Unit,
     onDeleteConfirmed: () -> Unit,
     onDeleteCancelled: () -> Unit,
+    onDateRangeSelected: (DateRangeFilter) -> Unit = {},
     onAddRequested: () -> Unit = {},
     onBookClicked: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         TextButton(onClick = onAddRequested) { Text("Add book") }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            DateRangeFilter.values().forEach { filter ->
+                val label = when (filter) {
+                    DateRangeFilter.LAST_MONTH -> "Last Month"
+                    DateRangeFilter.LAST_YEAR -> "Last Year"
+                    DateRangeFilter.ALL_TIME -> "All Time"
+                }
+                TextButton(
+                    onClick = { onDateRangeSelected(filter) },
+                    enabled = state.dateRange != filter
+                ) {
+                    Text(text = label)
+                }
+            }
+        }
 
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when {

@@ -160,4 +160,34 @@ class BookListScreenTest {
 
         assert(clickedId == 1L) { "expected onBookClicked to be invoked with id 1" }
     }
+
+    @Test
+    fun dateRangeFilters_areRendered_andClickingInvokesCallback() {
+        var selectedRange: com.librosleidos.domain.model.DateRangeFilter? = null
+        composeTestRule.setContent {
+            BookListScreen(
+                state = BookListUiState(
+                    books = emptyList(),
+                    isLoading = false,
+                    isEmpty = true,
+                    dateRange = com.librosleidos.domain.model.DateRangeFilter.ALL_TIME,
+                ),
+                onSortSelected = {},
+                onMinRatingSelected = {},
+                onDeleteRequested = {},
+                onDeleteConfirmed = {},
+                onDeleteCancelled = {},
+                onDateRangeSelected = { selectedRange = it },
+            )
+        }
+
+        composeTestRule.onNodeWithText("All Time").assertExists()
+        composeTestRule.onNodeWithText("Last Month").assertExists()
+        composeTestRule.onNodeWithText("Last Year").assertExists()
+
+        composeTestRule.onNodeWithText("Last Month").performClick()
+        assert(selectedRange == com.librosleidos.domain.model.DateRangeFilter.LAST_MONTH) {
+            "expected onDateRangeSelected to be invoked with LAST_MONTH"
+        }
+    }
 }

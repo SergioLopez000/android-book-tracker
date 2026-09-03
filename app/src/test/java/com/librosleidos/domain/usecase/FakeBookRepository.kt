@@ -30,7 +30,12 @@ class FakeBookRepository(seed: List<Book> = emptyList()) : BookRepository {
         lastRequestedSort = sort
         lastRequestedMinRating = minRating
         lastRequestedFromEpochDay = fromEpochDay
-        return books.map { current -> current.filter { it.rating.value >= minRating } }
+        return books.map { current ->
+            current.filter { book ->
+                book.rating.value >= minRating &&
+                    (fromEpochDay == null || book.dateFinished.toEpochDay() >= fromEpochDay)
+            }
+        }
     }
 
     override suspend fun findById(id: Long): Book? = books.value.find { it.id == id }

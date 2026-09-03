@@ -152,4 +152,32 @@ class BookListViewModelTest {
             assertEquals(1, state.books.size)
         }
     }
+
+    @Test
+    fun `setting a date range filter filters the list`() = runTest {
+        val repository = FakeBookRepository(
+            seed = listOf(
+                book(1, "Recent", 5.0f, 2),
+                book(2, "Last Month", 5.0f, 40),
+                book(3, "Older", 5.0f, 400),
+            ),
+        )
+        val vm = viewModel(repository)
+
+        vm.uiState.test {
+            val initial = awaitItem()
+            assertEquals(com.librosleidos.domain.model.DateRangeFilter.ALL_TIME, initial.dateRange)
+            assertEquals(3, initial.books.size)
+
+            vm.onDateRangeSelected(com.librosleidos.domain.model.DateRangeFilter.LAST_MONTH)
+            val stateMonth = awaitItem()
+            assertEquals(com.librosleidos.domain.model.DateRangeFilter.LAST_MONTH, stateMonth.dateRange)
+            assertEquals(setOf("Recent"), stateMonth.books.map { it.title }.toSet())
+
+            vm.onDateRangeSelected(com.librosleidos.domain.model.DateRangeFilter.LAST_YEAR)
+            val stateYear = awaitItem()
+            assertEquals(com.librosleidos.domain.model.DateRangeFilter.LAST_YEAR, stateYear.dateRange)
+            assertEquals(setOf("Recent", "Last Month"), stateYear.books.map { it.title }.toSet())
+        }
+    }
 }

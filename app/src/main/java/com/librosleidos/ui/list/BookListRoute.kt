@@ -31,6 +31,7 @@ fun BookListRoute(
         onDeleteRequested = viewModel::onDeleteRequested,
         onDeleteConfirmed = viewModel::onDeleteConfirmed,
         onDeleteCancelled = viewModel::onDeleteCancelled,
+        onDateRangeSelected = viewModel::onDateRangeSelected,
         onAddRequested = onAddRequested,
         onBookClicked = onBookClicked,
         modifier = modifier,

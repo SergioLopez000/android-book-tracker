@@ -3,6 +3,7 @@ package com.librosleidos.ui.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.librosleidos.domain.model.BookSort
+import com.librosleidos.domain.model.DateRangeFilter
 import com.librosleidos.domain.usecase.DeleteBookUseCase
 import com.librosleidos.domain.usecase.GetBooksUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,7 +16,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-private data class ListQuery(val sort: BookSort, val minRating: Float)
+private data class ListQuery(val sort: BookSort, val minRating: Float, val dateRange: DateRangeFilter)
 
 /**
  * Task 5.2 (design: Data Flow — `BookListRoute ← StateFlow ←
@@ -34,16 +35,23 @@ class BookListViewModel(
     private val deleteBook: DeleteBookUseCase,
 ) : ViewModel() {
 
-    private val query = MutableStateFlow(ListQuery(sort = BookSort.DATE_FINISHED_DESC, minRating = 0f))
+    private val query = MutableStateFlow(
+        ListQuery(
+            sort = BookSort.DATE_FINISHED_DESC,
+            minRating = 0f,
+            dateRange = DateRangeFilter.ALL_TIME,
+        )
+    )
     private val pendingDeleteId = MutableStateFlow<Long?>(null)
 
     val uiState: StateFlow<BookListUiState> = query
         .flatMapLatest { current ->
-            getBooks(current.sort, current.minRating).map { books ->
+            getBooks(current.sort, current.minRating, current.dateRange).map { books ->
                 BookListUiState(
                     books = books,
                     sort = current.sort,
                     minRating = current.minRating,
+                    dateRange = current.dateRange,
                     isLoading = false,
                     isEmpty = books.isEmpty(),
                 )
@@ -62,6 +70,10 @@ class BookListViewModel(
 
     fun onMinRatingSelected(minRating: Float) {
         query.value = query.value.copy(minRating = minRating)
+    }
+
+    fun onDateRangeSelected(dateRange: DateRangeFilter) {
+        query.value = query.value.copy(dateRange = dateRange)
     }
 
     fun onDeleteRequested(id: Long) {
