@@ -22,7 +22,7 @@ val googleBooksApiKey: String = localProperties.getProperty("GOOGLE_BOOKS_API_KE
 
 android {
     namespace = "com.librosleidos"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.sergiolopez.rincondelectura"
@@ -93,6 +93,13 @@ dependencies {
 
     implementation(libs.kotlinx.coroutines.android)
 
+    // Coil3 smoke test for the toolchain bump (PR3a): proves the dependency
+    // graph resolves and the project compiles with Coil present. No
+    // production usage (BookCoverImage.kt) is added in this PR — that is
+    // PR3b's scope.
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
+
     testImplementation(libs.junit)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.ext.junit)
@@ -106,6 +113,7 @@ dependencies {
     // ViewModel state-flow assertions (Phase 5, design: ViewModel tests use
     // coroutines-test + Turbine + fakes).
     testImplementation(libs.turbine)
+    testImplementation(libs.coil.test)
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
