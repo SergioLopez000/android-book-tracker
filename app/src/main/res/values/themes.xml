@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Task 1.5 (design "app-theme" D12, spec "Apply Custom Dark Color
+        Scheme"): dark NoActionBar platform theme for the launch window
+        background, matching the dark Compose theme (RinconDeLecturaTheme)
+        applied at the composition root. Previously
+        Theme.Material.Light.NoActionBar left a white window background
+        behind the dark Compose UI. Scaffold — plain resource declaration,
+        no branching logic. TDD-exempt, same rule as the rest of Phase 1.
+    -->
+    <style name="Theme.RinconDeLectura" parent="android:Theme.Material.NoActionBar" />
+</resources>

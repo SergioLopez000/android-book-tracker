@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,6 +23,7 @@ import com.librosleidos.ui.edit.BookEditRoute
 import com.librosleidos.ui.edit.BookEditViewModel
 import com.librosleidos.ui.list.BookListRoute
 import com.librosleidos.ui.list.BookListViewModel
+import com.librosleidos.ui.theme.RinconDeLecturaTheme
 
 /**
  * Task 7.2 (design: "Wiring & Integration"). Launcher activity — sets the
@@ -41,7 +41,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val appContainer = (application as LibrosLeidosApp).container
         setContent {
-            MaterialTheme {
+            RinconDeLecturaTheme {
                 Scaffold(
                     topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
                 ) { contentPadding ->
