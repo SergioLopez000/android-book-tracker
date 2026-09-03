@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -15,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.librosleidos.domain.model.BookMetadata
+import com.librosleidos.ui.components.BookCoverImage
 import com.librosleidos.ui.components.StarRating
 
 /**
@@ -44,6 +46,12 @@ fun BookEditScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {
+        BookCoverImage(
+            coverUrl = state.coverUrl,
+            contentDescription = "${state.title} cover",
+            modifier = Modifier.size(96.dp),
+        )
+
         OutlinedTextField(
             value = state.searchQuery,
             onValueChange = onSearchQueryChanged,

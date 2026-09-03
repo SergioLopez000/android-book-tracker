@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.librosleidos.domain.model.Book
 import com.librosleidos.domain.model.BookSort
+import com.librosleidos.ui.components.BookCoverImage
 import com.librosleidos.ui.components.StarRating
 
 /**
@@ -96,6 +98,11 @@ private fun BookListItem(
             .clickable(enabled = book.id != null) { book.id?.let(onClicked) }
             .padding(16.dp),
     ) {
+        BookCoverImage(
+            coverUrl = book.coverUrl,
+            contentDescription = "${book.title} cover",
+            modifier = Modifier.size(64.dp),
+        )
         Text(text = book.title)
         Text(text = book.author)
         StarRating(rating = book.rating.value)
