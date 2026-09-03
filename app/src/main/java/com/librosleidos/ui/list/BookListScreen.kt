@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.librosleidos.domain.model.Book
 import com.librosleidos.domain.model.BookSort
+import com.librosleidos.ui.components.StarRating
 
 /**
  * Task 5.3 (design: container/presentational split). Stateless — the
@@ -97,7 +98,7 @@ private fun BookListItem(
     ) {
         Text(text = book.title)
         Text(text = book.author)
-        Text(text = "${book.rating.value}")
+        StarRating(rating = book.rating.value)
         Text(text = "${book.dateFinished}")
         TextButton(onClick = { book.id?.let(onRemoveRequested) }) { Text("Remove") }
     }

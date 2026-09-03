@@ -1,6 +1,5 @@
 package com.librosleidos.ui.edit
 
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,10 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.librosleidos.domain.model.BookMetadata
-import com.librosleidos.domain.model.Rating
+import com.librosleidos.ui.components.StarRating
 
 /**
  * Task 6.3 (design: container/presentational split). Stateless — the
@@ -60,7 +58,7 @@ fun BookEditScreen(
 
         OutlinedTextField(value = state.author, onValueChange = onAuthorChanged, label = { Text("Author") })
 
-        RatingInput(rating = state.rating, onRatingChanged = onRatingChanged)
+        StarRating(rating = state.rating, onRatingChange = onRatingChanged)
         state.fieldErrors[BookEditField.RATING]?.let { ErrorText(it) }
 
         OutlinedTextField(value = state.review, onValueChange = onReviewChanged, label = { Text("Comment") })
@@ -95,24 +93,6 @@ private fun SearchResults(search: SearchState, onResultSelected: (BookMetadata) 
 }
 
 @Composable
-private fun RatingInput(rating: Float?, onRatingChanged: (Float) -> Unit) {
-    Column {
-        Text("Rating")
-        Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
-            ratingSteps.forEach { step ->
-                val label = "%.1f".format(step)
-                TextButton(onClick = { onRatingChanged(step) }) {
-                    Text(text = label, fontWeight = if (rating == step) FontWeight.Bold else FontWeight.Normal)
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun ErrorText(message: String) {
     Text(text = message, color = MaterialTheme.colorScheme.error)
 }
-
-private val ratingSteps: List<Float> =
-    generateSequence(Rating.MIN) { it + 0.5f }.takeWhile { it <= Rating.MAX }.toList()

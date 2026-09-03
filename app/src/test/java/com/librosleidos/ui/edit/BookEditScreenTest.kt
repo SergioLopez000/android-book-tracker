@@ -1,6 +1,7 @@
 package com.librosleidos.ui.edit
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -46,7 +47,7 @@ class BookEditScreenTest {
         }
 
         composeTestRule.onNodeWithText("Title").performTextInput("Dune")
-        composeTestRule.onNodeWithText("4.5").performScrollTo().performClick()
+        composeTestRule.onNodeWithContentDescription("Set rating 4.5").performScrollTo().performClick()
         composeTestRule.onNodeWithText("Save").performScrollTo().performClick()
 
         assert(savedInvoked) { "expected onSaveRequested to be invoked" }
