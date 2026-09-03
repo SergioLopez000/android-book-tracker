@@ -19,6 +19,12 @@ import org.robolectric.annotation.Config
  * rows. Spec: "Sort Book List", "Filter by Minimum Rating", "Delete Book
  * Entry". Uses a real in-memory Room database under Robolectric (design:
  * Testing Strategy).
+ *
+ * Task 4.4 (design D8): both queries also apply a nullable-bind
+ * `fromEpochDay` lower bound — `(:fromEpochDay IS NULL OR
+ * dateFinishedEpochDay >= :fromEpochDay)` — AND-combined with `minRating`.
+ * Spec: "Filter by Date Range", "Combine Date-Range and Minimum-Rating
+ * Filters".
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -46,7 +52,7 @@ class BookDaoTest {
         dao.upsert(bookEntity(id = 1, title = "Older", rating = 3.0f, dateFinishedEpochDay = 100))
         dao.upsert(bookEntity(id = 2, title = "Newer", rating = 3.0f, dateFinishedEpochDay = 200))
 
-        val result = dao.observeByDateDesc(minRating = 0f).first()
+        val result = dao.observeByDateDesc(minRating = 0f, fromEpochDay = null).first()
 
         assertEquals(listOf("Newer", "Older"), result.map { it.title })
     }
@@ -56,7 +62,7 @@ class BookDaoTest {
         dao.upsert(bookEntity(id = 1, title = "Low", rating = 2.0f, dateFinishedEpochDay = 100))
         dao.upsert(bookEntity(id = 2, title = "High", rating = 4.5f, dateFinishedEpochDay = 100))
 
-        val result = dao.observeByRatingDesc(minRating = 0f).first()
+        val result = dao.observeByRatingDesc(minRating = 0f, fromEpochDay = null).first()
 
         assertEquals(listOf("High", "Low"), result.map { it.title })
     }
@@ -66,7 +72,7 @@ class BookDaoTest {
         dao.upsert(bookEntity(id = 1, title = "Below", rating = 2.0f, dateFinishedEpochDay = 100))
         dao.upsert(bookEntity(id = 2, title = "AtMinimum", rating = 3.5f, dateFinishedEpochDay = 200))
 
-        val result = dao.observeByDateDesc(minRating = 3.5f).first()
+        val result = dao.observeByDateDesc(minRating = 3.5f, fromEpochDay = null).first()
 
         assertEquals(listOf("AtMinimum"), result.map { it.title })
     }
@@ -76,9 +82,98 @@ class BookDaoTest {
         dao.upsert(bookEntity(id = 1, title = "Below", rating = 2.0f, dateFinishedEpochDay = 100))
         dao.upsert(bookEntity(id = 2, title = "AtMinimum", rating = 3.5f, dateFinishedEpochDay = 100))
 
-        val result = dao.observeByRatingDesc(minRating = 3.5f).first()
+        val result = dao.observeByRatingDesc(minRating = 3.5f, fromEpochDay = null).first()
 
         assertEquals(listOf("AtMinimum"), result.map { it.title })
+    }
+
+    @Test
+    fun `observeByDateDesc with a near bound keeps only the most recent books`() = runTest {
+        dao.upsert(bookEntity(id = 1, title = "VeryOld", rating = 2.0f, dateFinishedEpochDay = 10))
+        dao.upsert(bookEntity(id = 2, title = "MediumOld", rating = 3.0f, dateFinishedEpochDay = 60))
+        dao.upsert(bookEntity(id = 3, title = "Recent", rating = 4.0f, dateFinishedEpochDay = 300))
+        dao.upsert(bookEntity(id = 4, title = "VeryRecent", rating = 5.0f, dateFinishedEpochDay = 400))
+
+        val result = dao.observeByDateDesc(minRating = 0f, fromEpochDay = 300).first()
+
+        assertEquals(listOf("VeryRecent", "Recent"), result.map { it.title })
+    }
+
+    @Test
+    fun `observeByDateDesc with a wide bound keeps books from that point on`() = runTest {
+        dao.upsert(bookEntity(id = 1, title = "VeryOld", rating = 2.0f, dateFinishedEpochDay = 10))
+        dao.upsert(bookEntity(id = 2, title = "MediumOld", rating = 3.0f, dateFinishedEpochDay = 60))
+        dao.upsert(bookEntity(id = 3, title = "Recent", rating = 4.0f, dateFinishedEpochDay = 300))
+        dao.upsert(bookEntity(id = 4, title = "VeryRecent", rating = 5.0f, dateFinishedEpochDay = 400))
+
+        val result = dao.observeByDateDesc(minRating = 0f, fromEpochDay = 60).first()
+
+        assertEquals(listOf("VeryRecent", "Recent", "MediumOld"), result.map { it.title })
+    }
+
+    @Test
+    fun `observeByDateDesc with fromEpochDay null returns every book regardless of date`() = runTest {
+        dao.upsert(bookEntity(id = 1, title = "VeryOld", rating = 2.0f, dateFinishedEpochDay = 10))
+        dao.upsert(bookEntity(id = 2, title = "MediumOld", rating = 3.0f, dateFinishedEpochDay = 60))
+        dao.upsert(bookEntity(id = 3, title = "Recent", rating = 4.0f, dateFinishedEpochDay = 300))
+        dao.upsert(bookEntity(id = 4, title = "VeryRecent", rating = 5.0f, dateFinishedEpochDay = 400))
+
+        val result = dao.observeByDateDesc(minRating = 0f, fromEpochDay = null).first()
+
+        assertEquals(
+            listOf("VeryRecent", "Recent", "MediumOld", "VeryOld"),
+            result.map { it.title },
+        )
+    }
+
+    @Test
+    fun `observeByRatingDesc with a near bound keeps only the most recent books`() = runTest {
+        dao.upsert(bookEntity(id = 1, title = "VeryOld", rating = 2.0f, dateFinishedEpochDay = 10))
+        dao.upsert(bookEntity(id = 2, title = "MediumOld", rating = 3.0f, dateFinishedEpochDay = 60))
+        dao.upsert(bookEntity(id = 3, title = "Recent", rating = 4.0f, dateFinishedEpochDay = 300))
+        dao.upsert(bookEntity(id = 4, title = "VeryRecent", rating = 5.0f, dateFinishedEpochDay = 400))
+
+        val result = dao.observeByRatingDesc(minRating = 0f, fromEpochDay = 300).first()
+
+        assertEquals(listOf("VeryRecent", "Recent"), result.map { it.title })
+    }
+
+    @Test
+    fun `observeByRatingDesc with a wide bound keeps books from that point on`() = runTest {
+        dao.upsert(bookEntity(id = 1, title = "VeryOld", rating = 2.0f, dateFinishedEpochDay = 10))
+        dao.upsert(bookEntity(id = 2, title = "MediumOld", rating = 3.0f, dateFinishedEpochDay = 60))
+        dao.upsert(bookEntity(id = 3, title = "Recent", rating = 4.0f, dateFinishedEpochDay = 300))
+        dao.upsert(bookEntity(id = 4, title = "VeryRecent", rating = 5.0f, dateFinishedEpochDay = 400))
+
+        val result = dao.observeByRatingDesc(minRating = 0f, fromEpochDay = 60).first()
+
+        assertEquals(listOf("VeryRecent", "Recent", "MediumOld"), result.map { it.title })
+    }
+
+    @Test
+    fun `observeByRatingDesc with fromEpochDay null returns every book regardless of date`() = runTest {
+        dao.upsert(bookEntity(id = 1, title = "VeryOld", rating = 2.0f, dateFinishedEpochDay = 10))
+        dao.upsert(bookEntity(id = 2, title = "MediumOld", rating = 3.0f, dateFinishedEpochDay = 60))
+        dao.upsert(bookEntity(id = 3, title = "Recent", rating = 4.0f, dateFinishedEpochDay = 300))
+        dao.upsert(bookEntity(id = 4, title = "VeryRecent", rating = 5.0f, dateFinishedEpochDay = 400))
+
+        val result = dao.observeByRatingDesc(minRating = 0f, fromEpochDay = null).first()
+
+        assertEquals(
+            listOf("VeryRecent", "Recent", "MediumOld", "VeryOld"),
+            result.map { it.title },
+        )
+    }
+
+    @Test
+    fun `date-range bound and minRating both apply together (AND)`() = runTest {
+        dao.upsert(bookEntity(id = 1, title = "OldHighRated", rating = 5.0f, dateFinishedEpochDay = 10))
+        dao.upsert(bookEntity(id = 2, title = "RecentLowRated", rating = 2.0f, dateFinishedEpochDay = 300))
+        dao.upsert(bookEntity(id = 3, title = "RecentHighRated", rating = 4.5f, dateFinishedEpochDay = 400))
+
+        val result = dao.observeByDateDesc(minRating = 3.5f, fromEpochDay = 60).first()
+
+        assertEquals(listOf("RecentHighRated"), result.map { it.title })
     }
 
     @Test

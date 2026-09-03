@@ -13,10 +13,10 @@ import kotlinx.coroutines.flow.map
  */
 class BookRepositoryImpl(private val dao: BookDao) : BookRepository {
 
-    override fun observeBooks(sort: BookSort, minRating: Float): Flow<List<Book>> {
+    override fun observeBooks(sort: BookSort, minRating: Float, fromEpochDay: Long?): Flow<List<Book>> {
         val entities = when (sort) {
-            BookSort.DATE_FINISHED_DESC -> dao.observeByDateDesc(minRating)
-            BookSort.RATING_DESC -> dao.observeByRatingDesc(minRating)
+            BookSort.DATE_FINISHED_DESC -> dao.observeByDateDesc(minRating, fromEpochDay)
+            BookSort.RATING_DESC -> dao.observeByRatingDesc(minRating, fromEpochDay)
         }
         return entities.map { list -> list.map { it.toDomain() } }
     }

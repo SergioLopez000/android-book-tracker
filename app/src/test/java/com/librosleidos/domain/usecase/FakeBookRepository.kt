@@ -21,12 +21,15 @@ class FakeBookRepository(seed: List<Book> = emptyList()) : BookRepository {
         private set
     var lastRequestedMinRating: Float? = null
         private set
+    var lastRequestedFromEpochDay: Long? = null
+        private set
     var lastDeletedId: Long? = null
         private set
 
-    override fun observeBooks(sort: BookSort, minRating: Float): Flow<List<Book>> {
+    override fun observeBooks(sort: BookSort, minRating: Float, fromEpochDay: Long?): Flow<List<Book>> {
         lastRequestedSort = sort
         lastRequestedMinRating = minRating
+        lastRequestedFromEpochDay = fromEpochDay
         return books.map { current -> current.filter { it.rating.value >= minRating } }
     }
 

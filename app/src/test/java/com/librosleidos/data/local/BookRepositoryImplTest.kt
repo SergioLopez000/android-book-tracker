@@ -89,8 +89,8 @@ class BookRepositoryImplTest {
             book(id = null, title = "HighRatingOld", rating = 4.5f, date = LocalDate.of(2020, 1, 1)),
         )
 
-        val byDate = repository.observeBooks(BookSort.DATE_FINISHED_DESC, minRating = 0f).first()
-        val byRating = repository.observeBooks(BookSort.RATING_DESC, minRating = 0f).first()
+        val byDate = repository.observeBooks(BookSort.DATE_FINISHED_DESC, minRating = 0f, fromEpochDay = null).first()
+        val byRating = repository.observeBooks(BookSort.RATING_DESC, minRating = 0f, fromEpochDay = null).first()
 
         assertEquals(listOf("LowRatingRecent", "HighRatingOld"), byDate.map { it.title })
         assertEquals(listOf("HighRatingOld", "LowRatingRecent"), byRating.map { it.title })
@@ -101,8 +101,8 @@ class BookRepositoryImplTest {
         repository.save(book(id = null, title = "Below", rating = 2.0f))
         repository.save(book(id = null, title = "AtMinimum", rating = 3.5f))
 
-        val unfiltered = repository.observeBooks(BookSort.RATING_DESC, minRating = 0f).first()
-        val filtered = repository.observeBooks(BookSort.RATING_DESC, minRating = 3.5f).first()
+        val unfiltered = repository.observeBooks(BookSort.RATING_DESC, minRating = 0f, fromEpochDay = null).first()
+        val filtered = repository.observeBooks(BookSort.RATING_DESC, minRating = 3.5f, fromEpochDay = null).first()
 
         assertEquals(listOf("AtMinimum", "Below"), unfiltered.map { it.title })
         assertEquals(listOf("AtMinimum"), filtered.map { it.title })
