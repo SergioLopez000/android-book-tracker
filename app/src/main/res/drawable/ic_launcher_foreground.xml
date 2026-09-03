@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 1. Hanging Bookmark Ribbon (Carmine Red) -->
+    <path
+        android:fillColor="#FF1744"
+        android:pathData="M51,71h6v10l-3,-2-3,2z" />
+
+    <!-- 2. Left Page of the Book (Lighter Amber Gold) -->
+    <path
+        android:fillColor="#FFE082"
+        android:pathData="M54,53c-8,0-18,-4-26,-1v18c8,-3 18,1 26,1z" />
+
+    <!-- 3. Right Page of the Book (Medium Amber Gold) -->
+    <path
+        android:fillColor="#FFCA28"
+        android:pathData="M54,53c8,0 18,-4 26,-1v18c-8,-3 -18,1 -26,1z" />
+
+    <!-- 4. Sparkle Star (Pure Bright White) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,26l2,9l8,2l-8,2l-2,9l-2,-9l-8,-2l8,-2z" />
+
+    <!-- 5. Optional Mini Sparkles (adds high-quality GDE polish!) -->
+    <path
+        android:fillColor="#FFF59D"
+        android:pathData="M38,34l1,3l3,1l-3,1l-1,3l-1,-3l-3,-1l3,-1z M68,44l1,3l3,1l-3,1l-1,3l-1,-3l-3,-1l3,-1z" />
+
+</vector>

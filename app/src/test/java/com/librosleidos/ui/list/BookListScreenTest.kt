@@ -49,6 +49,7 @@ class BookListScreenTest {
 
         composeTestRule.onNodeWithText("Dune").assertExists()
         composeTestRule.onNodeWithText("Frank Herbert").assertExists()
+        composeTestRule.onNodeWithText("Excellent.").assertExists()
     }
 
     @Test

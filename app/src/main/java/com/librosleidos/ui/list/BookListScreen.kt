@@ -132,6 +132,9 @@ private fun BookListItem(
         Text(text = book.author)
         StarRating(rating = book.rating.value)
         Text(text = "${book.dateFinished}")
+        if (book.review.isNotBlank()) {
+            Text(text = book.review)
+        }
         TextButton(onClick = { book.id?.let(onRemoveRequested) }) { Text("Remove") }
     }
 }
