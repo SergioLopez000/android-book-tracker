@@ -1,0 +1,12 @@
+compose-design skill
+
+This skill is a derivative work of the "frontend-design" skill from
+https://github.com/anthropics/skills (skills/frontend-design), licensed under
+the Apache License, Version 2.0. A copy of the license is in LICENSE.txt.
+
+Modifications (2026-11-13):
+- Restructured SKILL.md into an LLM-first contract (activation, rules, gates, steps, output).
+- Moved and adapted the design principles to references/design-philosophy.md,
+  translating web-specific guidance (hero, CSS, responsive) to Android Jetpack Compose.
+- Added project conventions in references/project-conventions.md
+  (atomic design, UI states, test tags for Appium, accessibility, Roborazzi).
