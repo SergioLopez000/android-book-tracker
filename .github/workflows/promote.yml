@@ -1,0 +1,68 @@
+# Promotes the commit verified in the dev ring to staging by fast-forwarding
+# `main` to it. The `staging` environment requires QA approval, so the job
+# waits until a reviewer approves the deployment. Fast-forward keeps the
+# exact SHA tested in dev, so artifacts are promoted instead of rebuilt.
+name: Promote dev to staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit on dev to promote (defaults to the current dev head)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  checks: read
+
+concurrency:
+  group: promote-staging
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    name: Fast-forward main
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve commit
+        id: target
+        env:
+          INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          sha="${INPUT_SHA:-$(git rev-parse origin/dev)}"
+          sha="$(git rev-parse --verify "${sha}^{commit}")"
+          git merge-base --is-ancestor "$sha" origin/dev \
+            || { echo "::error::$sha is not on dev"; exit 1; }
+          git merge-base --is-ancestor origin/main "$sha" \
+            || { echo "::error::main is not an ancestor of $sha; fast-forward impossible"; exit 1; }
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Require green checks on the commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          runs="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/check-runs" \
+            --jq '[.check_runs[] | select(.name != "Fast-forward main")]')"
+          total="$(jq 'length' <<<"$runs")"
+          bad="$(jq '[.[] | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | length' <<<"$runs")"
+          if [ "$total" -eq 0 ]; then
+            echo "::warning::No checks found on $SHA (CI not set up yet, see #3)"
+          elif [ "$bad" -ne 0 ]; then
+            echo "::error::$bad check(s) on $SHA are not successful"; exit 1
+          fi
+
+      - name: Fast-forward main
+        env:
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          git push origin "${SHA}:refs/heads/main"
+          echo "### Promoted \`${SHA}\` to main (staging)" >> "$GITHUB_STEP_SUMMARY"
