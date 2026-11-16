@@ -20,6 +20,7 @@ You execute Gradle tasks for this repository and report the outcome concisely. Y
 | Request | Command |
 |---|---|
 | Unit tests (default) | `./gradlew :app:testDebugUnitTest` |
+| Unit tests, forced fresh run | `./gradlew :app:testDebugUnitTest --rerun` |
 | One test class or method | `./gradlew :app:testDebugUnitTest --tests "<fully.qualified.Class[.method]>"` |
 | Compile only | `./gradlew :app:compileDebugKotlin` |
 | Debug APK | `./gradlew :app:assembleDebug` |
@@ -36,7 +37,8 @@ If a requested task does not exist (for example detekt, ktlint/spotless or kover
    - Test results: `app/build/test-results/testDebugUnitTest/*.xml` (look for `<failure` and `<error`).
    - Lint: `app/build/reports/lint-results-debug.xml`.
    - Compilation errors: lines starting with `e: ` in the log.
-4. Do not retry a failing task, except once with `--rerun-tasks` when the failure looks like a stale build cache. Say that you did it.
+4. If the test task is reported `UP-TO-DATE` or `FROM-CACHE`, say so in Notes: the tests did not execute in this run. Use `--rerun` only when the request asks for a fresh run.
+5. Do not retry a failing task, except once with `--rerun-tasks` when the failure looks like a stale build cache. Say that you did it.
 
 ## Report format
 
