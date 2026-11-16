@@ -5,13 +5,13 @@ verdict: pass_with_warnings
 blockers: 0
 critical_findings: 0
 requirements: 8/8
-scenarios: 28/28
+scenarios: 29/29
 test_command: ./gradlew spotlessCheck :app:lintDebug :app:koverHtmlReportDebug :app:koverXmlReportDebug :app:testDebugUnitTest --console=plain --rerun-tasks
 test_exit_code: 0
-test_output_hash: sha256:491eef9836f9caae1c7842fed4ac84400990d53215f7e005d5d60cbfa68e46d4
+test_output_hash: sha256:1db11f32b9b0053c4e9bc940892b8dd7154ff6e90897831fe41157e8c98049cf
 build_command: ./gradlew spotlessCheck :app:lintDebug :app:koverHtmlReportDebug :app:koverXmlReportDebug --console=plain --rerun-tasks
 build_exit_code: 0
-build_output_hash: sha256:491eef9836f9caae1c7842fed4ac84400990d53215f7e005d5d60cbfa68e46d4
+build_output_hash: sha256:1db11f32b9b0053c4e9bc940892b8dd7154ff6e90897831fe41157e8c98049cf
 ```
 
 ## Verification Report
@@ -80,7 +80,7 @@ build_output_hash: sha256:491eef9836f9caae1c7842fed4ac84400990d53215f7e005d5d60c
 | Documented Setup | README lists setup and commands | README.md lines 116-130 name lefthook, gitleaks, actionlint, shellcheck, lefthook install, spotlessCheck, :app:lintDebug, koverHtmlReportDebug, :app:testDebugUnitTest, baseline regeneration | COMPLIANT |
 | Documented Setup | Config reflects tooling | openspec/config.yaml: formatter, linter, coverage available with commands | COMPLIANT |
 
-Coverage: 8/8 requirements, 28/28 scenarios. Spec has 8 `### Requirement:` and 28 `#### Scenario:` headings.
+Coverage: 8/8 requirements, 29/29 scenarios. Spec has 8 `### Requirement:` and 29 `#### Scenario:` headings.
 
 ### Design Coherence
 | Decision | Followed | Notes |
