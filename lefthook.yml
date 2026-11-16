@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://lefthook.dev/schema.json
+pre-commit:
+  parallel: true
+  jobs:
+    - name: spotless
+      glob: "*.{kt,kts}"
+      run: ./gradlew --quiet spotlessCheck || { echo "Run ./gradlew spotlessApply"; exit 1; }
+    - name: gitleaks
+      run: command -v gitleaks >/dev/null || { echo "brew install gitleaks"; exit 1; }; gitleaks git --pre-commit --staged --redact --no-banner
+    - name: actionlint
+      glob: ".github/workflows/*.{yml,yaml}"
+      run: command -v actionlint >/dev/null || { echo "brew install actionlint shellcheck"; exit 1; }; actionlint
+    - name: shellcheck
+      glob: "*.sh"
+      run: command -v shellcheck >/dev/null || { echo "brew install shellcheck"; exit 1; }; shellcheck {staged_files} && scripts/test-check-commit-msg.sh
+commit-msg:
+  jobs:
+    - name: conventional-commit
+      run: scripts/check-commit-msg.sh {1}
