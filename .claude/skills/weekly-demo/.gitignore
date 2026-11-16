@@ -1,0 +1,5 @@
+# Generated decks, renders and virtualenvs never live in the repo.
+*.pptx
+*.pdf
+.venv/
+__pycache__/
