@@ -16,6 +16,8 @@ androidxTestRunner = "1.7.0"
 orgJson = "20260814"
 turbine = "1.2.1"
 coil = "3.6.1"
+spotless = "8.11.0"
+ktlint = "1.8.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -56,3 +58,4 @@ coil-test = { module = "io.coil-kt.coil3:coil-test", version.ref = "coil" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

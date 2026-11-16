@@ -1,0 +1,22 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{kt,kts}]
+ktlint_code_style = android_studio
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+# Path-scoped disables for violations ktlint cannot auto-fix. They keep the
+# format-only commit free of hand edits (design D5). Globs are
+# bare file names: Spotless does not honor directory-qualified globs here.
+[RemoteUtils.kt]
+ktlint_standard_kdoc = disabled
+
+[{BookDaoTest,StarRatingTest,BookEditViewModelTest}.kt]
+ktlint_standard_max-line-length = disabled
