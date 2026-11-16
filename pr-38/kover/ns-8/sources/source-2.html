@@ -1,0 +1,165 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>app Coverage Report > BookEditField</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: app<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.ui.edit</a>
+</div>
+
+<h1>Coverage Summary for Class: BookEditField (com.librosleidos.ui.edit)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">BookEditField</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+    <td class="coverageStat"/>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (24/24)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.ui.edit
+&nbsp;
+&nbsp;import com.librosleidos.domain.model.BookMetadata
+&nbsp;import java.time.LocalDate
+&nbsp;
+&nbsp;/**
+&nbsp; * Task 6.1 (design: UI State — `BookEditUiState(id, title, author, coverUrl,
+&nbsp; * rating, review, dateFinished, search, fieldErrors, isSaving)`). State
+&nbsp; * shape only, no logic — TDD-exempt scaffold.
+&nbsp; *
+&nbsp; * [searchQuery] is an addition beyond the design snippet: the metadata
+&nbsp; * search box needs its own editable text separate from the (possibly
+&nbsp; * already-prefilled) `title` field, so a user can search for one title
+&nbsp; * while still editing a different one.
+&nbsp; */
+&nbsp;data class BookEditUiState(
+&nbsp;    val id: Long? = null,
+&nbsp;    val title: String = &quot;&quot;,
+&nbsp;    val author: String = &quot;&quot;,
+&nbsp;    val coverUrl: String? = null,
+&nbsp;    val rating: Float? = null,
+&nbsp;    val review: String = &quot;&quot;,
+&nbsp;    val dateFinished: LocalDate = LocalDate.now(),
+&nbsp;    val searchQuery: String = &quot;&quot;,
+&nbsp;    val search: SearchState = SearchState.Idle,
+&nbsp;    val fieldErrors: Map&lt;BookEditField, String&gt; = emptyMap(),
+&nbsp;    val isSaving: Boolean = false
+&nbsp;)
+&nbsp;
+&nbsp;/**
+&nbsp; * Metadata lookup state (design: `book-metadata-lookup`). [Unavailable] is
+&nbsp; * part of the design&#39;s literal type shape but is not currently reachable
+&nbsp; * through [com.librosleidos.domain.usecase.SearchBookMetadataUseCase] — see
+&nbsp; * [BookEditViewModel]&#39;s doc comment for why.
+&nbsp; */
+&nbsp;sealed interface SearchState {
+&nbsp;    data object Idle : SearchState
+&nbsp;    data object Loading : SearchState
+&nbsp;    data class Results(val results: List&lt;BookMetadata&gt;) : SearchState
+&nbsp;    data object Unavailable : SearchState
+&nbsp;}
+&nbsp;
+&nbsp;/** Which entry-form field a [SaveBookRejection][com.librosleidos.domain.usecase.SaveBookRejection] maps to. */
+<b class="fc">&nbsp;enum class BookEditField { TITLE, RATING, DATE_FINISHED }</b>
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-16 14:34</div>
+</div>
+</body>
+</html>

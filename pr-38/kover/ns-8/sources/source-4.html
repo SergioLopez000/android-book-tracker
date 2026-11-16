@@ -1,0 +1,245 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>app Coverage Report > BookEditScreenKt</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: app<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.ui.edit</a>
+</div>
+
+<h1>Coverage Summary for Class: BookEditScreenKt (com.librosleidos.ui.edit)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">BookEditScreenKt</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    46.9%
+  </span>
+  <span class="absValue">
+    (30/64)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    93.9%
+  </span>
+  <span class="absValue">
+    (46/49)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    84.9%
+  </span>
+  <span class="absValue">
+    (897/1056)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.ui.edit
+&nbsp;
+&nbsp;import androidx.compose.foundation.layout.Column
+&nbsp;import androidx.compose.foundation.layout.Row
+&nbsp;import androidx.compose.foundation.layout.fillMaxSize
+&nbsp;import androidx.compose.foundation.layout.padding
+&nbsp;import androidx.compose.foundation.layout.size
+&nbsp;import androidx.compose.foundation.rememberScrollState
+&nbsp;import androidx.compose.foundation.verticalScroll
+&nbsp;import androidx.compose.material3.Button
+&nbsp;import androidx.compose.material3.MaterialTheme
+&nbsp;import androidx.compose.material3.OutlinedTextField
+&nbsp;import androidx.compose.material3.Text
+&nbsp;import androidx.compose.material3.TextButton
+&nbsp;import androidx.compose.runtime.Composable
+&nbsp;import androidx.compose.ui.Modifier
+&nbsp;import androidx.compose.ui.unit.dp
+&nbsp;import com.librosleidos.domain.model.BookMetadata
+&nbsp;import com.librosleidos.ui.components.BookCoverImage
+&nbsp;import com.librosleidos.ui.components.StarRating
+&nbsp;
+&nbsp;/**
+&nbsp; * Task 6.3 (design: container/presentational split). Stateless — the
+&nbsp; * container [BookEditRoute] binds [BookEditViewModel] to this composable.
+&nbsp; * Spec: &quot;Add Book via Metadata Lookup&quot;, &quot;Add Book Manually&quot;, &quot;Validate
+&nbsp; * Half-Star Rating&quot;, &quot;Require Rating on Save&quot;, &quot;Edit Existing Book&quot;,
+&nbsp; * &quot;Autofill Editable Fields&quot;.
+&nbsp; */
+&nbsp;@Composable
+&nbsp;fun BookEditScreen(
+&nbsp;    state: BookEditUiState,
+&nbsp;    onTitleChanged: (String) -&gt; Unit,
+&nbsp;    onAuthorChanged: (String) -&gt; Unit,
+&nbsp;    onRatingChanged: (Float) -&gt; Unit,
+&nbsp;    onReviewChanged: (String) -&gt; Unit,
+&nbsp;    onSearchQueryChanged: (String) -&gt; Unit,
+&nbsp;    onSearchRequested: () -&gt; Unit,
+&nbsp;    onResultSelected: (BookMetadata) -&gt; Unit,
+&nbsp;    onSaveRequested: () -&gt; Unit,
+&nbsp;    onCancelRequested: () -&gt; Unit,
+<b class="fc">&nbsp;    modifier: Modifier = Modifier</b>
+<b class="pc">&nbsp;) {</b>
+<b class="fc">&nbsp;    Column(</b>
+<b class="fc">&nbsp;        modifier = modifier</b>
+<b class="fc">&nbsp;            .fillMaxSize()</b>
+<b class="fc">&nbsp;            .verticalScroll(rememberScrollState())</b>
+<b class="fc">&nbsp;            .padding(16.dp)</b>
+&nbsp;    ) {
+<b class="fc">&nbsp;        BookCoverImage(</b>
+<b class="fc">&nbsp;            coverUrl = state.coverUrl,</b>
+<b class="fc">&nbsp;            contentDescription = &quot;${state.title} cover&quot;,</b>
+<b class="fc">&nbsp;            modifier = Modifier.size(96.dp)</b>
+&nbsp;        )
+&nbsp;
+<b class="fc">&nbsp;        OutlinedTextField(</b>
+<b class="fc">&nbsp;            value = state.searchQuery,</b>
+<b class="fc">&nbsp;            onValueChange = onSearchQueryChanged,</b>
+&nbsp;            label = { Text(&quot;Search by title&quot;) }
+&nbsp;        )
+<b class="fc">&nbsp;        Button(onClick = onSearchRequested) { Text(&quot;Search&quot;) }</b>
+&nbsp;
+<b class="fc">&nbsp;        SearchResults(search = state.search, onResultSelected = onResultSelected)</b>
+&nbsp;
+<b class="fc">&nbsp;        OutlinedTextField(value = state.title, onValueChange = onTitleChanged, label = {</b>
+&nbsp;            Text(&quot;Title&quot;)
+&nbsp;        })
+<b class="pc">&nbsp;        state.fieldErrors[BookEditField.TITLE]?.let { ErrorText(it) }</b>
+&nbsp;
+<b class="fc">&nbsp;        OutlinedTextField(value = state.author, onValueChange = onAuthorChanged, label = {</b>
+&nbsp;            Text(&quot;Author&quot;)
+&nbsp;        })
+&nbsp;
+<b class="fc">&nbsp;        StarRating(rating = state.rating, onRatingChange = onRatingChanged)</b>
+<b class="fc">&nbsp;        state.fieldErrors[BookEditField.RATING]?.let { ErrorText(it) }</b>
+&nbsp;
+<b class="fc">&nbsp;        OutlinedTextField(value = state.review, onValueChange = onReviewChanged, label = {</b>
+&nbsp;            Text(&quot;Comment&quot;)
+&nbsp;        })
+&nbsp;
+<b class="pc">&nbsp;        state.fieldErrors[BookEditField.DATE_FINISHED]?.let { ErrorText(it) }</b>
+&nbsp;
+<b class="fc">&nbsp;        Row {</b>
+<b class="fc">&nbsp;            TextButton(onClick = onCancelRequested) { Text(&quot;Cancel&quot;) }</b>
+<b class="fc">&nbsp;            Button(onClick = onSaveRequested, enabled = !state.isSaving) { Text(&quot;Save&quot;) }</b>
+<b class="fc">&nbsp;        }</b>
+<b class="fc">&nbsp;    }</b>
+<b class="fc">&nbsp;}</b>
+&nbsp;
+&nbsp;@Composable
+<b class="pc">&nbsp;private fun SearchResults(search: SearchState, onResultSelected: (BookMetadata) -&gt; Unit) {</b>
+<b class="fc">&nbsp;    when (search) {</b>
+<b class="pc">&nbsp;        is SearchState.Results -&gt; if (search.results.isEmpty()) {</b>
+<b class="nc">&nbsp;            Text(&quot;No matches found. You can still enter the details manually.&quot;)</b>
+<b class="fc">&nbsp;        } else {</b>
+<b class="fc">&nbsp;            Column {</b>
+<b class="fc">&nbsp;                search.results.forEach { result -&gt;</b>
+<b class="fc">&nbsp;                    TextButton(onClick = { onResultSelected(result) }) {</b>
+<b class="fc">&nbsp;                        Text(&quot;${result.title} — ${result.author}&quot;)</b>
+&nbsp;                    }
+<b class="fc">&nbsp;                }</b>
+<b class="fc">&nbsp;            }</b>
+&nbsp;        }
+&nbsp;
+<b class="pc">&nbsp;        SearchState.Loading -&gt; Text(&quot;Searching…&quot;)</b>
+&nbsp;
+<b class="pc">&nbsp;        SearchState.Unavailable -&gt; Text(</b>
+<b class="nc">&nbsp;            &quot;Search unavailable. You can still enter the details manually.&quot;</b>
+&nbsp;        )
+&nbsp;
+<b class="fc">&nbsp;        SearchState.Idle -&gt; Unit</b>
+<b class="nc">&nbsp;    }</b>
+<b class="fc">&nbsp;}</b>
+&nbsp;
+&nbsp;@Composable
+<b class="pc">&nbsp;private fun ErrorText(message: String) {</b>
+<b class="fc">&nbsp;    Text(text = message, color = MaterialTheme.colorScheme.error)</b>
+<b class="fc">&nbsp;}</b>
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-16 14:34</div>
+</div>
+</body>
+</html>
