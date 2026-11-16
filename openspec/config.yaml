@@ -1,0 +1,44 @@
+schema: spec-driven
+
+context: |
+  Rincon de Lectura: native Android, local-first, single-user book tracker (rate + review).
+  Single Gradle module :app, package com.librosleidos. Kotlin 2.3.20, AGP 9.1.1 (built-in Kotlin),
+  Gradle 9.6.0, JDK 17, Jetpack Compose (Material3, BOM 2026.08.00), Room 2.8.4 + KSP, Coil 3.
+  Hexagonal architecture (ports and adapters): domain/{model,port,usecase}, data/{local,remote}, ui/*, di.
+  Remote metadata: Open Library with Google Books fallback (optional API key in local.properties).
+  Tests: JUnit4 + Robolectric + Compose UI test + Turbine + coroutines-test under app/src/test.
+
+strict_tdd: true
+
+testing:
+  workspace_command: "./gradlew :app:testDebugUnitTest"
+  projects:
+    - path: "."
+      stack: "Kotlin/Android (Gradle module :app)"
+      test_command: "./gradlew :app:testDebugUnitTest"
+      framework: "JUnit4 + Robolectric"
+  layers:
+    unit: { available: true, tool: "JUnit4 + Robolectric + coroutines-test + Turbine" }
+    integration: { available: true, tool: "Robolectric + Room (room-testing) in app/src/test" }
+    e2e: { available: false, tool: null }
+  coverage: { available: false, command: null }
+  quality:
+    linter: { available: false, command: null }
+    type_checker: { available: true, command: "Kotlin compiler (./gradlew :app:compileDebugKotlin)" }
+    formatter: { available: false, command: null }
+
+rules:
+  proposal:
+    - Keep changes within the hexagonal layering; domain must not depend on Android or data packages.
+  specs:
+    - Use Given/When/Then scenarios; existing capabilities live under openspec/specs.
+  design:
+    - Prefer ports in domain/port with adapters in data/*.
+  tasks:
+    - Tests first (Strict TDD). Review budget 800 changed lines; delivery_strategy ask-on-risk.
+  apply:
+    - Write a failing test, make it pass, then refactor. Run ./gradlew :app:testDebugUnitTest.
+  verify:
+    - Run ./gradlew :app:testDebugUnitTest; no coverage or lint tooling is configured.
+  archive:
+    - Do not modify archived changes.
