@@ -117,7 +117,7 @@ brew install lefthook gitleaks actionlint shellcheck
 lefthook install
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
-`lefthook install` activa los hooks locales: `spotlessCheck`, `gitleaks` (secretos en el índice), `actionlint`, `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
+`lefthook install` activa los hooks locales (pre-commit): `spotlessCheck`, Android Lint (`:app:lintDebug`, solo si tocas fuentes/recursos Android), `gitleaks` (secretos en el índice), `actionlint`, `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
 
 ### Comandos
 | Objetivo | Comando |
@@ -137,20 +137,20 @@ Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas exis
 
 ## 🤖 Integración Continua (GitHub Actions)
 
-`.github/workflows/ci.yml` corre en cada Pull Request y en cada push a `dev` (sin filtros de rutas) y aplica los mismos gates que los hooks locales, que se pueden saltar con `--no-verify`.
+`.github/workflows/ci.yml` corre en cada Pull Request y en cada push a `dev` (sin filtros de rutas). **El CI ejecuta solo las pruebas y los reportes; el análisis estático corre únicamente en local** mediante lefthook (pre-commit: `spotlessCheck`, `:app:lintDebug`, gitleaks, actionlint, shellcheck; commit-msg: Conventional Commits).
+
+> **Riesgo aceptado**: como el análisis estático no se repite en CI, un commit hecho con `--no-verify`, desde la web de GitHub o sin `lefthook install` se salta lint, formato, secretos y la validación del mensaje de commit. Decisión explícita del proyecto: el análisis estático es solo local.
 
 ```text
-lint-format  lint-android  lint-workflows  secrets  commit-messages  shell   (en paralelo)
-                              └── needs (todos) ──> unit-tests ──> ci-gate  (check requerido)
-                                                       └──> report (informativo, no bloquea)
+unit-tests ──> ci-gate  (check requerido)
+    └──> report (informativo, no bloquea)
 ```
 
-- **Jobs de lint**: `spotlessCheck`, `:app:lintDebug`, actionlint, gitleaks, commits del PR + título del PR (Conventional Commits) y shellcheck + harnesses de `scripts/test-*.sh`.
-- **`unit-tests`**: `:app:testDebugUnitTest` + Kover XML/HTML. Se omite si falla cualquier lint.
-- **`ci-gate`**: único check requerido. Falla si algún job de lint o `unit-tests` no termina en éxito (un job omitido cuenta como fallo). `report` no lo afecta.
+- **`unit-tests`**: `:app:testDebugUnitTest` + Kover XML/HTML.
+- **`ci-gate`**: único check requerido. Falla si `unit-tests` no termina en éxito (un job omitido cuenta como fallo). `report` no lo afecta.
 - **`report`**: genera Allure 2.46.2 desde el JUnit XML y publica Allure + Kover en la rama `gh-pages` (`pr-<N>/` en PRs, `dev/` en pushes a `dev`), y deja un único comentario sticky en el PR con los enlaces y la cobertura de líneas y ramas. Solo PRs del mismo repositorio; los PRs desde forks solo suben el artefacto `report-site`.
 - **`pr-cleanup.yml`**: borra `pr-<N>/` de `gh-pages` al cerrar el PR.
-- **`promote.yml`**: exige que el último check-run `ci-gate` del SHA (emitido por GitHub Actions) sea `success`; si falta o no es exitoso, la promoción falla.
+- **`promote.yml`**: exige que el último check-run `ci-gate` del SHA (emitido por GitHub Actions) sea `success` (es decir, que las pruebas pasaron); si falta o no es exitoso, la promoción falla.
 
 Reportes publicados: `https://<usuario>.github.io/android-book-tracker/pr-<N>/allure/` y `.../kover/` (o `dev/` para la rama `dev`).
 

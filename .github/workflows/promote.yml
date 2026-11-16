@@ -45,6 +45,7 @@ jobs:
             || { echo "::error::main is not an ancestor of $sha; fast-forward impossible"; exit 1; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
+      # ci-gate only aggregates the unit tests; static analysis is local-only.
       # The check name alone can be spoofed by another app, so the run must
       # also come from GitHub Actions (app id 15368; confirm on the first
       # real ci-gate check-run, see tasks 0.2).

@@ -1,6 +1,7 @@
-# Enforces the local quality gates on every pull request and dev push, then
-# publishes Allure and Kover reports to gh-pages. `ci-gate` is the single
-# required status check; `report` is informative and never gates.
+# Runs the unit tests on every pull request and dev push, then publishes Allure
+# and Kover reports to gh-pages. Static analysis (lint, format, secrets, shell,
+# workflows, commit messages) runs ONLY locally via lefthook, never here.
+# `ci-gate` is the single required status check; `report` never gates.
 name: CI
 
 on:
@@ -19,116 +20,8 @@ env:
   GRADLE_OPTS: -Dorg.gradle.daemon=false
 
 jobs:
-  lint-format:
-    name: lint-format
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: "17"
-      - uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/dev' }}
-      - run: ./gradlew spotlessCheck
-
-  lint-android:
-    name: lint-android
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: "17"
-      - uses: gradle/actions/setup-gradle@v6
-        with:
-          cache-read-only: ${{ github.ref != 'refs/heads/dev' }}
-      - run: ./gradlew :app:lintDebug
-
-  lint-workflows:
-    name: lint-workflows
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - name: actionlint
-        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
-
-  secrets:
-    name: secrets
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          GITLEAKS_ENABLE_COMMENTS: "false"
-
-  commit-messages:
-    name: commit-messages
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: Validate commits in range
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PUSH_BEFORE: ${{ github.event.before }}
-          PUSH_AFTER: ${{ github.sha }}
-        run: |
-          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            range="${BASE_SHA}..${HEAD_SHA}"
-          elif git cat-file -e "${PUSH_BEFORE}^{commit}" 2>/dev/null; then
-            range="${PUSH_BEFORE}..${PUSH_AFTER}"
-          else
-            range="${PUSH_AFTER}^!"
-          fi
-          msg="$(mktemp)"
-          failed=0
-          for commit in $(git rev-list --no-merges "$range"); do
-            git log -1 --format=%B "$commit" >"$msg"
-            if ! scripts/check-commit-msg.sh "$msg" 2>/dev/null; then
-              echo "::error::Commit ${commit} has an invalid message: $(git log -1 --format=%s "$commit")"
-              failed=1
-            fi
-          done
-          exit "$failed"
-      - name: Validate PR title
-        if: github.event_name == 'pull_request'
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          title_file="$(mktemp)"
-          printf '%s\n' "$PR_TITLE" >"$title_file"
-          scripts/check-commit-msg.sh "$title_file" \
-            || { echo "::error::PR title is not a valid conventional-commit title"; exit 1; }
-
-  shell:
-    name: shell
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v7
-      - name: shellcheck
-        run: shellcheck scripts/*.sh
-      - name: Script harnesses
-        run: |
-          for harness in scripts/test-*.sh; do
-            echo "::group::${harness}"
-            "$harness"
-            echo "::endgroup::"
-          done
-
   unit-tests:
     name: unit-tests
-    needs: [lint-format, lint-android, lint-workflows, secrets, commit-messages, shell]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -287,16 +180,16 @@ jobs:
 
   ci-gate:
     name: ci-gate
-    needs: [lint-format, lint-android, lint-workflows, secrets, commit-messages, shell, unit-tests]
+    needs: [unit-tests]
     if: always()
     runs-on: ubuntu-24.04
     steps:
-      - name: Require every gating job to succeed
+      - name: Require the test job to succeed
         env:
           NEEDS: ${{ toJSON(needs) }}
         run: |
           bad="$(jq -r 'to_entries[] | select(.value.result != "success") | "\(.key)=\(.value.result)"' <<<"$NEEDS")"
           if [ -n "$bad" ]; then
-            echo "::error::Gating jobs not successful: $(tr '\n' ' ' <<<"$bad")"
+            echo "::error::Gating job not successful: $(tr '\n' ' ' <<<"$bad")"
             exit 1
           fi
