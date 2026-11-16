@@ -18,6 +18,7 @@ turbine = "1.2.1"
 coil = "3.6.1"
 spotless = "8.11.0"
 ktlint = "1.8.0"
+composeLints = "1.5.4"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -53,6 +54,7 @@ turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 coil-test = { module = "io.coil-kt.coil3:coil-test", version.ref = "coil" }
+compose-lint-checks = { module = "com.slack.lint.compose:compose-lint-checks", version.ref = "composeLints" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

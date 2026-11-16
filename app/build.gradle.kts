@@ -52,6 +52,13 @@ android {
         buildConfig = true
     }
 
+    lint {
+        baseline = file("lint-baseline.xml")
+        lintConfig = file("lint.xml")
+        abortOnError = true
+        warningsAsErrors = true
+    }
+
     // Robolectric needs merged Android resources on the unit-test classpath.
     testOptions {
         unitTests.isIncludeAndroidResources = true
@@ -117,4 +124,6 @@ dependencies {
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    lintChecks(libs.compose.lint.checks)
 }
