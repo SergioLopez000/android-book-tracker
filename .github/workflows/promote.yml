@@ -24,11 +24,11 @@ jobs:
   promote:
     name: Fast-forward main
     if: github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: staging
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -45,19 +45,26 @@ jobs:
             || { echo "::error::main is not an ancestor of $sha; fast-forward impossible"; exit 1; }
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
-      - name: Require green checks on the commit
+      # ci-gate only aggregates the unit tests; static analysis is local-only.
+      # The check name alone can be spoofed by another app, so the run must
+      # also come from GitHub Actions (app id 15368; confirm on the first
+      # real ci-gate check-run, see tasks 0.2).
+      - name: Require a green ci-gate on the commit
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ steps.target.outputs.sha }}
+          ACTIONS_APP_ID: "15368"
         run: |
-          runs="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/check-runs" \
-            --jq '[.check_runs[] | select(.name != "Fast-forward main")]')"
-          total="$(jq 'length' <<<"$runs")"
-          bad="$(jq '[.[] | select(.conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral")] | length' <<<"$runs")"
-          if [ "$total" -eq 0 ]; then
-            echo "::warning::No checks found on $SHA (CI not set up yet, see #3)"
-          elif [ "$bad" -ne 0 ]; then
-            echo "::error::$bad check(s) on $SHA are not successful"; exit 1
+          runs="$(gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/commits/${SHA}/check-runs?check_name=ci-gate&filter=latest" \
+            | jq -s --argjson app "$ACTIONS_APP_ID" \
+              '[.[].check_runs[] | select(.app.id == $app)]')"
+          if [ "$(jq 'length' <<<"$runs")" -eq 0 ]; then
+            echo "::error::No ci-gate check-run found on $SHA"; exit 1
+          fi
+          state="$(jq -r 'sort_by(.started_at) | last | "\(.status)/\(.conclusion)"' <<<"$runs")"
+          if [ "$state" != "completed/success" ]; then
+            echo "::error::Latest ci-gate on $SHA is $state, expected completed/success"; exit 1
           fi
 
       - name: Fast-forward main

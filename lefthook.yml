@@ -5,6 +5,9 @@ pre-commit:
     - name: spotless
       glob: "*.{kt,kts}"
       run: ./gradlew --quiet spotlessCheck || { echo "Run ./gradlew spotlessApply"; exit 1; }
+    - name: android-lint
+      glob: "{app/**/*.{kt,kts,xml},*.gradle.kts,gradle/*.toml,gradle.properties}"
+      run: ./gradlew --quiet :app:lintDebug || { echo "Android Lint failed. See app/build/reports/lint-results-debug.html; fix it or run ./gradlew :app:updateLintBaseline for accepted legacy issues"; exit 1; }
     - name: gitleaks
       run: command -v gitleaks >/dev/null || { echo "brew install gitleaks"; exit 1; }; gitleaks git --pre-commit --staged --redact --no-banner
     - name: actionlint
