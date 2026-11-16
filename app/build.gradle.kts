@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kover)
 }
 
 // Google Books API key is optional. It is read from a git-ignored
@@ -75,6 +76,25 @@ android {
 // (design: Migration / Rollout — no fallbackToDestructiveMigration).
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+// Report-only coverage (no koverVerify threshold). Generated classes are
+// excluded so the report reflects hand-written code.
+kover {
+    reports {
+        filters {
+            excludes {
+                classes(
+                    "*_Impl",
+                    "*_Impl\$*",
+                    "*ComposableSingletons*",
+                    "*.BuildConfig",
+                    "*.R",
+                    "*.R\$*"
+                )
+            }
+        }
+    }
 }
 
 dependencies {
