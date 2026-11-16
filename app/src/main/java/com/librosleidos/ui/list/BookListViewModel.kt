@@ -16,7 +16,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-private data class ListQuery(val sort: BookSort, val minRating: Float, val dateRange: DateRangeFilter)
+private data class ListQuery(
+    val sort: BookSort,
+    val minRating: Float,
+    val dateRange: DateRangeFilter
+)
 
 /**
  * Task 5.2 (design: Data Flow — `BookListRoute ← StateFlow ←
@@ -32,14 +36,14 @@ private data class ListQuery(val sort: BookSort, val minRating: Float, val dateR
 @OptIn(ExperimentalCoroutinesApi::class)
 class BookListViewModel(
     private val getBooks: GetBooksUseCase,
-    private val deleteBook: DeleteBookUseCase,
+    private val deleteBook: DeleteBookUseCase
 ) : ViewModel() {
 
     private val query = MutableStateFlow(
         ListQuery(
             sort = BookSort.DATE_FINISHED_DESC,
             minRating = 0f,
-            dateRange = DateRangeFilter.ALL_TIME,
+            dateRange = DateRangeFilter.ALL_TIME
         )
     )
     private val pendingDeleteId = MutableStateFlow<Long?>(null)
@@ -53,7 +57,7 @@ class BookListViewModel(
                     minRating = current.minRating,
                     dateRange = current.dateRange,
                     isLoading = false,
-                    isEmpty = books.isEmpty(),
+                    isEmpty = books.isEmpty()
                 )
             }
         }
@@ -61,7 +65,7 @@ class BookListViewModel(
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = BookListUiState(isLoading = true),
+            initialValue = BookListUiState(isLoading = true)
         )
 
     fun onSortSelected(sort: BookSort) {

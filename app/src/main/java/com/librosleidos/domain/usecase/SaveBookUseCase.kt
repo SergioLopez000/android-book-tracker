@@ -40,7 +40,7 @@ class SaveBookUseCase(private val repository: BookRepository) {
             coverUrl = request.coverUrl,
             rating = rating,
             review = request.review,
-            dateFinished = request.dateFinished,
+            dateFinished = request.dateFinished
         )
         return SaveBookOutcome.Saved(repository.save(book))
     }
@@ -58,7 +58,7 @@ data class SaveBookRequest(
     val coverUrl: String? = null,
     val rating: Float?,
     val review: String = "",
-    val dateFinished: LocalDate,
+    val dateFinished: LocalDate
 )
 
 sealed interface SaveBookOutcome {
@@ -70,5 +70,5 @@ enum class SaveBookRejection {
     BLANK_TITLE,
     MISSING_RATING,
     INVALID_RATING,
-    FUTURE_DATE_FINISHED,
+    FUTURE_DATE_FINISHED
 }

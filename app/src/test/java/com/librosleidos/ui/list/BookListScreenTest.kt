@@ -31,7 +31,7 @@ class BookListScreenTest {
         coverUrl = null,
         rating = Rating(4.5f),
         review = "Excellent.",
-        dateFinished = LocalDate.of(2026, 1, 15),
+        dateFinished = LocalDate.of(2026, 1, 15)
     )
 
     @Test
@@ -43,7 +43,7 @@ class BookListScreenTest {
                 onMinRatingSelected = {},
                 onDeleteRequested = {},
                 onDeleteConfirmed = {},
-                onDeleteCancelled = {},
+                onDeleteCancelled = {}
             )
         }
 
@@ -61,7 +61,7 @@ class BookListScreenTest {
                 onMinRatingSelected = {},
                 onDeleteRequested = {},
                 onDeleteConfirmed = {},
-                onDeleteCancelled = {},
+                onDeleteCancelled = {}
             )
         }
 
@@ -72,12 +72,17 @@ class BookListScreenTest {
     fun pendingDelete_showsConfirmationDialogWithBookTitle() {
         composeTestRule.setContent {
             BookListScreen(
-                state = BookListUiState(books = listOf(dune), isLoading = false, isEmpty = false, pendingDeleteId = 1L),
+                state = BookListUiState(
+                    books = listOf(dune),
+                    isLoading = false,
+                    isEmpty = false,
+                    pendingDeleteId = 1L
+                ),
                 onSortSelected = {},
                 onMinRatingSelected = {},
                 onDeleteRequested = {},
                 onDeleteConfirmed = {},
-                onDeleteCancelled = {},
+                onDeleteCancelled = {}
             )
         }
 
@@ -89,12 +94,17 @@ class BookListScreenTest {
         var confirmed = false
         composeTestRule.setContent {
             BookListScreen(
-                state = BookListUiState(books = listOf(dune), isLoading = false, isEmpty = false, pendingDeleteId = 1L),
+                state = BookListUiState(
+                    books = listOf(dune),
+                    isLoading = false,
+                    isEmpty = false,
+                    pendingDeleteId = 1L
+                ),
                 onSortSelected = {},
                 onMinRatingSelected = {},
                 onDeleteRequested = {},
                 onDeleteConfirmed = { confirmed = true },
-                onDeleteCancelled = {},
+                onDeleteCancelled = {}
             )
         }
 
@@ -108,12 +118,17 @@ class BookListScreenTest {
         var cancelled = false
         composeTestRule.setContent {
             BookListScreen(
-                state = BookListUiState(books = listOf(dune), isLoading = false, isEmpty = false, pendingDeleteId = 1L),
+                state = BookListUiState(
+                    books = listOf(dune),
+                    isLoading = false,
+                    isEmpty = false,
+                    pendingDeleteId = 1L
+                ),
                 onSortSelected = {},
                 onMinRatingSelected = {},
                 onDeleteRequested = {},
                 onDeleteConfirmed = {},
-                onDeleteCancelled = { cancelled = true },
+                onDeleteCancelled = { cancelled = true }
             )
         }
 
@@ -133,7 +148,7 @@ class BookListScreenTest {
                 onDeleteRequested = {},
                 onDeleteConfirmed = {},
                 onDeleteCancelled = {},
-                onAddRequested = { addRequested = true },
+                onAddRequested = { addRequested = true }
             )
         }
 
@@ -153,7 +168,7 @@ class BookListScreenTest {
                 onDeleteRequested = {},
                 onDeleteConfirmed = {},
                 onDeleteCancelled = {},
-                onBookClicked = { clickedId = it },
+                onBookClicked = { clickedId = it }
             )
         }
 
@@ -171,14 +186,14 @@ class BookListScreenTest {
                     books = emptyList(),
                     isLoading = false,
                     isEmpty = true,
-                    dateRange = com.librosleidos.domain.model.DateRangeFilter.ALL_TIME,
+                    dateRange = com.librosleidos.domain.model.DateRangeFilter.ALL_TIME
                 ),
                 onSortSelected = {},
                 onMinRatingSelected = {},
                 onDeleteRequested = {},
                 onDeleteConfirmed = {},
                 onDeleteCancelled = {},
-                onDateRangeSelected = { selectedRange = it },
+                onDateRangeSelected = { selectedRange = it }
             )
         }
 

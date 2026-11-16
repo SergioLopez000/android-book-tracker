@@ -42,12 +42,14 @@ class BookEditScreenTest {
                 onSearchRequested = { searchRequested = true },
                 onResultSelected = {},
                 onSaveRequested = { savedInvoked = true },
-                onCancelRequested = {},
+                onCancelRequested = {}
             )
         }
 
         composeTestRule.onNodeWithText("Title").performTextInput("Dune")
-        composeTestRule.onNodeWithContentDescription("Set rating 4.5").performScrollTo().performClick()
+        composeTestRule.onNodeWithContentDescription(
+            "Set rating 4.5"
+        ).performScrollTo().performClick()
         composeTestRule.onNodeWithText("Save").performScrollTo().performClick()
 
         assert(savedInvoked) { "expected onSaveRequested to be invoked" }
@@ -58,7 +60,9 @@ class BookEditScreenTest {
     fun blockedSave_showsFieldErrorMessage() {
         composeTestRule.setContent {
             BookEditScreen(
-                state = noOpState.copy(fieldErrors = mapOf(BookEditField.RATING to "Rating is required.")),
+                state = noOpState.copy(
+                    fieldErrors = mapOf(BookEditField.RATING to "Rating is required.")
+                ),
                 onTitleChanged = {},
                 onAuthorChanged = {},
                 onRatingChanged = {},
@@ -67,7 +71,7 @@ class BookEditScreenTest {
                 onSearchRequested = {},
                 onResultSelected = {},
                 onSaveRequested = {},
-                onCancelRequested = {},
+                onCancelRequested = {}
             )
         }
 
@@ -82,7 +86,7 @@ class BookEditScreenTest {
                     id = 7L,
                     title = "Neuromancer",
                     author = "William Gibson",
-                    review = "Classic cyberpunk.",
+                    review = "Classic cyberpunk."
                 ),
                 onTitleChanged = {},
                 onAuthorChanged = {},
@@ -92,7 +96,7 @@ class BookEditScreenTest {
                 onSearchRequested = {},
                 onResultSelected = {},
                 onSaveRequested = {},
-                onCancelRequested = {},
+                onCancelRequested = {}
             )
         }
 
@@ -116,13 +120,15 @@ class BookEditScreenTest {
                 onSearchRequested = {},
                 onResultSelected = { selected = it },
                 onSaveRequested = {},
-                onCancelRequested = {},
+                onCancelRequested = {}
             )
         }
 
         composeTestRule.onNodeWithText("Dune — Frank Herbert").performClick()
 
-        assert(selected == dune) { "expected onResultSelected to be invoked with the picked result" }
+        assert(selected == dune) {
+            "expected onResultSelected to be invoked with the picked result"
+        }
     }
 
     @Test
@@ -139,7 +145,7 @@ class BookEditScreenTest {
                 onSearchRequested = {},
                 onResultSelected = {},
                 onSaveRequested = {},
-                onCancelRequested = { cancelled = true },
+                onCancelRequested = { cancelled = true }
             )
         }
 

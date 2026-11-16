@@ -15,9 +15,8 @@ import org.junit.Test
  */
 class ChainedMetadataSourceTest {
 
-    private class FakeBookMetadataSource(
-        private val result: Result<List<BookMetadata>>,
-    ) : BookMetadataSource {
+    private class FakeBookMetadataSource(private val result: Result<List<BookMetadata>>) :
+        BookMetadataSource {
         var callCount: Int = 0
             private set
 
@@ -28,19 +27,21 @@ class ChainedMetadataSourceTest {
     }
 
     private val dune = BookMetadata(title = "Dune", author = "Frank Herbert", coverUrl = null)
-    private val foundation = BookMetadata(title = "Foundation", author = "Isaac Asimov", coverUrl = null)
+    private val foundation =
+        BookMetadata(title = "Foundation", author = "Isaac Asimov", coverUrl = null)
 
     @Test
-    fun `returns primary results without calling the fallback when primary has matches`() = runTest {
-        val primary = FakeBookMetadataSource(Result.success(listOf(dune)))
-        val fallback = FakeBookMetadataSource(Result.success(listOf(foundation)))
-        val chained = ChainedMetadataSource(primary, fallback)
+    fun `returns primary results without calling the fallback when primary has matches`() =
+        runTest {
+            val primary = FakeBookMetadataSource(Result.success(listOf(dune)))
+            val fallback = FakeBookMetadataSource(Result.success(listOf(foundation)))
+            val chained = ChainedMetadataSource(primary, fallback)
 
-        val result = chained.search("dune")
+            val result = chained.search("dune")
 
-        assertEquals(listOf(dune), result.getOrThrow())
-        assertEquals(0, fallback.callCount)
-    }
+            assertEquals(listOf(dune), result.getOrThrow())
+            assertEquals(0, fallback.callCount)
+        }
 
     @Test
     fun `falls back when the primary returns an empty result`() = runTest {

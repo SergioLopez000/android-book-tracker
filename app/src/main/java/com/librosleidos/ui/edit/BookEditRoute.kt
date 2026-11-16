@@ -23,7 +23,7 @@ fun BookEditRoute(
     viewModel: BookEditViewModel,
     onSaveCompleted: () -> Unit,
     onCancelRequested: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -46,6 +46,6 @@ fun BookEditRoute(
         onResultSelected = viewModel::onResultSelected,
         onSaveRequested = viewModel::onSaveRequested,
         onCancelRequested = onCancelRequested,
-        modifier = modifier,
+        modifier = modifier
     )
 }

@@ -21,6 +21,6 @@ fun RinconDeLecturaTheme(content: @Composable () -> Unit) {
     MaterialTheme(
         colorScheme = DarkColorScheme,
         typography = AppTypography,
-        content = content,
+        content = content
     )
 }

@@ -35,7 +35,11 @@ class GetBooksUseCaseTest {
 
     @Test
     fun `ALL_TIME requests no date lower bound`() = runTest {
-        useCase(BookSort.DATE_FINISHED_DESC, minRating = 0f, range = DateRangeFilter.ALL_TIME).first()
+        useCase(
+            BookSort.DATE_FINISHED_DESC,
+            minRating = 0f,
+            range = DateRangeFilter.ALL_TIME
+        ).first()
 
         assertNull(repository.lastRequestedFromEpochDay)
     }
@@ -49,7 +53,7 @@ class GetBooksUseCaseTest {
         useCaseWithFixedClock(
             BookSort.DATE_FINISHED_DESC,
             minRating = 0f,
-            range = DateRangeFilter.LAST_MONTH,
+            range = DateRangeFilter.LAST_MONTH
         ).first()
 
         assertEquals(LocalDate.of(2026, 3, 1).toEpochDay(), repository.lastRequestedFromEpochDay)
@@ -64,7 +68,7 @@ class GetBooksUseCaseTest {
         useCaseWithFixedClock(
             BookSort.DATE_FINISHED_DESC,
             minRating = 0f,
-            range = DateRangeFilter.LAST_YEAR,
+            range = DateRangeFilter.LAST_YEAR
         ).first()
 
         assertEquals(LocalDate.of(2025, 3, 31).toEpochDay(), repository.lastRequestedFromEpochDay)

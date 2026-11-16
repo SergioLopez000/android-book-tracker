@@ -38,7 +38,7 @@ class CoilSpikeTest {
             AsyncImage(
                 model = "https://example.com/fake-cover.jpg",
                 contentDescription = null,
-                onSuccess = { succeeded = true },
+                onSuccess = { succeeded = true }
             )
         }
 

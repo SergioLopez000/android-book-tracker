@@ -20,11 +20,7 @@ import coil3.compose.AsyncImage
  * editing", "Missing cover in edit form" (edit form).
  */
 @Composable
-fun BookCoverImage(
-    coverUrl: String?,
-    contentDescription: String?,
-    modifier: Modifier = Modifier,
-) {
+fun BookCoverImage(coverUrl: String?, contentDescription: String?, modifier: Modifier = Modifier) {
     val secureCoverUrl = coverUrl.asSecureHttpsUrl()
     if (secureCoverUrl == null) {
         CoverPlaceholder(modifier = modifier)
@@ -32,7 +28,7 @@ fun BookCoverImage(
         AsyncImage(
             model = secureCoverUrl,
             contentDescription = contentDescription,
-            modifier = modifier,
+            modifier = modifier
         )
     }
 }

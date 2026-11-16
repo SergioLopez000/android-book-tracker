@@ -38,38 +38,44 @@ fun BookEditScreen(
     onResultSelected: (BookMetadata) -> Unit,
     onSaveRequested: () -> Unit,
     onCancelRequested: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(16.dp)
     ) {
         BookCoverImage(
             coverUrl = state.coverUrl,
             contentDescription = "${state.title} cover",
-            modifier = Modifier.size(96.dp),
+            modifier = Modifier.size(96.dp)
         )
 
         OutlinedTextField(
             value = state.searchQuery,
             onValueChange = onSearchQueryChanged,
-            label = { Text("Search by title") },
+            label = { Text("Search by title") }
         )
         Button(onClick = onSearchRequested) { Text("Search") }
 
         SearchResults(search = state.search, onResultSelected = onResultSelected)
 
-        OutlinedTextField(value = state.title, onValueChange = onTitleChanged, label = { Text("Title") })
+        OutlinedTextField(value = state.title, onValueChange = onTitleChanged, label = {
+            Text("Title")
+        })
         state.fieldErrors[BookEditField.TITLE]?.let { ErrorText(it) }
 
-        OutlinedTextField(value = state.author, onValueChange = onAuthorChanged, label = { Text("Author") })
+        OutlinedTextField(value = state.author, onValueChange = onAuthorChanged, label = {
+            Text("Author")
+        })
 
         StarRating(rating = state.rating, onRatingChange = onRatingChanged)
         state.fieldErrors[BookEditField.RATING]?.let { ErrorText(it) }
 
-        OutlinedTextField(value = state.review, onValueChange = onReviewChanged, label = { Text("Comment") })
+        OutlinedTextField(value = state.review, onValueChange = onReviewChanged, label = {
+            Text("Comment")
+        })
 
         state.fieldErrors[BookEditField.DATE_FINISHED]?.let { ErrorText(it) }
 
@@ -94,8 +100,13 @@ private fun SearchResults(search: SearchState, onResultSelected: (BookMetadata) 
                 }
             }
         }
+
         SearchState.Loading -> Text("Searching…")
-        SearchState.Unavailable -> Text("Search unavailable. You can still enter the details manually.")
+
+        SearchState.Unavailable -> Text(
+            "Search unavailable. You can still enter the details manually."
+        )
+
         SearchState.Idle -> Unit
     }
 }

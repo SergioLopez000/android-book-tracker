@@ -21,7 +21,7 @@ fun BookListRoute(
     viewModel: BookListViewModel,
     onAddRequested: () -> Unit = {},
     onBookClicked: (Long) -> Unit = {},
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsState()
     BookListScreen(
@@ -34,6 +34,6 @@ fun BookListRoute(
         onDateRangeSelected = viewModel::onDateRangeSelected,
         onAddRequested = onAddRequested,
         onBookClicked = onBookClicked,
-        modifier = modifier,
+        modifier = modifier
     )
 }

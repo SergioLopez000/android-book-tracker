@@ -37,7 +37,7 @@ class BookDaoTest {
     fun setUp() {
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            BooksDatabase::class.java,
+            BooksDatabase::class.java
         ).allowMainThreadQueries().build()
         dao = database.bookDao()
     }
@@ -122,7 +122,7 @@ class BookDaoTest {
 
         assertEquals(
             listOf("VeryRecent", "Recent", "MediumOld", "VeryOld"),
-            result.map { it.title },
+            result.map { it.title }
         )
     }
 
@@ -161,7 +161,7 @@ class BookDaoTest {
 
         assertEquals(
             listOf("VeryRecent", "Recent", "MediumOld", "VeryOld"),
-            result.map { it.title },
+            result.map { it.title }
         )
     }
 
@@ -198,7 +198,7 @@ class BookDaoTest {
         id: Long,
         title: String,
         rating: Float,
-        dateFinishedEpochDay: Long,
+        dateFinishedEpochDay: Long
     ) = BookEntity(
         id = id,
         title = title,
@@ -206,6 +206,6 @@ class BookDaoTest {
         coverUrl = null,
         rating = rating,
         review = "",
-        dateFinishedEpochDay = dateFinishedEpochDay,
+        dateFinishedEpochDay = dateFinishedEpochDay
     )
 }
