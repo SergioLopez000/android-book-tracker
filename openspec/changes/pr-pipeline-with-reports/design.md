@@ -2,7 +2,7 @@
 
 ## Technical Approach
 
-One `ci.yml` (approach A, proposal). Parallel gate jobs feed `unit-tests`. A non-blocking `report` job turns JUnit XML into Allure 2.46.2 and publishes Allure and Kover to `gh-pages`. `ci-gate` aggregates the gate jobs and is the only required check. `promote.yml` requires the latest `ci-gate` on the promoted SHA. Parsing logic lives in `scripts/*.sh` with table harnesses, following `check-commit-msg.sh`. Three spikes run first. No app, Gradle or layering changes.
+One `ci.yml` (approach A, proposal). `unit-tests` is the only gating job (D11 removed the lint jobs). A non-blocking `report` job turns JUnit XML into Allure 2.46.2 and publishes Allure and Kover to `gh-pages`. `ci-gate` aggregates `unit-tests` and is the only required check. `promote.yml` requires the latest `ci-gate` on the promoted SHA. Parsing logic lives in `scripts/*.sh` with table harnesses, following `check-commit-msg.sh`. Three spikes run first. No app, Gradle or layering changes.
 
 ## Architecture Decisions
 
@@ -18,13 +18,11 @@ One `ci.yml` (approach A, proposal). Parallel gate jobs feed `unit-tests`. A non
 | D8 | Closing fallback (only if S2 fails) | `promote.yml` parses `main..SHA` before the push and closes open issues | Manual closing | Deterministic and testable. Adds `issues: write` only in this case. |
 | D9 | Check trust | `promote.yml` filters `check_name=ci-gate`, `filter=latest`, `app.id` = Actions id | Any check named `ci-gate` | Another app could spoof the check name. |
 | D10 | Gradle cache | `setup-gradle` with `cache-read-only: ${{ github.ref != 'refs/heads/dev' }}` | Default (writes on `main` only) | CI never runs on `main`, so the cache would never be written. PRs read caches from their base branch. |
+| D11 | Static analysis local-only (supersedes the lint-job topology, D3 inputs and the commit-messages/shell job contracts) | Remove the six lint jobs from CI; add `:app:lintDebug` to the lefthook pre-commit | Keep lint jobs in CI | Explicit user decision 2026-11-16. Accepted risk: `--no-verify`/web commits skip all gates. `ci-gate` depends only on `unit-tests`. |
 
 ## Data Flow
 
 ```
-lint-format  lint-android  lint-workflows  secrets  commit-messages  shell
-     └────────────┴─────────────┴──────────┴──────────┴──────────┘
-                              │ needs (all)
                          unit-tests ── allure-results-unit, coverage-unit
                     ┌─────────┴──────────┐
                  ci-gate               report (!cancelled, unit-tests ran)
@@ -39,9 +37,9 @@ lint-format  lint-android  lint-workflows  secrets  commit-messages  shell
 - **Triggers**: `pull_request` and `push: [dev]`. No `paths:` filters. Runner `ubuntu-24.04`. JDK temurin 17.
 - **Concurrency**: workflow group `ci-${{ github.event.pull_request.number || github.ref }}`, with `cancel-in-progress` on PRs only. The `report` job and `pr-cleanup` share group `gh-pages`, with `cancel-in-progress: false`.
 - **Permissions**: `contents: read` at workflow level. `report` gets `contents: write` and `pull-requests: write`. `pr-cleanup` gets `contents: write`.
-- **commit-messages**: on PRs, runs every `git rev-list --no-merges base.sha..head.sha` message through `check-commit-msg.sh`. The PR title is passed through `env:`, written to a temp file, and checked. On pushes it is a no-op success.
-- **shell**: `shellcheck scripts/*.sh`, then every `scripts/test-*.sh`.
-- **unit-tests**: `./gradlew :app:testDebugUnitTest :app:koverXmlReportDebug :app:koverHtmlReportDebug --continue`. Uploads run with `if: !cancelled()`, so failing runs still report.
+- **commit-messages** (SUPERSEDED by D11, removed from CI): on PRs, runs every `git rev-list --no-merges base.sha..head.sha` message through `check-commit-msg.sh`. The PR title is passed through `env:`, written to a temp file, and checked. On pushes it is a no-op success.
+- **shell** (SUPERSEDED by D11, removed from CI): `shellcheck scripts/*.sh`, then every `scripts/test-*.sh`.
+- **unit-tests**: no `needs`. `./gradlew :app:testDebugUnitTest :app:koverXmlReportDebug :app:koverHtmlReportDebug --continue`. Uploads run with `if: !cancelled()`, so failing runs still report.
 - **report**: download `allure-results-*` (merged) and `coverage-*` (per suite). Install the pinned Allure tgz and verify its SHA-256. Run `allure generate`. Read `widgets/summary.json` and `kover-summary.sh`. Write to the step summary. Then publish and add the sticky comment (header `ci-report`) for pushes and same-repo PRs. Always upload `report-site`.
 - **pr-cleanup.yml**: on `pull_request: closed` for same-repo PRs. Check out `gh-pages` (exit 0 if it is missing), `git rm -r --ignore-unmatch pr-<N>`, commit, and push only if something changed.
 - **promote.yml**: add `--paginate`, a ci-gate query (D9), and fail on a missing, in-progress or non-success ci-gate. Remove the "#3" warning. Use `ubuntu-24.04` and `checkout@v7`.
@@ -60,22 +58,23 @@ Retention is 14 days. `scripts/kover-summary.sh <xml>` prints `line=<pct> branch
 
 | File | Action | Description |
 |---|---|---|
-| `.github/workflows/ci.yml` | Create | Jobs above |
+| `.github/workflows/ci.yml` | Create | `unit-tests`, `report`, `ci-gate` (D11: no lint jobs) |
+| `lefthook.yml` | Modify | Android Lint pre-commit job (D11) |
 | `.github/workflows/pr-cleanup.yml` | Create | Removes the PR folder |
 | `.github/workflows/promote.yml` | Modify | ci-gate requirement. D8 step only if S2 fails |
 | `scripts/kover-summary.sh`, `scripts/test-kover-summary.sh` | Create | Coverage parser and its harness |
 | `scripts/closing-issues.sh`, `scripts/test-closing-issues.sh` | Create (conditional) | D8 parser and its harness |
 | `README.md` | Modify | CI, report links, admin steps, rollback |
 
-Estimate: about 450 authored lines (+60 with D8). One PR within the 800-line budget.
+Estimate: about 330 authored lines after D11 (ci.yml shrank by ~120 lines; +60 with D8). One PR within the 800-line budget.
 
 ## Testing Strategy
 
 | Layer | What | Approach |
 |---|---|---|
 | Unit (shell, Strict TDD) | `kover-summary.sh`, `closing-issues.sh` | Write the harness first (RED). Cases: missing branch counter, 0/0, `Fixes`/`closes`/`RESOLVED`, `owner/repo#N` ignored, duplicates, `#0`/non-numeric. |
-| Static | Workflows | `actionlint` locally and in CI |
-| Live probes | AC1, AC2, cleanup, promote | Spotless probe PR: lint red, unit-tests skipped, ci-gate red. Green PR: one comment, links resolve. Close PR: folder removed. Promote a SHA with a red ci-gate: fails. |
+| Static | Workflows | `actionlint` locally (pre-commit); not in CI (D11) |
+| Live probes | AC2, cleanup, promote | (Spotless/lint probe PRs dropped by D11.) Green PR: one comment, links resolve. Close PR: folder removed. Promote a SHA with a red ci-gate: fails. |
 
 ## Threat Matrix
 

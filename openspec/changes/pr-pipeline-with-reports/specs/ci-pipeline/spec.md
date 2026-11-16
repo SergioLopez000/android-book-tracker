@@ -1,7 +1,7 @@
 ## Capability: ci-pipeline
 
 ### Purpose
-GitHub Actions orchestration that enforces the existing quality gates (`code-quality-gates`) on every pull request and `dev` push, publishes linked test and coverage reports, exposes a single required check, cleans up per-PR reports, and ensures promotion to `main` requires a green pipeline and closes referenced issues. Gate semantics are NOT redefined here; CI only invokes them.
+GitHub Actions orchestration that runs the unit tests on every pull request and `dev` push (static analysis stays local-only, see `code-quality-gates`), publishes linked test and coverage reports, exposes a single required check, cleans up per-PR reports, and ensures promotion to `main` requires a green pipeline and closes referenced issues. Gate semantics are NOT redefined here; CI only invokes them.
 
 ## ADDED Requirements
 
@@ -23,59 +23,26 @@ GitHub Actions orchestration that enforces the existing quality gates (`code-qua
 - WHEN their permissions are inspected
 - THEN the workflow default is `contents: read`, write scopes appear only on the report and cleanup jobs, and no workflow uses `pull_request_target`
 
-### Requirement: Parallel Lint Jobs
-CI MUST run these lint jobs in parallel with no dependency between them: `spotlessCheck`, `:app:lintDebug`, actionlint, gitleaks, commit validation, and shellcheck with the commit-msg script test. Each job MUST invoke the corresponding existing gate and fail when that gate exits non-zero. Gitleaks and commit validation MUST check out full history (`fetch-depth: 0`); gitleaks MUST disable PR comments.
+### Requirement: No Static Analysis in CI
+CI MUST NOT run static analysis. `ci.yml` MUST NOT contain jobs or steps for `spotlessCheck`, `:app:lintDebug`, actionlint, gitleaks, shellcheck, script harnesses, commit-message validation, or PR-title validation. These gates run only locally through the lefthook hooks. This is an explicit, accepted decision: commits made with `--no-verify`, through the GitHub web UI, or without `lefthook install` skip them.
 
-#### Scenario: Lint jobs run concurrently
-- GIVEN a PR run
-- WHEN the jobs start
-- THEN all lint jobs are scheduled without `needs` on one another
+#### Scenario: No lint jobs
+- GIVEN the merged `ci.yml`
+- WHEN its jobs are listed
+- THEN no job invokes a static-analysis tool or a commit/PR-title validator
 
-#### Scenario: Formatting violation
-- GIVEN a misformatted Kotlin file
-- WHEN the formatting job runs
-- THEN the job fails
+#### Scenario: Bypassed hook is not caught in CI
+- GIVEN a commit pushed with `--no-verify`
+- WHEN the pipeline runs
+- THEN no CI job rejects it for formatting, lint, secrets, or message format
 
-#### Scenario: Secret detected
-- GIVEN a commit in the PR range containing a secret
-- WHEN the gitleaks job runs
-- THEN the job fails
+### Requirement: Unit Test Job
+The `unit-tests` job MUST have no `needs`, MUST run `:app:testDebugUnitTest` and generate Kover XML and HTML coverage, and MUST upload its results as artifacts per the artifact contract.
 
-#### Scenario: Workflow or shell script defect
-- GIVEN an invalid workflow file or a shellcheck violation in a hook script
-- WHEN the actionlint or shellcheck job runs
-- THEN that job fails
-
-### Requirement: Commit and PR Title Validation
-The commit job MUST validate every commit in the PR range against the repository commit-message rules and MUST validate the PR title against the same conventional-commit format. On `push` to `dev` (no PR), it MUST validate the pushed range, and the PR title check MUST be skipped.
-
-#### Scenario: Non-conforming commit
-- GIVEN a PR containing a commit whose message violates the rules
-- WHEN the commit job runs
-- THEN it fails and names the commit
-
-#### Scenario: Non-conforming PR title
-- GIVEN a PR whose title is not a valid conventional-commit title
-- WHEN the commit job runs
-- THEN it fails
-
-#### Scenario: Conforming PR passes
-- GIVEN all commits and the title are valid
-- WHEN the commit job runs
-- THEN it succeeds
-
-### Requirement: Unit Test Job Gated by Lint
-The `unit-tests` job MUST declare `needs` on every lint job, MUST run `:app:testDebugUnitTest` and generate Kover XML and HTML coverage, and MUST upload its results as artifacts per the artifact contract. If any lint job fails, `unit-tests` MUST be skipped.
-
-#### Scenario: Lint failure skips tests
-- GIVEN one lint job fails
-- WHEN the pipeline completes
-- THEN `unit-tests` is skipped
-
-#### Scenario: All lint green runs tests
-- GIVEN all lint jobs succeed
-- WHEN `unit-tests` runs
-- THEN it executes `:app:testDebugUnitTest`, produces Kover XML and HTML, and uploads artifacts
+#### Scenario: Tests run on every trigger
+- GIVEN a PR or a `dev` push
+- WHEN the pipeline starts
+- THEN `unit-tests` runs `:app:testDebugUnitTest`, produces Kover XML and HTML, and uploads artifacts
 
 #### Scenario: Test failure still uploads results
 - GIVEN a unit test fails
@@ -147,17 +114,12 @@ For same-repo PRs, the `report` job MUST create or update exactly one sticky com
 - THEN it states coverage is unavailable and does not fabricate figures
 
 ### Requirement: Single Required Check (ci-gate)
-CI MUST define a job named exactly `ci-gate` that runs with `if: always()`, depends on all lint jobs and `unit-tests` (the gating jobs; `report` is not gating), and succeeds only if every gating job succeeded. A skipped or failed gating job MUST make `ci-gate` fail. A failure of the `report` job alone MUST NOT fail `ci-gate`. The job name MUST NOT change, as it is the sole required status check for the `dev` ruleset.
+CI MUST define a job named exactly `ci-gate` that runs with `if: always()`, depends only on `unit-tests` (the sole gating job; `report` is not gating), and succeeds only if `unit-tests` succeeded. A skipped or failed `unit-tests` MUST make `ci-gate` fail. A failure of the `report` job alone MUST NOT fail `ci-gate`. The job name MUST NOT change, as it is the sole required status check for the `dev` ruleset.
 
 #### Scenario: Everything green
-- GIVEN all lint jobs and `unit-tests` succeeded
+- GIVEN `unit-tests` succeeded
 - WHEN `ci-gate` evaluates
 - THEN it succeeds
-
-#### Scenario: Lint failure
-- GIVEN any lint job failed
-- WHEN `ci-gate` evaluates
-- THEN it fails (not skipped), even though `unit-tests` was skipped
 
 #### Scenario: Test failure
 - GIVEN `unit-tests` failed
@@ -165,7 +127,7 @@ CI MUST define a job named exactly `ci-gate` that runs with `if: always()`, depe
 - THEN it fails
 
 #### Scenario: Report outage
-- GIVEN all gating jobs passed but `report` failed (e.g. Pages push error)
+- GIVEN `unit-tests` passed but `report` failed (e.g. Pages push error)
 - WHEN `ci-gate` evaluates
 - THEN it succeeds
 
@@ -224,7 +186,7 @@ A `Closes #N` (or equivalent closing keyword) present in a commit message on `de
 - THEN promotion does not fail
 
 ### Requirement: Documentation of CI and Admin Steps
-`README.md` MUST document the pipeline, how to reach the reports, the artifact contract, and the manual admin steps: enabling Pages from `gh-pages` after the branch exists, adding `ci-gate` (Actions integration) as a required status check to the `dev` ruleset after the first green run, and configuring the squash merge message to include the PR description.
+`README.md` MUST document the pipeline (tests and reports only; static analysis local-only with the accepted `--no-verify` risk), how to reach the reports, the artifact contract, and the manual admin steps: enabling Pages from `gh-pages` after the branch exists, adding `ci-gate` (Actions integration) as a required status check to the `dev` ruleset after the first green run, and configuring the squash merge message to include the PR description.
 
 #### Scenario: Admin steps documented
 - GIVEN the README
@@ -237,4 +199,4 @@ This change MUST NOT add contract, PIT or E2E jobs, SonarCloud, CodeQL or Depend
 #### Scenario: No extra jobs
 - GIVEN the merged workflows
 - WHEN their jobs are listed
-- THEN only lint, `unit-tests`, `report`, `ci-gate` (and cleanup/promote workflows) exist
+- THEN only `unit-tests`, `report`, `ci-gate` (and cleanup/promote workflows) exist
