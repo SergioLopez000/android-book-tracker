@@ -21,11 +21,11 @@ testing:
     unit: { available: true, tool: "JUnit4 + Robolectric + coroutines-test + Turbine" }
     integration: { available: true, tool: "Robolectric + Room (room-testing) in app/src/test" }
     e2e: { available: false, tool: null }
-  coverage: { available: false, command: null }
+  coverage: { available: true, command: "./gradlew koverHtmlReportDebug" }
   quality:
-    linter: { available: false, command: null }
+    linter: { available: true, command: "./gradlew :app:lintDebug" }
     type_checker: { available: true, command: "Kotlin compiler (./gradlew :app:compileDebugKotlin)" }
-    formatter: { available: false, command: null }
+    formatter: { available: true, command: "./gradlew spotlessCheck" }
 
 rules:
   proposal:
@@ -39,6 +39,6 @@ rules:
   apply:
     - Write a failing test, make it pass, then refactor. Run ./gradlew :app:testDebugUnitTest.
   verify:
-    - Run ./gradlew :app:testDebugUnitTest; no coverage or lint tooling is configured.
+    - Run ./gradlew :app:testDebugUnitTest; also ./gradlew spotlessCheck :app:lintDebug koverHtmlReportDebug.
   archive:
     - Do not modify archived changes.

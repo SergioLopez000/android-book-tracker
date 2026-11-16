@@ -109,4 +109,29 @@ Con el móvil conectado y la Depuración USB activa, ejecuta:
 
 ---
 
+## 🛠️ Calidad de Código y Hooks Locales
+
+### Configuración inicial (una sola vez)
+```bash
+brew install lefthook gitleaks actionlint shellcheck
+lefthook install
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+`lefthook install` activa los hooks locales: `spotlessCheck`, `gitleaks` (secretos en el índice), `actionlint`, `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
+
+### Comandos
+| Objetivo | Comando |
+|---|---|
+| Verificar formato | `./gradlew spotlessCheck` |
+| Aplicar formato | `./gradlew spotlessApply` |
+| Android Lint (con baseline) | `./gradlew :app:lintDebug` |
+| Regenerar el baseline de Lint | `./gradlew :app:updateLintBaseline` (revisa el diff de `app/lint-baseline.xml`) |
+| Reporte de cobertura (Kover) | `./gradlew koverHtmlReportDebug` (sale en `app/build/reports/kover/htmlDebug/index.html`) |
+| Pruebas unitarias | `./gradlew :app:testDebugUnitTest` |
+| Pruebas del validador de commits | `scripts/test-check-commit-msg.sh` |
+
+Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas existentes viven en el baseline. Kover es solo informativo: no hay umbral de cobertura.
+
+---
+
 *Creado con pasión e ingeniería de alta fidelidad. "Concepts > Code".*
