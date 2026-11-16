@@ -15,15 +15,16 @@ import org.junit.Test
 class GoogleBooksMetadataSourceTest {
 
     @Test
-    fun `returns an empty result without calling the http client when the API key is blank`() = runTest {
-        val client = FakeHttpClient(response = Result.success("{}"))
-        val source = GoogleBooksMetadataSource(client, apiKey = "")
+    fun `returns an empty result without calling the http client when the API key is blank`() =
+        runTest {
+            val client = FakeHttpClient(response = Result.success("{}"))
+            val source = GoogleBooksMetadataSource(client, apiKey = "")
 
-        val result = source.search("dune")
+            val result = source.search("dune")
 
-        assertTrue(result.getOrThrow().isEmpty())
-        assertEquals(0, client.callCount)
-    }
+            assertTrue(result.getOrThrow().isEmpty())
+            assertEquals(0, client.callCount)
+        }
 
     @Test
     fun `maps a matching item to BookMetadata and upgrades the thumbnail to https`() = runTest {
@@ -36,24 +37,31 @@ class GoogleBooksMetadataSourceTest {
         val result = source.search("dune")
 
         assertEquals(
-            listOf(BookMetadata(title = "Dune", author = "Frank Herbert", coverUrl = "https://books.google.com/dune.jpg")),
-            result.getOrThrow(),
+            listOf(
+                BookMetadata(
+                    title = "Dune",
+                    author = "Frank Herbert",
+                    coverUrl = "https://books.google.com/dune.jpg"
+                )
+            ),
+            result.getOrThrow()
         )
         assertTrue(client.lastUrl?.contains("key=test-key") == true)
     }
 
     @Test
-    fun `maps an item with no authors and no imageLinks to blank author and null cover`() = runTest {
-        val body = """{"items":[{"volumeInfo":{"title":"Untitled Work"}}]}"""
-        val client = FakeHttpClient(response = Result.success(body))
-        val source = GoogleBooksMetadataSource(client, apiKey = "test-key")
+    fun `maps an item with no authors and no imageLinks to blank author and null cover`() =
+        runTest {
+            val body = """{"items":[{"volumeInfo":{"title":"Untitled Work"}}]}"""
+            val client = FakeHttpClient(response = Result.success(body))
+            val source = GoogleBooksMetadataSource(client, apiKey = "test-key")
 
-        val result = source.search("untitled")
+            val result = source.search("untitled")
 
-        val metadata = result.getOrThrow().single()
-        assertEquals("", metadata.author)
-        assertNull(metadata.coverUrl)
-    }
+            val metadata = result.getOrThrow().single()
+            assertEquals("", metadata.author)
+            assertNull(metadata.coverUrl)
+        }
 
     @Test
     fun `returns a failure result when the http client throws`() = runTest {

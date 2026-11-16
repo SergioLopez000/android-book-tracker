@@ -5,5 +5,5 @@ package com.librosleidos.domain.model
  */
 enum class BookSort {
     DATE_FINISHED_DESC,
-    RATING_DESC,
+    RATING_DESC
 }

@@ -16,5 +16,5 @@ data class Book(
     val coverUrl: String?,
     val rating: Rating,
     val review: String,
-    val dateFinished: LocalDate,
+    val dateFinished: LocalDate
 )

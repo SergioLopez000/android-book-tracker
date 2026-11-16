@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="6" by="lint 9.1.1" type="baseline" client="gradle" dependencies="false" name="AGP (9.1.1)" variant="all" version="9.1.1">
+
+    <issue
+        id="ComposeViewModelInjection"
+        message="Implicit dependencies of composables should be made explicit.&#xA;Usages of viewModel to acquire a ViewModel should be done in composable default parameters, so that it is more testable and flexible.&#xA;See https://slackhq.github.io/compose-lints/rules/#viewmodels for more information."
+        errorLine1="            val viewModel: BookListViewModel ="
+        errorLine2="            ^">
+        <location
+            file="src/main/java/com/librosleidos/MainActivity.kt"
+            line="73"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ComposeViewModelInjection"
+        message="Implicit dependencies of composables should be made explicit.&#xA;Usages of viewModel to acquire a ViewModel should be done in composable default parameters, so that it is more testable and flexible.&#xA;See https://slackhq.github.io/compose-lints/rules/#viewmodels for more information."
+        errorLine1="            val viewModel: BookEditViewModel = viewModel("
+        errorLine2="            ^">
+        <location
+            file="src/main/java/com/librosleidos/MainActivity.kt"
+            line="92"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/java/com/librosleidos/ui/list/BookListRoute.kt"
+            line="24"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ModifierParameter"
+        message="Modifier parameter should be the first optional parameter"
+        errorLine1="    modifier: Modifier = Modifier"
+        errorLine2="    ~~~~~~~~">
+        <location
+            file="src/main/java/com/librosleidos/ui/list/BookListScreen.kt"
+            line="50"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ObsoleteSdkInt"
+        message="This folder configuration (`v26`) is unnecessary; `minSdkVersion` is 26. Merge all the resources in this folder into `mipmap-anydpi`.">
+        <location
+            file="src/main/res/mipmap-anydpi-v26"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive icon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="MonochromeLauncherIcon"
+        message="The application adaptive roundIcon is missing a monochrome tag"
+        errorLine1="&lt;adaptive-icon xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;>"
+        errorLine2="^">
+        <location
+            file="src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml"
+            line="2"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="ComposeMultipleContentEmitters"
+        message="Composable functions should only be emitting content into the composition from one source at their top level.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#do-not-emit-multiple-pieces-of-content for more information."
+        errorLine1="/** Single shared draw path for one star: outline plus a [fraction]-clipped filled overlay. */"
+        errorLine2="^">
+        <location
+            file="src/main/java/com/librosleidos/ui/components/StarRating.kt"
+            line="80"
+            column="1"/>
+    </issue>
+
+    <issue
+        id="ComposeParameterOrder"
+        message="Parameters in a composable function should be ordered following this pattern: params without defaults, modifiers, params with defaults and optionally, a trailing function that might not have a default param.&#xA;Current params are: `[viewModel: BookListViewModel, onAddRequested: () -> Unit = {}, onBookClicked: (Long) -> Unit = {}, modifier: Modifier = Modifier]` but should be `[viewModel: BookListViewModel, modifier: Modifier = Modifier, onAddRequested: () -> Unit = {}, onBookClicked: (Long) -> Unit = {}]`.&#xA;See https://slackhq.github.io/compose-lints/rules/#ordering-composable-parameters-properly for more information."
+        errorLine1="fun BookListRoute("
+        errorLine2="                 ^">
+        <location
+            file="src/main/java/com/librosleidos/ui/list/BookListRoute.kt"
+            line="20"
+            column="18"/>
+    </issue>
+
+    <issue
+        id="ComposeParameterOrder"
+        message="Parameters in a composable function should be ordered following this pattern: params without defaults, modifiers, params with defaults and optionally, a trailing function that might not have a default param.&#xA;Current params are: `[state: BookListUiState, onSortSelected: (BookSort) -> Unit, onMinRatingSelected: (Float) -> Unit, onDeleteRequested: (Long) -> Unit, onDeleteConfirmed: () -> Unit, onDeleteCancelled: () -> Unit, onDateRangeSelected: (DateRangeFilter) -> Unit = {}, onAddRequested: () -> Unit = {}, onBookClicked: (Long) -> Unit = {}, modifier: Modifier = Modifier]` but should be `[state: BookListUiState, onSortSelected: (BookSort) -> Unit, onMinRatingSelected: (Float) -> Unit, onDeleteRequested: (Long) -> Unit, onDeleteConfirmed: () -> Unit, onDeleteCancelled: () -> Unit, modifier: Modifier = Modifier, onDateRangeSelected: (DateRangeFilter) -> Unit = {}, onAddRequested: () -> Unit = {}, onBookClicked: (Long) -> Unit = {}]`.&#xA;See https://slackhq.github.io/compose-lints/rules/#ordering-composable-parameters-properly for more information."
+        errorLine1="fun BookListScreen("
+        errorLine2="                  ^">
+        <location
+            file="src/main/java/com/librosleidos/ui/list/BookListScreen.kt"
+            line="40"
+            column="19"/>
+    </issue>
+
+</issues>

@@ -47,7 +47,7 @@ class AppContainer(context: Context) {
     private val database: BooksDatabase = Room.databaseBuilder(
         context.applicationContext,
         BooksDatabase::class.java,
-        "books.db",
+        "books.db"
     ).build()
 
     private val bookRepository = BookRepositoryImpl(database.bookDao())
@@ -56,11 +56,11 @@ class AppContainer(context: Context) {
     private val openLibrarySource = OpenLibraryMetadataSource(httpClient)
     private val googleBooksSource = GoogleBooksMetadataSource(
         httpClient = httpClient,
-        apiKey = BuildConfig.GOOGLE_BOOKS_API_KEY,
+        apiKey = BuildConfig.GOOGLE_BOOKS_API_KEY
     )
     private val metadataSource = ChainedMetadataSource(
         primary = openLibrarySource,
-        fallback = googleBooksSource,
+        fallback = googleBooksSource
     )
 
     private val getBooksUseCase = GetBooksUseCase(bookRepository)

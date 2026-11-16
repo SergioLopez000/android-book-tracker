@@ -20,5 +20,5 @@ val Pink40 = Color(0xFF7D5260)
 val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,
-    tertiary = Pink80,
+    tertiary = Pink80
 )

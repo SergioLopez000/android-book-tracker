@@ -2,8 +2,8 @@ package com.librosleidos.ui.list
 
 import app.cash.turbine.test
 import com.librosleidos.domain.model.Book
-import com.librosleidos.domain.model.Rating
 import com.librosleidos.domain.model.BookSort
+import com.librosleidos.domain.model.Rating
 import com.librosleidos.domain.usecase.DeleteBookUseCase
 import com.librosleidos.domain.usecase.FakeBookRepository
 import com.librosleidos.domain.usecase.GetBooksUseCase
@@ -35,7 +35,7 @@ class BookListViewModelTest {
         coverUrl = null,
         rating = Rating(rating),
         review = "",
-        dateFinished = LocalDate.now().minusDays(daysAgo),
+        dateFinished = LocalDate.now().minusDays(daysAgo)
     )
 
     private fun viewModel(repository: FakeBookRepository) =
@@ -44,7 +44,7 @@ class BookListViewModelTest {
     @Test
     fun `books present are exposed and isEmpty is false`() = runTest {
         val repository = FakeBookRepository(
-            seed = listOf(book(1, "Dune", 4.5f, 1), book(2, "Neuromancer", 3.5f, 2)),
+            seed = listOf(book(1, "Dune", 4.5f, 1), book(2, "Neuromancer", 3.5f, 2))
         )
         val vm = viewModel(repository)
 
@@ -87,8 +87,8 @@ class BookListViewModelTest {
             seed = listOf(
                 book(1, "Low", 2.0f, 1),
                 book(2, "Mid", 3.5f, 2),
-                book(3, "High", 5.0f, 3),
-            ),
+                book(3, "High", 5.0f, 3)
+            )
         )
         val vm = viewModel(repository)
 
@@ -159,8 +159,8 @@ class BookListViewModelTest {
             seed = listOf(
                 book(1, "Recent", 5.0f, 2),
                 book(2, "Last Month", 5.0f, 40),
-                book(3, "Older", 5.0f, 400),
-            ),
+                book(3, "Older", 5.0f, 400)
+            )
         )
         val vm = viewModel(repository)
 
@@ -171,12 +171,18 @@ class BookListViewModelTest {
 
             vm.onDateRangeSelected(com.librosleidos.domain.model.DateRangeFilter.LAST_MONTH)
             val stateMonth = awaitItem()
-            assertEquals(com.librosleidos.domain.model.DateRangeFilter.LAST_MONTH, stateMonth.dateRange)
+            assertEquals(
+                com.librosleidos.domain.model.DateRangeFilter.LAST_MONTH,
+                stateMonth.dateRange
+            )
             assertEquals(setOf("Recent"), stateMonth.books.map { it.title }.toSet())
 
             vm.onDateRangeSelected(com.librosleidos.domain.model.DateRangeFilter.LAST_YEAR)
             val stateYear = awaitItem()
-            assertEquals(com.librosleidos.domain.model.DateRangeFilter.LAST_YEAR, stateYear.dateRange)
+            assertEquals(
+                com.librosleidos.domain.model.DateRangeFilter.LAST_YEAR,
+                stateYear.dateRange
+            )
             assertEquals(setOf("Recent", "Last Month"), stateYear.books.map { it.title }.toSet())
         }
     }

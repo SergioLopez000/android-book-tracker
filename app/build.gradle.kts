@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kover)
 }
 
 // Google Books API key is optional. It is read from a git-ignored
@@ -52,6 +53,13 @@ android {
         buildConfig = true
     }
 
+    lint {
+        baseline = file("lint-baseline.xml")
+        lintConfig = file("lint.xml")
+        abortOnError = true
+        warningsAsErrors = true
+    }
+
     // Robolectric needs merged Android resources on the unit-test classpath.
     testOptions {
         unitTests.isIncludeAndroidResources = true
@@ -68,6 +76,25 @@ android {
 // (design: Migration / Rollout — no fallbackToDestructiveMigration).
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
+}
+
+// Report-only coverage (no koverVerify threshold). Generated classes are
+// excluded so the report reflects hand-written code.
+kover {
+    reports {
+        filters {
+            excludes {
+                classes(
+                    "*_Impl",
+                    "*_Impl\$*",
+                    "*ComposableSingletons*",
+                    "*.BuildConfig",
+                    "*.R",
+                    "*.R\$*"
+                )
+            }
+        }
+    }
 }
 
 dependencies {
@@ -117,4 +144,6 @@ dependencies {
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    lintChecks(libs.compose.lint.checks)
 }

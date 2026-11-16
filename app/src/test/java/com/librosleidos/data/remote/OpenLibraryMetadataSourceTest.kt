@@ -24,8 +24,14 @@ class OpenLibraryMetadataSourceTest {
         val result = source.search("dune")
 
         assertEquals(
-            listOf(BookMetadata(title = "Dune", author = "Frank Herbert", coverUrl = "https://covers.openlibrary.org/b/id/258027-M.jpg")),
-            result.getOrThrow(),
+            listOf(
+                BookMetadata(
+                    title = "Dune",
+                    author = "Frank Herbert",
+                    coverUrl = "https://covers.openlibrary.org/b/id/258027-M.jpg"
+                )
+            ),
+            result.getOrThrow()
         )
     }
 
@@ -39,7 +45,7 @@ class OpenLibraryMetadataSourceTest {
 
         assertEquals(
             listOf(BookMetadata(title = "Untitled Work", author = "", coverUrl = null)),
-            result.getOrThrow(),
+            result.getOrThrow()
         )
     }
 
@@ -70,7 +76,10 @@ class OpenLibraryMetadataSourceTest {
 
         source.search("dune messiah")
 
-        assertEquals("https://openlibrary.org/search.json?q=dune+messiah&fields=title,author_name,cover_i&limit=20", client.lastUrl)
+        assertEquals(
+            "https://openlibrary.org/search.json?q=dune+messiah&fields=title,author_name,cover_i&limit=20",
+            client.lastUrl
+        )
         assertTrue(client.lastHeaders["User-Agent"]?.contains("LibrosLeidos") == true)
     }
 }

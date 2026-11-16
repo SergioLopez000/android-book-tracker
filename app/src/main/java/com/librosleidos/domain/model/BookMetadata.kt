@@ -5,8 +5,4 @@ package com.librosleidos.domain.model
  * (design: `book-metadata-lookup`). Used to prefill, never lock, the entry
  * form's editable fields.
  */
-data class BookMetadata(
-    val title: String,
-    val author: String,
-    val coverUrl: String?,
-)
+data class BookMetadata(val title: String, val author: String, val coverUrl: String?)

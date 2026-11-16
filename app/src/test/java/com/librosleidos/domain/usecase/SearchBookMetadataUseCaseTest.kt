@@ -14,7 +14,7 @@ import org.junit.Test
 class SearchBookMetadataUseCaseTest {
 
     private class FakeBookMetadataSource(
-        private val result: Result<List<BookMetadata>> = Result.success(emptyList()),
+        private val result: Result<List<BookMetadata>> = Result.success(emptyList())
     ) : BookMetadataSource {
         var lastQuery: String? = null
             private set
@@ -60,7 +60,8 @@ class SearchBookMetadataUseCaseTest {
 
     @Test
     fun `maps a source failure to an empty result`() = runTest {
-        val source = FakeBookMetadataSource(result = Result.failure(RuntimeException("network down")))
+        val source =
+            FakeBookMetadataSource(result = Result.failure(RuntimeException("network down")))
         val useCase = SearchBookMetadataUseCase(source)
 
         val results = useCase("dune")

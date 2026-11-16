@@ -43,7 +43,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             RinconDeLecturaTheme {
                 Scaffold(
-                    topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
+                    topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) }
                 ) { contentPadding ->
                     Surface(modifier = Modifier.padding(contentPadding)) {
                         LibrosLeidosNavHost(appContainer = appContainer)
@@ -70,11 +70,12 @@ private fun LibrosLeidosNavHost(appContainer: AppContainer) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = ROUTE_LIST) {
         composable(ROUTE_LIST) {
-            val viewModel: BookListViewModel = viewModel(factory = appContainer.bookListViewModelFactory())
+            val viewModel: BookListViewModel =
+                viewModel(factory = appContainer.bookListViewModelFactory())
             BookListRoute(
                 viewModel = viewModel,
                 onAddRequested = { navController.navigate(editRoute(null)) },
-                onBookClicked = { id -> navController.navigate(editRoute(id)) },
+                onBookClicked = { id -> navController.navigate(editRoute(id)) }
             )
         }
         composable(
@@ -83,18 +84,18 @@ private fun LibrosLeidosNavHost(appContainer: AppContainer) {
                 navArgument(ARG_BOOK_ID) {
                     type = NavType.LongType
                     defaultValue = NO_BOOK_ID
-                },
-            ),
+                }
+            )
         ) { backStackEntry ->
             val rawId = backStackEntry.arguments?.getLong(ARG_BOOK_ID) ?: NO_BOOK_ID
             val bookId = rawId.takeIf { it != NO_BOOK_ID }
             val viewModel: BookEditViewModel = viewModel(
-                factory = appContainer.bookEditViewModelFactory(bookId),
+                factory = appContainer.bookEditViewModelFactory(bookId)
             )
             BookEditRoute(
                 viewModel = viewModel,
                 onSaveCompleted = { navController.popBackStack() },
-                onCancelRequested = { navController.popBackStack() },
+                onCancelRequested = { navController.popBackStack() }
             )
         }
     }

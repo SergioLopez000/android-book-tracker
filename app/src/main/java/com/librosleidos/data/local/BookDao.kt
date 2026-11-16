@@ -24,14 +24,14 @@ interface BookDao {
     @Query(
         "SELECT * FROM books WHERE rating >= :minRating " +
             "AND (:fromEpochDay IS NULL OR dateFinishedEpochDay >= :fromEpochDay) " +
-            "ORDER BY dateFinishedEpochDay DESC",
+            "ORDER BY dateFinishedEpochDay DESC"
     )
     fun observeByDateDesc(minRating: Float, fromEpochDay: Long?): Flow<List<BookEntity>>
 
     @Query(
         "SELECT * FROM books WHERE rating >= :minRating " +
             "AND (:fromEpochDay IS NULL OR dateFinishedEpochDay >= :fromEpochDay) " +
-            "ORDER BY rating DESC",
+            "ORDER BY rating DESC"
     )
     fun observeByRatingDesc(minRating: Float, fromEpochDay: Long?): Flow<List<BookEntity>>
 

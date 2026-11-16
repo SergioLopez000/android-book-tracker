@@ -47,7 +47,7 @@ private const val STAR_STROKE_WIDTH_DP = 2f
 fun StarRating(
     rating: Float?,
     modifier: Modifier = Modifier,
-    onRatingChange: ((Float) -> Unit)? = null,
+    onRatingChange: ((Float) -> Unit)? = null
 ) {
     val clampedRating = (rating ?: 0f).coerceIn(0f, STAR_COUNT.toFloat())
     val rowModifier = if (onRatingChange == null) {
@@ -83,14 +83,18 @@ private fun Star(fraction: Float) {
     val outlineColor = MaterialTheme.colorScheme.onSurfaceVariant
     val filledColor = MaterialTheme.colorScheme.primary
     Canvas(modifier = Modifier.size(STAR_SIZE)) {
-        drawPath(starPath(size.width, size.height), color = outlineColor, style = Stroke(width = STAR_STROKE_WIDTH_DP.dp.toPx()))
+        drawPath(
+            starPath(size.width, size.height),
+            color = outlineColor,
+            style = Stroke(width = STAR_STROKE_WIDTH_DP.dp.toPx())
+        )
     }
     Canvas(
         modifier = Modifier
             .size(STAR_SIZE)
             .drawWithContent {
                 clipRect(right = size.width * fraction) { this@drawWithContent.drawContent() }
-            },
+            }
     ) {
         drawPath(starPath(size.width, size.height), color = filledColor)
     }
@@ -107,14 +111,14 @@ private fun BoxScope.StarTapTargets(starIndex: Int, onRatingChange: (Float) -> U
                 .weight(1f)
                 .fillMaxHeight()
                 .clickable { onRatingChange(halfValue) }
-                .semantics { contentDescription = "Set rating %.1f".format(halfValue) },
+                .semantics { contentDescription = "Set rating %.1f".format(halfValue) }
         )
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
                 .clickable { onRatingChange(fullValue) }
-                .semantics { contentDescription = "Set rating %.1f".format(fullValue) },
+                .semantics { contentDescription = "Set rating %.1f".format(fullValue) }
         )
     }
 }

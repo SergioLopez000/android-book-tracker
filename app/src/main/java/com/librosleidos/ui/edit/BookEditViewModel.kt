@@ -52,7 +52,7 @@ class BookEditViewModel(
     private val saveBook: SaveBookUseCase,
     private val searchMetadata: SearchBookMetadataUseCase,
     private val getBookById: GetBookByIdUseCase,
-    bookId: Long? = null,
+    bookId: Long? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BookEditUiState(id = bookId))
@@ -73,7 +73,7 @@ class BookEditViewModel(
                         coverUrl = book.coverUrl,
                         rating = book.rating.value,
                         review = book.review,
-                        dateFinished = book.dateFinished,
+                        dateFinished = book.dateFinished
                     )
                 }
             }
@@ -119,7 +119,7 @@ class BookEditViewModel(
                 title = result.title,
                 author = result.author,
                 coverUrl = result.coverUrl,
-                search = SearchState.Idle,
+                search = SearchState.Idle
             )
         }
     }
@@ -136,18 +136,19 @@ class BookEditViewModel(
                     coverUrl = current.coverUrl,
                     rating = current.rating,
                     review = current.review,
-                    dateFinished = current.dateFinished,
-                ),
+                    dateFinished = current.dateFinished
+                )
             )
             when (outcome) {
                 is SaveBookOutcome.Saved -> {
                     _uiState.update { it.copy(id = outcome.id, isSaving = false) }
                     _effects.send(BookEditEffect.SaveCompleted)
                 }
+
                 is SaveBookOutcome.Rejected -> _uiState.update {
                     it.copy(
                         isSaving = false,
-                        fieldErrors = mapOf(fieldFor(outcome.reason) to messageFor(outcome.reason)),
+                        fieldErrors = mapOf(fieldFor(outcome.reason) to messageFor(outcome.reason))
                     )
                 }
             }
