@@ -33,16 +33,16 @@ Notes: PR 1 reformat size is UNMEASURED until `spotlessApply` runs. Measure with
 ## PR 1: Format first
 
 ### Unit 1 (commit 1: `build: add spotless and editorconfig`)
-- [ ] 1.1 `gradle/libs.versions.toml`: add `spotless = "8.11.0"`, `ktlint = "1.8.0"` and plugin alias `spotless`. Check: `./gradlew help` exit 0. (Formatting Gate)
-- [ ] 1.2 `build.gradle.kts`: apply spotless (`kotlin` target `**/*.kt` excluding `**/build/**`; `kotlinGradle` target `*.gradle.kts`, `app/*.gradle.kts`; ktlint from catalog). Check: `./gradlew spotlessCheck` runs (red expected).
-- [ ] 1.3 `.editorconfig`: create per design (`android_studio` style, Composable naming exception, no `editorConfigOverride`). Verify Spotless reads it without `setEditorConfigPath`. Scenario: Composable PascalCase name allowed.
+- [x] 1.1 `gradle/libs.versions.toml`: add `spotless = "8.11.0"`, `ktlint = "1.8.0"` and plugin alias `spotless`. Check: `./gradlew help` exit 0. (Formatting Gate)
+- [x] 1.2 `build.gradle.kts`: apply spotless (`kotlin` target `**/*.kt` excluding `**/build/**`; `kotlinGradle` target `*.gradle.kts`, `app/*.gradle.kts`; ktlint from catalog). Check: `./gradlew spotlessCheck` runs (red expected).
+- [x] 1.3 `.editorconfig`: create per design (`android_studio` style, Composable naming exception, no `editorConfigOverride`). Verify Spotless reads it without `setEditorConfigPath`. Scenario: Composable PascalCase name allowed.
 
 ### Unit 2 (commit 2: `style: apply spotless formatting`, format-only)
-- [ ] 1.4 Run `./gradlew spotlessApply`. If ktlint cannot auto-fix `property-naming` in `app/src/main/java/com/librosleidos/ui/theme/*.kt`, add the path-scoped disable to `.editorconfig` in commit 1 (amend before 1.4), not code edits (D5).
-- [ ] 1.5 Commit `app/src/**/*.kt` and `*.gradle.kts` output ONLY. Check: `./gradlew spotlessCheck` exit 0. Scenario: Formatted tree passes.
-- [ ] 1.6 Measure `git diff --shortstat HEAD~1` and record it. If over 800 lines, flag for `size:exception` decision.
-- [ ] 1.7 Regression: `./gradlew :app:testDebugUnitTest` exit 0. Scenario: Unit tests pass.
-- [ ] 1.8 Probe (not committed): add extra spaces or wildcard import to a `.kt`; `./gradlew spotlessCheck` exit != 0 naming the file; revert probe. Scenario: Misformatted Kotlin file fails.
+- [x] 1.4 Run `./gradlew spotlessApply`. If ktlint cannot auto-fix `property-naming` in `app/src/main/java/com/librosleidos/ui/theme/*.kt`, add the path-scoped disable to `.editorconfig` in commit 1 (amend before 1.4), not code edits (D5).
+- [x] 1.5 Commit `app/src/**/*.kt` and `*.gradle.kts` output ONLY. Check: `./gradlew spotlessCheck` exit 0. Scenario: Formatted tree passes.
+- [x] 1.6 Measure `git diff --shortstat HEAD~1` and record it. If over 800 lines, flag for `size:exception` decision.
+- [x] 1.7 Regression: `./gradlew :app:testDebugUnitTest` exit 0. Scenario: Unit tests pass.
+- [x] 1.8 Probe (not committed): add extra spaces or wildcard import to a `.kt`; `./gradlew spotlessCheck` exit != 0 naming the file; revert probe. Scenario: Misformatted Kotlin file fails.
 
 ## PR 2: Tooling (based on merged PR 1)
 
