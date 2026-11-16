@@ -1,0 +1,47 @@
+# Removes the published report folder (pr-<N>/) from gh-pages when a pull
+# request is closed. Fork PRs never publish, so they are skipped.
+name: PR report cleanup
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: cleanup
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: Remove pr-<N>/ from gh-pages
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          rc=0
+          git ls-remote --exit-code --heads origin gh-pages >/dev/null || rc=$?
+          if [ "$rc" -eq 2 ]; then
+            echo "gh-pages does not exist yet; nothing to clean"
+            exit 0
+          elif [ "$rc" -ne 0 ]; then
+            exit "$rc"
+          fi
+          git fetch --depth=1 origin gh-pages
+          git switch --force-create gh-pages FETCH_HEAD
+          git rm -r --quiet --ignore-unmatch "pr-${PR_NUMBER}"
+          if git diff --cached --quiet; then
+            echo "pr-${PR_NUMBER}/ not found; nothing to clean"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --quiet -m "chore: remove report for closed PR #${PR_NUMBER}"
+          git push origin gh-pages

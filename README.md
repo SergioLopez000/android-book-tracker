@@ -129,8 +129,53 @@ git config blame.ignoreRevsFile .git-blame-ignore-revs
 | Reporte de cobertura (Kover) | `./gradlew koverHtmlReportDebug` (sale en `app/build/reports/kover/htmlDebug/index.html`) |
 | Pruebas unitarias | `./gradlew :app:testDebugUnitTest` |
 | Pruebas del validador de commits | `scripts/test-check-commit-msg.sh` |
+| Pruebas del resumen de cobertura | `scripts/test-kover-summary.sh` |
 
 Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas existentes viven en el baseline. Kover es solo informativo: no hay umbral de cobertura.
+
+---
+
+## 🤖 Integración Continua (GitHub Actions)
+
+`.github/workflows/ci.yml` corre en cada Pull Request y en cada push a `dev` (sin filtros de rutas) y aplica los mismos gates que los hooks locales, que se pueden saltar con `--no-verify`.
+
+```text
+lint-format  lint-android  lint-workflows  secrets  commit-messages  shell   (en paralelo)
+                              └── needs (todos) ──> unit-tests ──> ci-gate  (check requerido)
+                                                       └──> report (informativo, no bloquea)
+```
+
+- **Jobs de lint**: `spotlessCheck`, `:app:lintDebug`, actionlint, gitleaks, commits del PR + título del PR (Conventional Commits) y shellcheck + harnesses de `scripts/test-*.sh`.
+- **`unit-tests`**: `:app:testDebugUnitTest` + Kover XML/HTML. Se omite si falla cualquier lint.
+- **`ci-gate`**: único check requerido. Falla si algún job de lint o `unit-tests` no termina en éxito (un job omitido cuenta como fallo). `report` no lo afecta.
+- **`report`**: genera Allure 2.46.2 desde el JUnit XML y publica Allure + Kover en la rama `gh-pages` (`pr-<N>/` en PRs, `dev/` en pushes a `dev`), y deja un único comentario sticky en el PR con los enlaces y la cobertura de líneas y ramas. Solo PRs del mismo repositorio; los PRs desde forks solo suben el artefacto `report-site`.
+- **`pr-cleanup.yml`**: borra `pr-<N>/` de `gh-pages` al cerrar el PR.
+- **`promote.yml`**: exige que el último check-run `ci-gate` del SHA (emitido por GitHub Actions) sea `success`; si falta o no es exitoso, la promoción falla.
+
+Reportes publicados: `https://<usuario>.github.io/android-book-tracker/pr-<N>/allure/` y `.../kover/` (o `dev/` para la rama `dev`).
+
+### Contrato de artefactos
+
+| Artefacto | Contenido |
+|---|---|
+| `allure-results-<suite>` | JUnit XML de la suite (hoy `unit`). El job `report` fusiona todos los `allure-results-*`. |
+| `coverage-<suite>` | Reportes Kover (`reportDebug.xml` + `htmlDebug/`). |
+| `pit-<suite>` | Reservado para mutation testing (#6). |
+
+Las suites futuras (contract, PIT, E2E) se adjuntan con estos nombres sin cambiar el job `report`.
+
+### Pasos de administración (en orden, una sola vez)
+
+1. Fusiona este cambio a `dev`; el primer push a `dev` crea la rama `gh-pages`.
+2. **Settings → Pages**: fuente `Deploy from a branch`, rama `gh-pages`, carpeta `/ (root)`.
+3. Tras la primera ejecución verde, agrega `ci-gate` (integración *GitHub Actions*) como *required status check* en el ruleset de `dev`.
+4. **Settings → General → Pull Requests**: en squash merge, título = título del PR y mensaje = descripción del PR, para que `Closes #N` viaje en el commit de `dev` y cierre el issue al promover a `main`.
+
+### Reversión
+
+1. Quita `ci-gate` del ruleset de `dev`.
+2. Revierte el PR de CI (restaura `promote.yml`).
+3. Opcional: desactiva Pages, borra `gh-pages` y restaura los ajustes de squash merge.
 
 ---
 

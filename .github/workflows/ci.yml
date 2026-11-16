@@ -1,0 +1,302 @@
+# Enforces the local quality gates on every pull request and dev push, then
+# publishes Allure and Kover reports to gh-pages. `ci-gate` is the single
+# required status check; `report` is informative and never gates.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false
+
+jobs:
+  lint-format:
+    name: lint-format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/dev' }}
+      - run: ./gradlew spotlessCheck
+
+  lint-android:
+    name: lint-android
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/dev' }}
+      - run: ./gradlew :app:lintDebug
+
+  lint-workflows:
+    name: lint-workflows
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: actionlint
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12 -color
+
+  secrets:
+    name: secrets
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+
+  commit-messages:
+    name: commit-messages
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Validate commits in range
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            range="${BASE_SHA}..${HEAD_SHA}"
+          elif git cat-file -e "${PUSH_BEFORE}^{commit}" 2>/dev/null; then
+            range="${PUSH_BEFORE}..${PUSH_AFTER}"
+          else
+            range="${PUSH_AFTER}^!"
+          fi
+          msg="$(mktemp)"
+          failed=0
+          for commit in $(git rev-list --no-merges "$range"); do
+            git log -1 --format=%B "$commit" >"$msg"
+            if ! scripts/check-commit-msg.sh "$msg" 2>/dev/null; then
+              echo "::error::Commit ${commit} has an invalid message: $(git log -1 --format=%s "$commit")"
+              failed=1
+            fi
+          done
+          exit "$failed"
+      - name: Validate PR title
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          title_file="$(mktemp)"
+          printf '%s\n' "$PR_TITLE" >"$title_file"
+          scripts/check-commit-msg.sh "$title_file" \
+            || { echo "::error::PR title is not a valid conventional-commit title"; exit 1; }
+
+  shell:
+    name: shell
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: shellcheck
+        run: shellcheck scripts/*.sh
+      - name: Script harnesses
+        run: |
+          for harness in scripts/test-*.sh; do
+            echo "::group::${harness}"
+            "$harness"
+            echo "::endgroup::"
+          done
+
+  unit-tests:
+    name: unit-tests
+    needs: [lint-format, lint-android, lint-workflows, secrets, commit-messages, shell]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/dev' }}
+      - run: ./gradlew :app:testDebugUnitTest :app:koverXmlReportDebug :app:koverHtmlReportDebug --continue
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: allure-results-unit
+          path: app/build/test-results/testDebugUnitTest/*.xml
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload coverage
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-unit
+          path: app/build/reports/kover
+          if-no-files-found: ignore
+          retention-days: 14
+
+  report:
+    name: report
+    needs: [unit-tests]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    env:
+      ALLURE_VERSION: "2.46.2"
+      ALLURE_SHA256: 83021e2c02e9a3487df249ef7bbf51c1b9f23b722bd288c6d1785609303e0df8
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Download test results
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          pattern: allure-results-*
+          merge-multiple: true
+          path: allure-results
+      - name: Download coverage
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          pattern: coverage-*
+          path: coverage
+      - name: Detect results
+        id: detect
+        run: |
+          if compgen -G "allure-results/*.xml" >/dev/null; then
+            echo "has_results=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_results=false" >> "$GITHUB_OUTPUT"
+            echo "### Report skipped: no test results (unit-tests did not run)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Install Allure
+        if: steps.detect.outputs.has_results == 'true'
+        run: |
+          curl -fsSL -o allure.tgz \
+            "https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.tgz"
+          echo "${ALLURE_SHA256}  allure.tgz" | sha256sum -c -
+          tar -xzf allure.tgz
+          echo "$PWD/allure-${ALLURE_VERSION}/bin" >> "$GITHUB_PATH"
+      - name: Build report site
+        id: site
+        if: steps.detect.outputs.has_results == 'true'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          mkdir -p site
+          allure generate allure-results -o site/allure --clean
+          kover_html="$(find coverage -type d -name htmlDebug | head -n 1)"
+          kover_xml="$(find coverage -type f -name reportDebug.xml | head -n 1)"
+          [ -n "$kover_html" ] && cp -r "$kover_html" site/kover
+          summary="$(jq -r '.statistic | "\(.passed) passed, \(.failed) failed, \(.broken) broken, \(.skipped) skipped (\(.total) total)"' site/allure/widgets/summary.json)"
+          coverage="unavailable"
+          if [ -n "$kover_xml" ]; then
+            parsed="$(scripts/kover-summary.sh "$kover_xml" 2>/dev/null || true)"
+            if [ -n "$parsed" ]; then
+              line_cov="${parsed#line=}"; line_cov="${line_cov%% *}"
+              branch_cov="${parsed##*branch=}"
+              coverage="line ${line_cov}%, branch ${branch_cov}%"
+            fi
+          fi
+          {
+            echo "### Test report"
+            echo "- Tests: ${summary}"
+            echo "- Coverage: ${coverage}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$EVENT_NAME" = "pull_request" ]; then dest="pr-${PR_NUMBER}"; else dest="dev"; fi
+          publish=false
+          if [ "$EVENT_NAME" = "push" ] || [ "$HEAD_REPO" = "$GITHUB_REPOSITORY" ]; then publish=true; fi
+          {
+            echo "dest=${dest}"
+            echo "publish=${publish}"
+            echo "tests=${summary}"
+            echo "coverage=${coverage}"
+          } >> "$GITHUB_OUTPUT"
+      - name: Upload report site
+        if: steps.detect.outputs.has_results == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: report-site
+          path: site
+          retention-days: 14
+      - name: Publish to gh-pages
+        if: steps.detect.outputs.has_results == 'true' && steps.site.outputs.publish == 'true'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ github.token }}
+          publish_dir: site
+          destination_dir: ${{ steps.site.outputs.dest }}
+          keep_files: true
+      - name: Compose PR comment
+        if: steps.detect.outputs.has_results == 'true' && steps.site.outputs.publish == 'true' && github.event_name == 'pull_request'
+        env:
+          DEST: ${{ steps.site.outputs.dest }}
+          TESTS: ${{ steps.site.outputs.tests }}
+          COVERAGE: ${{ steps.site.outputs.coverage }}
+        run: |
+          repo="${GITHUB_REPOSITORY#*/}"
+          base="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${repo}/${DEST}"
+          {
+            echo "### CI report"
+            echo
+            echo "- [Allure report](${base}/allure/)"
+            echo "- [Kover coverage](${base}/kover/)"
+            echo "- Tests: ${TESTS}"
+            echo "- Coverage: ${COVERAGE}"
+          } > comment.md
+      - name: Sticky PR comment
+        if: steps.detect.outputs.has_results == 'true' && steps.site.outputs.publish == 'true' && github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v3
+        with:
+          header: ci-report
+          path: comment.md
+
+  ci-gate:
+    name: ci-gate
+    needs: [lint-format, lint-android, lint-workflows, secrets, commit-messages, shell, unit-tests]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every gating job to succeed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          bad="$(jq -r 'to_entries[] | select(.value.result != "success") | "\(.key)=\(.value.result)"' <<<"$NEEDS")"
+          if [ -n "$bad" ]; then
+            echo "::error::Gating jobs not successful: $(tr '\n' ' ' <<<"$bad")"
+            exit 1
+          fi
