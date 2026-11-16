@@ -35,7 +35,7 @@ class BookRepositoryImplTest {
     fun setUp() {
         database = Room.inMemoryDatabaseBuilder(
             ApplicationProvider.getApplicationContext(),
-            BooksDatabase::class.java,
+            BooksDatabase::class.java
         ).allowMainThreadQueries().build()
         repository = BookRepositoryImpl(database.bookDao())
     }
@@ -83,14 +83,32 @@ class BookRepositoryImplTest {
     @Test
     fun `observeBooks reflects a sort change from date to rating`() = runTest {
         repository.save(
-            book(id = null, title = "LowRatingRecent", rating = 2.0f, date = LocalDate.of(2024, 1, 1)),
+            book(
+                id = null,
+                title = "LowRatingRecent",
+                rating = 2.0f,
+                date = LocalDate.of(2024, 1, 1)
+            )
         )
         repository.save(
-            book(id = null, title = "HighRatingOld", rating = 4.5f, date = LocalDate.of(2020, 1, 1)),
+            book(
+                id = null,
+                title = "HighRatingOld",
+                rating = 4.5f,
+                date = LocalDate.of(2020, 1, 1)
+            )
         )
 
-        val byDate = repository.observeBooks(BookSort.DATE_FINISHED_DESC, minRating = 0f, fromEpochDay = null).first()
-        val byRating = repository.observeBooks(BookSort.RATING_DESC, minRating = 0f, fromEpochDay = null).first()
+        val byDate = repository.observeBooks(
+            BookSort.DATE_FINISHED_DESC,
+            minRating = 0f,
+            fromEpochDay = null
+        ).first()
+        val byRating = repository.observeBooks(
+            BookSort.RATING_DESC,
+            minRating = 0f,
+            fromEpochDay = null
+        ).first()
 
         assertEquals(listOf("LowRatingRecent", "HighRatingOld"), byDate.map { it.title })
         assertEquals(listOf("HighRatingOld", "LowRatingRecent"), byRating.map { it.title })
@@ -101,8 +119,16 @@ class BookRepositoryImplTest {
         repository.save(book(id = null, title = "Below", rating = 2.0f))
         repository.save(book(id = null, title = "AtMinimum", rating = 3.5f))
 
-        val unfiltered = repository.observeBooks(BookSort.RATING_DESC, minRating = 0f, fromEpochDay = null).first()
-        val filtered = repository.observeBooks(BookSort.RATING_DESC, minRating = 3.5f, fromEpochDay = null).first()
+        val unfiltered = repository.observeBooks(
+            BookSort.RATING_DESC,
+            minRating = 0f,
+            fromEpochDay = null
+        ).first()
+        val filtered = repository.observeBooks(
+            BookSort.RATING_DESC,
+            minRating = 3.5f,
+            fromEpochDay = null
+        ).first()
 
         assertEquals(listOf("AtMinimum", "Below"), unfiltered.map { it.title })
         assertEquals(listOf("AtMinimum"), filtered.map { it.title })
@@ -112,7 +138,7 @@ class BookRepositoryImplTest {
         id: Long?,
         title: String,
         rating: Float = 4.0f,
-        date: LocalDate = LocalDate.of(2023, 5, 1),
+        date: LocalDate = LocalDate.of(2023, 5, 1)
     ) = Book(
         id = id,
         title = title,
@@ -120,6 +146,6 @@ class BookRepositoryImplTest {
         coverUrl = null,
         rating = Rating(rating),
         review = "",
-        dateFinished = date,
+        dateFinished = date
     )
 }

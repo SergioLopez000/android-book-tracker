@@ -47,7 +47,7 @@ fun BookListScreen(
     onDateRangeSelected: (DateRangeFilter) -> Unit = {},
     onAddRequested: () -> Unit = {},
     onBookClicked: (Long) -> Unit = {},
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         TextButton(onClick = onAddRequested) { Text("Add book") }
@@ -75,17 +75,21 @@ fun BookListScreen(
 
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when {
-                state.isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                state.isLoading -> CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center)
+                )
+
                 state.isEmpty -> Text(
                     text = "No books yet. Add one to get started.",
-                    modifier = Modifier.align(Alignment.Center),
+                    modifier = Modifier.align(Alignment.Center)
                 )
+
                 else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(items = state.books, key = { it.id ?: 0L }) { book ->
                         BookListItem(
                             book = book,
                             onRemoveRequested = onDeleteRequested,
-                            onClicked = onBookClicked,
+                            onClicked = onBookClicked
                         )
                     }
                 }
@@ -102,11 +106,11 @@ fun BookListScreen(
             text = {
                 Text(
                     "Remove \"${pendingBook?.title.orEmpty()}\" from your library? " +
-                        "This cannot be undone.",
+                        "This cannot be undone."
                 )
             },
             confirmButton = { TextButton(onClick = onDeleteConfirmed) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = onDeleteCancelled) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = onDeleteCancelled) { Text("Cancel") } }
         )
     }
 }
@@ -115,18 +119,18 @@ fun BookListScreen(
 private fun BookListItem(
     book: Book,
     onRemoveRequested: (Long) -> Unit,
-    onClicked: (Long) -> Unit = {},
+    onClicked: (Long) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = book.id != null) { book.id?.let(onClicked) }
-            .padding(16.dp),
+            .padding(16.dp)
     ) {
         BookCoverImage(
             coverUrl = book.coverUrl,
             contentDescription = "${book.title} cover",
-            modifier = Modifier.size(64.dp),
+            modifier = Modifier.size(64.dp)
         )
         Text(text = book.title)
         Text(text = book.author)

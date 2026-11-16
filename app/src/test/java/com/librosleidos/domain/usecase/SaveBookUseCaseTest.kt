@@ -28,12 +28,12 @@ class SaveBookUseCaseTest {
         title: String = "Dune",
         author: String = "Frank Herbert",
         rating: Float? = 4.5f,
-        dateFinished: LocalDate = today,
+        dateFinished: LocalDate = today
     ) = SaveBookRequest(
         title = title,
         author = author,
         rating = rating,
-        dateFinished = dateFinished,
+        dateFinished = dateFinished
     )
 
     @Test

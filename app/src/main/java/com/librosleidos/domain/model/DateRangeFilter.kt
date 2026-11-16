@@ -10,5 +10,5 @@ package com.librosleidos.domain.model
 enum class DateRangeFilter {
     LAST_MONTH,
     LAST_YEAR,
-    ALL_TIME,
+    ALL_TIME
 }

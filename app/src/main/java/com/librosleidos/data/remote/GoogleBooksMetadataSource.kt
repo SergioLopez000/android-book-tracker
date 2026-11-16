@@ -12,7 +12,7 @@ import org.json.JSONObject
 internal data class GoogleBooksVolume(
     val title: String,
     val author: String?,
-    val thumbnailUrl: String?,
+    val thumbnailUrl: String?
 )
 
 /**
@@ -22,10 +22,8 @@ internal data class GoogleBooksVolume(
  * fallback is disabled and returns an empty result rather than making a
  * request or throwing — a fresh clone builds and tests green without it.
  */
-class GoogleBooksMetadataSource(
-    private val httpClient: HttpClient,
-    private val apiKey: String,
-) : BookMetadataSource {
+class GoogleBooksMetadataSource(private val httpClient: HttpClient, private val apiKey: String) :
+    BookMetadataSource {
 
     override suspend fun search(query: String): Result<List<BookMetadata>> {
         if (apiKey.isBlank()) return Result.success(emptyList())
@@ -44,14 +42,14 @@ class GoogleBooksMetadataSource(
             GoogleBooksVolume(
                 title = volumeInfo?.optString("title").orEmpty(),
                 author = volumeInfo?.optJSONArray("authors")?.optString(0),
-                thumbnailUrl = volumeInfo?.optJSONObject("imageLinks")?.optString("thumbnail"),
+                thumbnailUrl = volumeInfo?.optJSONObject("imageLinks")?.optString("thumbnail")
             )
         }
 
     private fun GoogleBooksVolume.toBookMetadata() = BookMetadata(
         title = title,
         author = author ?: "",
-        coverUrl = thumbnailUrl?.toSecureCoverUrl(),
+        coverUrl = thumbnailUrl?.toSecureCoverUrl()
     )
 
     // Threat matrix: coverUrl accepted only over https.

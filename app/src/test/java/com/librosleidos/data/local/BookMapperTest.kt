@@ -23,7 +23,7 @@ class BookMapperTest {
             coverUrl = "https://example.com/dune.jpg",
             rating = Rating(4.5f),
             review = "Excellent",
-            dateFinished = LocalDate.of(2024, 3, 15),
+            dateFinished = LocalDate.of(2024, 3, 15)
         )
 
         val entity = book.toEntity()
@@ -46,7 +46,7 @@ class BookMapperTest {
             coverUrl = null,
             rating = Rating(1.0f),
             review = "",
-            dateFinished = LocalDate.of(2024, 1, 1),
+            dateFinished = LocalDate.of(2024, 1, 1)
         )
 
         val entity = book.toEntity()
@@ -63,7 +63,7 @@ class BookMapperTest {
             coverUrl = null,
             rating = 5.0f,
             review = "",
-            dateFinishedEpochDay = LocalDate.of(2023, 1, 1).toEpochDay(),
+            dateFinishedEpochDay = LocalDate.of(2023, 1, 1).toEpochDay()
         )
 
         val book = entity.toDomain()
@@ -86,7 +86,7 @@ class BookMapperTest {
             coverUrl = null,
             rating = Rating(3.5f),
             review = "Classic",
-            dateFinished = LocalDate.of(2022, 6, 30),
+            dateFinished = LocalDate.of(2022, 6, 30)
         )
 
         val roundTripped = original.toEntity().toDomain()

@@ -52,7 +52,7 @@ class BookCoverImageTest {
         composeTestRule.setContent {
             BookCoverImage(
                 coverUrl = "http://example.com/cover.jpg",
-                contentDescription = realCoverDescription,
+                contentDescription = realCoverDescription
             )
         }
 
@@ -65,7 +65,7 @@ class BookCoverImageTest {
         composeTestRule.setContent {
             BookCoverImage(
                 coverUrl = "https://example.com/cover.jpg",
-                contentDescription = realCoverDescription,
+                contentDescription = realCoverDescription
             )
         }
 

@@ -17,5 +17,5 @@ data class BookEntity(
     val coverUrl: String?,
     val rating: Float,
     val review: String,
-    val dateFinishedEpochDay: Long,
+    val dateFinishedEpochDay: Long
 )

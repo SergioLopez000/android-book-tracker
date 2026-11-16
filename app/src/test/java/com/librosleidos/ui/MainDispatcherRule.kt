@@ -17,9 +17,8 @@ import org.junit.runner.Description
  * logic — TDD-exempt.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
-class MainDispatcherRule(
-    private val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),
-) : TestWatcher() {
+class MainDispatcherRule(private val dispatcher: TestDispatcher = UnconfinedTestDispatcher()) :
+    TestWatcher() {
 
     override fun starting(description: Description) {
         Dispatchers.setMain(dispatcher)

@@ -19,5 +19,5 @@ data class BookListUiState(
     val dateRange: DateRangeFilter = DateRangeFilter.ALL_TIME,
     val isLoading: Boolean = true,
     val isEmpty: Boolean = false,
-    val pendingDeleteId: Long? = null,
+    val pendingDeleteId: Long? = null
 )

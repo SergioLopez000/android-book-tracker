@@ -9,11 +9,7 @@ import org.json.JSONObject
  * (design: Phase 4, task 4.1). Kept internal — only [OpenLibraryMetadataSource]
  * maps it to the domain [BookMetadata].
  */
-internal data class OpenLibraryDoc(
-    val title: String,
-    val authorName: String?,
-    val coverId: Int?,
-)
+internal data class OpenLibraryDoc(val title: String, val authorName: String?, val coverId: Int?)
 
 /**
  * Task 4.1 (design D3, spec "Search Open Library First"). Primary metadata
@@ -25,7 +21,7 @@ internal data class OpenLibraryDoc(
  */
 class OpenLibraryMetadataSource(
     private val httpClient: HttpClient,
-    private val userAgent: String = "LibrosLeidos/1.0 (contact: sergio.lopezm@sngular.com)",
+    private val userAgent: String = "LibrosLeidos/1.0 (contact: sergio.lopezm@sngular.com)"
 ) : BookMetadataSource {
 
     override suspend fun search(query: String): Result<List<BookMetadata>> = runCatching {
@@ -40,14 +36,14 @@ class OpenLibraryMetadataSource(
             OpenLibraryDoc(
                 title = doc.optString("title"),
                 authorName = doc.optJSONArray("author_name")?.optString(0),
-                coverId = doc.optInt("cover_i", NO_COVER).takeIf { it != NO_COVER },
+                coverId = doc.optInt("cover_i", NO_COVER).takeIf { it != NO_COVER }
             )
         }
 
     private fun OpenLibraryDoc.toBookMetadata() = BookMetadata(
         title = title,
         author = authorName ?: "",
-        coverUrl = coverId?.let { "https://covers.openlibrary.org/b/id/$it-M.jpg" },
+        coverUrl = coverId?.let { "https://covers.openlibrary.org/b/id/$it-M.jpg" }
     )
 
     private companion object {

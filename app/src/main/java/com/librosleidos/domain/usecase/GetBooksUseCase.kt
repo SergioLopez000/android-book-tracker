@@ -22,12 +22,12 @@ import kotlinx.coroutines.flow.Flow
  */
 class GetBooksUseCase(
     private val repository: BookRepository,
-    private val clock: Clock = Clock.systemDefaultZone(),
+    private val clock: Clock = Clock.systemDefaultZone()
 ) {
     operator fun invoke(
         sort: BookSort,
         minRating: Float,
-        range: DateRangeFilter = DateRangeFilter.ALL_TIME,
+        range: DateRangeFilter = DateRangeFilter.ALL_TIME
     ): Flow<List<Book>> {
         val today = LocalDate.now(clock)
         val fromEpochDay = when (range) {

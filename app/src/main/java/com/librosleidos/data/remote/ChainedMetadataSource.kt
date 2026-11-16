@@ -18,7 +18,7 @@ import com.librosleidos.domain.port.BookMetadataSource
  */
 class ChainedMetadataSource(
     private val primary: BookMetadataSource,
-    private val fallback: BookMetadataSource,
+    private val fallback: BookMetadataSource
 ) : BookMetadataSource {
 
     override suspend fun search(query: String): Result<List<BookMetadata>> {

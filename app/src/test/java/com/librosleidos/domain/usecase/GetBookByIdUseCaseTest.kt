@@ -20,7 +20,7 @@ class GetBookByIdUseCaseTest {
         coverUrl = null,
         rating = Rating(4.5f),
         review = "Great book",
-        dateFinished = LocalDate.now(),
+        dateFinished = LocalDate.now()
     )
     private val repository = FakeBookRepository(seed = listOf(existingBook))
     private val useCase = GetBookByIdUseCase(repository)

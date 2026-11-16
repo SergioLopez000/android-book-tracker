@@ -17,7 +17,7 @@ import kotlinx.coroutines.withContext
  */
 class HttpUrlConnectionClient(
     private val connectTimeoutMs: Int = 10_000,
-    private val readTimeoutMs: Int = 10_000,
+    private val readTimeoutMs: Int = 10_000
 ) : HttpClient {
 
     override suspend fun get(url: String, headers: Map<String, String>): String =

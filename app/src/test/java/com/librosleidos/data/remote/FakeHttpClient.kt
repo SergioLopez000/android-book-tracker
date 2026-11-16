@@ -5,9 +5,7 @@ package com.librosleidos.data.remote
  * no live network in tests"). Records the last request for assertions such
  * as the courtesy `User-Agent` header.
  */
-class FakeHttpClient(
-    private val response: Result<String> = Result.success("{}"),
-) : HttpClient {
+class FakeHttpClient(private val response: Result<String> = Result.success("{}")) : HttpClient {
     var lastUrl: String? = null
         private set
     var lastHeaders: Map<String, String> = emptyMap()

@@ -16,7 +16,7 @@ fun Book.toEntity(): BookEntity = BookEntity(
     coverUrl = coverUrl,
     rating = rating.value,
     review = review,
-    dateFinishedEpochDay = dateFinished.toEpochDay(),
+    dateFinishedEpochDay = dateFinished.toEpochDay()
 )
 
 fun BookEntity.toDomain(): Book = Book(
@@ -26,5 +26,5 @@ fun BookEntity.toDomain(): Book = Book(
     coverUrl = coverUrl,
     rating = Rating(rating),
     review = review,
-    dateFinished = LocalDate.ofEpochDay(dateFinishedEpochDay),
+    dateFinished = LocalDate.ofEpochDay(dateFinishedEpochDay)
 )

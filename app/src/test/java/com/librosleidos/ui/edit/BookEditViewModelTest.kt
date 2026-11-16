@@ -33,7 +33,7 @@ class BookEditViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private class FakeBookMetadataSource(
-        private val result: Result<List<BookMetadata>> = Result.success(emptyList()),
+        private val result: Result<List<BookMetadata>> = Result.success(emptyList())
     ) : BookMetadataSource {
         override suspend fun search(query: String): Result<List<BookMetadata>> = result
     }
@@ -47,18 +47,18 @@ class BookEditViewModelTest {
         coverUrl = null,
         rating = Rating(4.0f),
         review = "Classic cyberpunk.",
-        dateFinished = LocalDate.of(2026, 1, 10),
+        dateFinished = LocalDate.of(2026, 1, 10)
     )
 
     private fun viewModel(
         repository: FakeBookRepository = FakeBookRepository(),
         metadataSource: BookMetadataSource = FakeBookMetadataSource(),
-        bookId: Long? = null,
+        bookId: Long? = null
     ) = BookEditViewModel(
         saveBook = SaveBookUseCase(repository),
         searchMetadata = SearchBookMetadataUseCase(metadataSource),
         getBookById = GetBookByIdUseCase(repository),
-        bookId = bookId,
+        bookId = bookId
     )
 
     @Test

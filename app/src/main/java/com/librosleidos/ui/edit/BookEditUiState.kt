@@ -24,7 +24,7 @@ data class BookEditUiState(
     val searchQuery: String = "",
     val search: SearchState = SearchState.Idle,
     val fieldErrors: Map<BookEditField, String> = emptyMap(),
-    val isSaving: Boolean = false,
+    val isSaving: Boolean = false
 )
 
 /**
