@@ -1,6 +1,7 @@
-# Runs the unit tests on every pull request and dev push, then publishes Allure
-# and Kover reports to gh-pages. Static analysis (lint, format, secrets, shell,
-# workflows, commit messages) runs ONLY locally via lefthook, never here.
+# Runs the unit tests and the secret scan on every pull request and dev push,
+# then publishes Allure and Kover reports to gh-pages. Quality checks (lint,
+# format, detekt, shell, workflows, commit messages) run ONLY locally via
+# lefthook, never here; secrets are scanned here so --no-verify cannot skip them.
 # `ci-gate` is the single required status check; `report` never gates.
 name: CI
 
@@ -49,6 +50,31 @@ jobs:
           path: app/build/reports/kover
           if-no-files-found: ignore
           retention-days: 14
+
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-24.04
+    env:
+      GITLEAKS_VERSION: "8.30.1"
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -fsSL -o gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tgz" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/gl" && tar -xzf gitleaks.tgz -C "$RUNNER_TEMP/gl" gitleaks
+          echo "$RUNNER_TEMP/gl" >> "$GITHUB_PATH"
+      - name: Scan commit range
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: gitleaks git --log-opts="$(scripts/secret-scan-range.sh)" --redact --no-banner --exit-code 1 .
 
   report:
     name: report
@@ -109,6 +135,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          ACTOR: ${{ github.actor }}
         run: |
           mkdir -p site
           allure generate allure-results -o site/allure --clean
@@ -133,6 +160,8 @@ jobs:
           if [ "$EVENT_NAME" = "pull_request" ]; then dest="pr-${PR_NUMBER}"; else dest="dev"; fi
           publish=false
           if [ "$EVENT_NAME" = "push" ] || [ "$HEAD_REPO" = "$GITHUB_REPOSITORY" ]; then publish=true; fi
+          # Dependabot tokens are read-only; never try to publish or comment.
+          if [ "$ACTOR" = "dependabot[bot]" ]; then publish=false; fi
           {
             echo "dest=${dest}"
             echo "publish=${publish}"
@@ -180,11 +209,11 @@ jobs:
 
   ci-gate:
     name: ci-gate
-    needs: [unit-tests]
+    needs: [unit-tests, secret-scan]
     if: always()
     runs-on: ubuntu-24.04
     steps:
-      - name: Require the test job to succeed
+      - name: Require the gating jobs to succeed
         env:
           NEEDS: ${{ toJSON(needs) }}
         run: |
