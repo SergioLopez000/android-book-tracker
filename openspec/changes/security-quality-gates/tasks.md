@@ -55,26 +55,26 @@ Issue #4, branch `ci/4-security-quality-gates`. Project review budget is 800 lin
 
 ## Phase 2: ci.yml (secret-scan, ci-gate, report guard)
 
-- [ ] 2.1 `.github/workflows/ci.yml`: update the header comment (secrets scanned in CI); add the `secret-scan` job exactly as in design (gitleaks 8.30.1 pinned by sha256, `fetch-depth: 0`, SHAs via `env:`, `--redact --no-banner --exit-code 1`).
-- [ ] 2.2 `ci-gate`: `needs: [unit-tests, secret-scan]`; rename the step "Require the gating jobs to succeed". Keep the `jq` loop unchanged.
-- [ ] 2.3 `report` "Build report site": add `ACTOR: ${{ github.actor }}` env and force `publish=false` when `$ACTOR = dependabot[bot]` (guards publish and comment steps).
-- [ ] 2.4 `actionlint` clean on `.github/workflows/ci.yml`; `shellcheck` on extracted run blocks via the hook.
+- [x] 2.1 `.github/workflows/ci.yml`: update the header comment (secrets scanned in CI); add the `secret-scan` job exactly as in design (gitleaks 8.30.1 pinned by sha256, `fetch-depth: 0`, SHAs via `env:`, `--redact --no-banner --exit-code 1`).
+- [x] 2.2 `ci-gate`: `needs: [unit-tests, secret-scan]`; rename the step "Require the gating jobs to succeed". Keep the `jq` loop unchanged.
+- [x] 2.3 `report` "Build report site": add `ACTOR: ${{ github.actor }}` env and force `publish=false` when `$ACTOR = dependabot[bot]` (guards publish and comment steps).
+- [x] 2.4 `actionlint` clean on `.github/workflows/ci.yml`; `shellcheck` on extracted run blocks via the hook.
 
 ## Phase 3: codeql.yml
 
-- [ ] 3.1 Create `.github/workflows/codeql.yml` per design (PR to `dev`, push `dev`, weekly cron, `build-mode: manual`, `:app:compileDebugKotlin` no daemon / no build cache, `security-events: write` on the job only). `actionlint` clean.
+- [x] 3.1 Create `.github/workflows/codeql.yml` per design (PR to `dev`, push `dev`, weekly cron, `build-mode: manual`, `:app:compileDebugKotlin` no daemon / no build cache, `security-events: write` on the job only). `actionlint` clean.
 
 ## Phase 4: dependabot.yml, detekt, docs, promote comment
 
-- [ ] 4.1 Create `.github/dependabot.yml` per design (gradle + github-actions, weekly, `target-branch: dev`, prefixes, groups with `test-tooling` first, limit 5); validate against the Dependabot schema.
-- [ ] 4.2 Create `config/detekt/detekt.yml` (`--build-upon-default-config` overrides only): ktlint-duplicate rules off and Compose tuning; confirm every rule id with `detekt --generate-config` (S1).
-- [ ] 4.3 Generate `config/detekt/baseline.xml` over `app/src` with the S1 separator (`detekt --create-baseline`); record the entry count; no CI baseline regeneration.
-- [ ] 4.4 `lefthook.yml`: add the `detekt` pre-commit job (glob `*.kt`, `{staged_files}`, `IFS` per S1, `brew install detekt` hint and baseline fix hint). `lefthook validate` OK.
-- [ ] 4.5 `README.md` (Spanish): "que corre donde" table, accepted-risk update (quality bypass accepted, secrets caught in CI), detekt (brew, commands, baseline regeneration) and SonarQube for IDE, local gitleaks/detekt version note, admin steps A1-A3 (ordered), retarget + reopen process for security PRs, rollback order.
-- [ ] 4.6 `openspec/config.yaml`: add `quality.static_analysis` (detekt) and the verify rule (`detekt` command).
-- [ ] 4.7 `.github/workflows/promote.yml`: comment-only change, the ci-gate comment says unit tests + secret scan. No functional diff (`git diff` shows comment lines only); `actionlint` clean.
-- [ ] 4.8 Conditional: `.gitleaksignore` only if S4 (0.2) found false positives.
-- [ ] 4.9 Local verify: `bash scripts/test-secret-scan-range.sh`, `bash scripts/test-kover-summary.sh`, `shellcheck scripts/*.sh`, `actionlint`, `lefthook validate`, `./gradlew :app:testDebugUnitTest`.
+- [x] 4.1 Create `.github/dependabot.yml` per design (gradle + github-actions, weekly, `target-branch: dev`, prefixes, groups with `test-tooling` first, limit 5); validate against the Dependabot schema.
+- [x] 4.2 Create `config/detekt/detekt.yml` (`--build-upon-default-config` overrides only): ktlint-duplicate rules off and Compose tuning; confirm every rule id with `detekt --generate-config` (S1).
+- [x] 4.3 Generate `config/detekt/baseline.xml` over `app/src` with the S1 separator (`detekt --create-baseline`); record the entry count; no CI baseline regeneration.
+- [x] 4.4 `lefthook.yml`: add the `detekt` pre-commit job (glob `*.kt`, `{staged_files}`, `IFS` per S1, `brew install detekt` hint and baseline fix hint). `lefthook validate` OK.
+- [x] 4.5 `README.md` (Spanish): "que corre donde" table, accepted-risk update (quality bypass accepted, secrets caught in CI), detekt (brew, commands, baseline regeneration) and SonarQube for IDE, local gitleaks/detekt version note, admin steps A1-A3 (ordered), retarget + reopen process for security PRs, rollback order.
+- [x] 4.6 `openspec/config.yaml`: add `quality.static_analysis` (detekt) and the verify rule (`detekt` command).
+- [x] 4.7 `.github/workflows/promote.yml`: comment-only change, the ci-gate comment says unit tests + secret scan. No functional diff (`git diff` shows comment lines only); `actionlint` clean.
+- [x] 4.8 Conditional: `.gitleaksignore` only if S4 (0.2) found false positives. (N/A: S4 found 0 findings, no file created.)
+- [x] 4.9 Local verify: `bash scripts/test-secret-scan-range.sh`, `bash scripts/test-kover-summary.sh`, `shellcheck scripts/*.sh`, `actionlint`, `lefthook validate`, `./gradlew :app:testDebugUnitTest`.
 
 ## Phase 5: Admin (OUTWARD, user confirmation required for each)
 
