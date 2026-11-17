@@ -92,10 +92,10 @@ Issue #4, branch `ci/4-security-quality-gates`. Project review budget is 800 lin
 ## Phase 7: Verify, archive, board (issue #4)
 
 - [x] 7.1 (OUTWARD) On PR open: move issue #4 to "In review" on GitHub Project #2. Done: #4 moved to In review when PR #42 opened.
-- [ ] 7.2 `sdd-verify` against both spec deltas, including Strict TDD evidence.
+- (lifecycle, not an apply task) 7.2 `sdd-verify` against both spec deltas, including Strict TDD evidence.
 - [x] 7.3 (OUTWARD) After the PR merges to `dev`: move issue #4 to "In dev (QA)". Done: #4 moved to In dev (QA) after the #42 merge (`16923d4`).
-- [ ] 7.4 `sdd-archive`: merge deltas into living specs `ci-pipeline` and `code-quality-gates`.
-- [ ] 7.5 (OUTWARD) At Done: post the summary comment on issue #4, close it manually, move to "Done".
+- (lifecycle, not an apply task) 7.4 `sdd-archive`: merge deltas into living specs `ci-pipeline` and `code-quality-gates`.
+- (lifecycle, not an apply task) 7.5 (OUTWARD) At Done: post the summary comment on issue #4, close it manually, move to "Done".
 - [x] 7.6 Delete the local branch `ci/4-security-quality-gates` after merge. Done: the branch was auto-deleted on GitHub and deleted locally after the merge.
 - [x] 7.7 In `apply-progress`, record the TDD Cycle Evidence table for `secret-scan-range.sh`: Done: recorded in Engram apply-progress (obs #109). RED `e48d66a` (harness only, fails 'range script not found'), GREEN `5f3d653` (9 cases), TRIANGULATE to 21 cases plus a head-only mutant caught by 2 cases, SAFETY NET `test-kover-summary.sh` green, REFACTOR shellcheck clean.
 
