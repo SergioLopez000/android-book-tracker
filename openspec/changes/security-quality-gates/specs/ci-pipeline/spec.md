@@ -51,7 +51,7 @@ The `dev` ruleset (27200640) MUST include the rule "Require code scanning result
 - THEN the code-scanning rule is not yet added to the ruleset
 
 ### Requirement: Secret Scan Job
-`ci.yml` MUST contain a job `secret-scan` with `contents: read` and `fetch-depth: 0`. It MUST run the gitleaks v8.30.1 binary, verified against the pinned sha256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` before execution, with `--redact`. The scanned range MUST be base..head for a PR, before..sha for a push, and the head commit only when `before` is all zeros. A detected secret MUST fail the job.
+`ci.yml` MUST contain a job `secret-scan` with `contents: read` and `fetch-depth: 0`. It MUST run the gitleaks v8.30.1 binary, verified against the pinned sha256 `551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb` before execution, with `--redact`. The scanned range MUST be base..head for a PR, before..sha for a push, and the head commit only when `before` is all zeros. If `before` is not all zeros but is unreachable or malformed, the range selection MUST fail closed (non-zero exit with a clear error) instead of narrowing the scan. A detected secret MUST fail the job.
 
 #### Scenario: Secret pushed with --no-verify fails
 - GIVEN a commit with a fake secret pushed with `--no-verify`
@@ -67,6 +67,11 @@ The `dev` ruleset (27200640) MUST include the rule "Require code scanning result
 - GIVEN a push whose `before` SHA is all zeros
 - WHEN `secret-scan` selects its range
 - THEN it scans the head commit only
+
+#### Scenario: Unreachable before fails closed
+- GIVEN a push whose `before` SHA is not all zeros and is not present in the fetched history
+- WHEN `secret-scan` selects its range
+- THEN it exits non-zero with a clear error and does not fall back to scanning the head commit only
 
 #### Scenario: Checksum mismatch
 - GIVEN the downloaded binary does not match the pinned sha256
