@@ -167,23 +167,23 @@ CI MUST define a job named exactly `ci-gate` that runs with `if: always()`, depe
 - WHEN `promote.yml` runs
 - THEN promotion proceeds
 
-### Requirement: Issue Closing on Promotion
-A `Closes #N` (or equivalent closing keyword) present in a commit message on `dev` MUST result in issue N being closed once the commit reaches `main` through promotion. The change MUST verify with a throwaway issue whether the fast-forward promotion closes issues natively. If it does not, `promote.yml` MUST close the issues referenced by closing keywords in the promoted commits as part of promotion. PR-body keywords MUST NOT be relied upon, since PRs target `dev`.
+### Requirement: Issue Linking and Manual Closing
+Promotion MUST NOT be relied upon to close issues: the S2 spike (issue #39, 2026-11-17) showed that a fast-forward promotion of a commit with `Closes #N` does not close the issue, and the user chose manual closing over a `promote.yml` fallback. Each issue's branch MUST be created from the issue (`gh issue develop <N> --base dev`), so it is linked in the issue's Development section, and the PR body MUST reference the issue. Before an issue is closed and moved to Done, a summary comment of the work MUST be posted on it. `promote.yml` MUST NOT request `issues: write`.
 
-#### Scenario: Native close verified
-- GIVEN a commit on `dev` with `Closes #N` for an open throwaway issue
-- WHEN it is promoted to `main`
-- THEN the issue is closed
+#### Scenario: Branch linked to the issue
+- GIVEN work starts on issue N
+- WHEN the branch is created with `gh issue develop N --base dev`
+- THEN the branch appears in issue N's Development section
 
-#### Scenario: Fallback close
-- GIVEN the spike shows promotion does not close issues natively
-- WHEN `promote.yml` promotes commits containing `Closes #N`
-- THEN `promote.yml` closes issue N and the promotion succeeds
+#### Scenario: Promotion leaves issues open
+- GIVEN a promoted commit contains `Closes #N`
+- WHEN `promote.yml` fast-forwards `main`
+- THEN issue N stays open and the promotion succeeds
 
-#### Scenario: Already closed issue
-- GIVEN a referenced issue is already closed
-- WHEN promotion runs the fallback
-- THEN promotion does not fail
+#### Scenario: Summary before closing
+- GIVEN issue N has `qa:approved` and its commit is promoted
+- WHEN it is moved to Done
+- THEN a summary comment exists on issue N and the issue is closed by hand
 
 ### Requirement: Documentation of CI and Admin Steps
 `README.md` MUST document the pipeline (tests and reports only; static analysis local-only with the accepted `--no-verify` risk), how to reach the reports, the artifact contract, and the manual admin steps: enabling Pages from `gh-pages` after the branch exists, adding `ci-gate` (Actions integration) as a required status check to the `dev` ruleset after the first green run, and configuring the squash merge message to include the PR description.

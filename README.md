@@ -159,7 +159,7 @@ Reportes publicados: `https://<usuario>.github.io/android-book-tracker/pr-<N>/al
 GitHub solo interpreta `Closes #N` en PRs hacia la rama por defecto (`main`); en un PR hacia `dev` la palabra clave se ignora y no crea enlace. Por eso:
 
 1. **Enlace**: crea la rama desde el issue con `gh issue develop <N> --base dev --name <tipo>/<N>-<slug> --checkout`. La rama aparece en la sección *Development* del issue y el PR queda en su historial gracias a la mención `#N` de la descripción. La API de GitHub no permite enlazar un PR hacia `dev` en *Development*; solo se puede hacer a mano desde la web.
-2. **Cierre**: la descripción del PR incluye `Closes #N`. Con squash merge, el mensaje del commit en `dev` es la descripción del PR, y el issue se cierra cuando ese commit llega a `main` mediante `promote.yml`.
+2. **Cierre**: los issues se cierran a mano. `Closes #N` en el PR no los cierra: GitHub lo ignora en PRs hacia `dev`, y la promoción a `main` con `promote.yml` tampoco los cierra (comprobado en #39). Orden: `qa:approved` → comentario de resumen → promoción a staging → cerrar el issue → *Done*.
 3. **Resumen**: antes de pasar el issue a *Done*, se publica en él un comentario con lo hecho (PRs, cambios principales y cómo se verificó).
 
 Estados del tablero: *In progress* (inicio) → *In review* (primer PR) → *In dev (QA)* (fusionado a `dev`) → *Done* (`qa:approved` y promovido a staging).
@@ -179,7 +179,7 @@ Las suites futuras (contract, PIT, E2E) se adjuntan con estos nombres sin cambia
 1. Fusiona este cambio a `dev`; el primer push a `dev` crea la rama `gh-pages`.
 2. **Settings → Pages**: fuente `Deploy from a branch`, rama `gh-pages`, carpeta `/ (root)`.
 3. Tras la primera ejecución verde, agrega `ci-gate` (integración *GitHub Actions*) como *required status check* en el ruleset de `dev`.
-4. **Settings → General → Pull Requests**: en squash merge, título = título del PR y mensaje = descripción del PR, para que `Closes #N` viaje en el commit de `dev` y cierre el issue al promover a `main`.
+4. **Settings → General → Pull Requests**: en squash merge, título = título del PR y mensaje = descripción del PR, para que el commit de `dev` conserve la descripción del PR con sus referencias `#N`.
 
 ### Reversión
 
