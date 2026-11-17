@@ -1,0 +1,307 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>app Coverage Report > BookEditEffect</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: app<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.ui.edit</a>
+</div>
+
+<h1>Coverage Summary for Class: BookEditEffect (com.librosleidos.ui.edit)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+  <tr>
+    <td class="name">BookEditEffect$SaveCompleted</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+    <td class="coverageStat"/>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+    <td class="coverageStat"/>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.ui.edit
+&nbsp;
+&nbsp;import androidx.lifecycle.ViewModel
+&nbsp;import androidx.lifecycle.viewModelScope
+&nbsp;import com.librosleidos.domain.model.BookMetadata
+&nbsp;import com.librosleidos.domain.usecase.GetBookByIdUseCase
+&nbsp;import com.librosleidos.domain.usecase.SaveBookOutcome
+&nbsp;import com.librosleidos.domain.usecase.SaveBookRejection
+&nbsp;import com.librosleidos.domain.usecase.SaveBookRequest
+&nbsp;import com.librosleidos.domain.usecase.SaveBookUseCase
+&nbsp;import com.librosleidos.domain.usecase.SearchBookMetadataUseCase
+&nbsp;import java.time.LocalDate
+&nbsp;import kotlinx.coroutines.channels.Channel
+&nbsp;import kotlinx.coroutines.flow.Flow
+&nbsp;import kotlinx.coroutines.flow.MutableStateFlow
+&nbsp;import kotlinx.coroutines.flow.StateFlow
+&nbsp;import kotlinx.coroutines.flow.asStateFlow
+&nbsp;import kotlinx.coroutines.flow.receiveAsFlow
+&nbsp;import kotlinx.coroutines.flow.update
+&nbsp;import kotlinx.coroutines.launch
+&nbsp;
+&nbsp;/**
+&nbsp; * One-shot events (design D7: &quot;one-shot nav/snackbar via
+&nbsp; * `Channel().receiveAsFlow()`&quot;). [SaveCompleted] is genuinely single-fire —
+&nbsp; * unlike PR5&#39;s delete-confirmation dialog (persistent, assertable state kept
+&nbsp; * in [BookEditUiState] via `search`/`fieldErrors`), a completed save should
+&nbsp; * fire navigation exactly once and never replay on recomposition.
+&nbsp; */
+&nbsp;sealed interface BookEditEffect {
+<b class="fc">&nbsp;    data object SaveCompleted : BookEditEffect</b>
+&nbsp;}
+&nbsp;
+&nbsp;/**
+&nbsp; * Task 6.2 (design: Data Flow — `BookEditRoute → BookEditViewModel →
+&nbsp; * SearchBookMetadataUseCase → BookMetadataSource`, `pick result → fields
+&nbsp; * prefill (still editable) → SaveBookUseCase → BookRepository`). Spec:
+&nbsp; * &quot;Autofill Editable Fields&quot;, &quot;Add Book via Metadata Lookup&quot;, &quot;Validate
+&nbsp; * Half-Star Rating&quot;, &quot;Edit Existing Book&quot;.
+&nbsp; *
+&nbsp; * [SearchState.Unavailable] is part of the design&#39;s literal type shape but
+&nbsp; * is not reachable through this ViewModel today:
+&nbsp; * [SearchBookMetadataUseCase] already collapses a source failure to an
+&nbsp; * empty result (Phase 2/4 design decision), so a network failure and a
+&nbsp; * genuine no-match both surface here as `SearchState.Results(emptyList())`.
+&nbsp; * This is a known simplification carried up from the use-case boundary, not
+&nbsp; * a bug introduced in this screen — flagged per the spec&#39;s &quot;Graceful
+&nbsp; * Degradation&quot; requirement, whose two scenarios (&quot;No results from either
+&nbsp; * source&quot; vs. &quot;Network failure during lookup&quot;) call for distinguishable
+&nbsp; * messaging that the current use-case contract cannot provide.
+&nbsp; */
+&nbsp;class BookEditViewModel(
+&nbsp;    private val saveBook: SaveBookUseCase,
+&nbsp;    private val searchMetadata: SearchBookMetadataUseCase,
+&nbsp;    private val getBookById: GetBookByIdUseCase,
+&nbsp;    bookId: Long? = null
+&nbsp;) : ViewModel() {
+&nbsp;
+&nbsp;    private val _uiState = MutableStateFlow(BookEditUiState(id = bookId))
+&nbsp;    val uiState: StateFlow&lt;BookEditUiState&gt; = _uiState.asStateFlow()
+&nbsp;
+&nbsp;    private val _effects = Channel&lt;BookEditEffect&gt;(Channel.BUFFERED)
+&nbsp;    val effects: Flow&lt;BookEditEffect&gt; = _effects.receiveAsFlow()
+&nbsp;
+&nbsp;    init {
+&nbsp;        if (bookId != null) {
+&nbsp;            viewModelScope.launch {
+&nbsp;                val book = getBookById(bookId) ?: return@launch
+&nbsp;                _uiState.update {
+&nbsp;                    it.copy(
+&nbsp;                        id = book.id,
+&nbsp;                        title = book.title,
+&nbsp;                        author = book.author,
+&nbsp;                        coverUrl = book.coverUrl,
+&nbsp;                        rating = book.rating.value,
+&nbsp;                        review = book.review,
+&nbsp;                        dateFinished = book.dateFinished
+&nbsp;                    )
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    fun onTitleChanged(title: String) {
+&nbsp;        _uiState.update { it.copy(title = title) }
+&nbsp;    }
+&nbsp;
+&nbsp;    fun onAuthorChanged(author: String) {
+&nbsp;        _uiState.update { it.copy(author = author) }
+&nbsp;    }
+&nbsp;
+&nbsp;    fun onRatingChanged(rating: Float?) {
+&nbsp;        _uiState.update { it.copy(rating = rating) }
+&nbsp;    }
+&nbsp;
+&nbsp;    fun onReviewChanged(review: String) {
+&nbsp;        _uiState.update { it.copy(review = review) }
+&nbsp;    }
+&nbsp;
+&nbsp;    fun onDateFinishedChanged(dateFinished: LocalDate) {
+&nbsp;        _uiState.update { it.copy(dateFinished = dateFinished) }
+&nbsp;    }
+&nbsp;
+&nbsp;    fun onSearchQueryChanged(query: String) {
+&nbsp;        _uiState.update { it.copy(searchQuery = query) }
+&nbsp;    }
+&nbsp;
+&nbsp;    fun onSearchRequested() {
+&nbsp;        val query = _uiState.value.searchQuery
+&nbsp;        _uiState.update { it.copy(search = SearchState.Loading) }
+&nbsp;        viewModelScope.launch {
+&nbsp;            val results = searchMetadata(query)
+&nbsp;            _uiState.update { it.copy(search = SearchState.Results(results)) }
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    fun onResultSelected(result: BookMetadata) {
+&nbsp;        _uiState.update {
+&nbsp;            it.copy(
+&nbsp;                title = result.title,
+&nbsp;                author = result.author,
+&nbsp;                coverUrl = result.coverUrl,
+&nbsp;                search = SearchState.Idle
+&nbsp;            )
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    fun onSaveRequested() {
+&nbsp;        val current = _uiState.value
+&nbsp;        _uiState.update { it.copy(isSaving = true, fieldErrors = emptyMap()) }
+&nbsp;        viewModelScope.launch {
+&nbsp;            val outcome = saveBook(
+&nbsp;                SaveBookRequest(
+&nbsp;                    id = current.id,
+&nbsp;                    title = current.title,
+&nbsp;                    author = current.author,
+&nbsp;                    coverUrl = current.coverUrl,
+&nbsp;                    rating = current.rating,
+&nbsp;                    review = current.review,
+&nbsp;                    dateFinished = current.dateFinished
+&nbsp;                )
+&nbsp;            )
+&nbsp;            when (outcome) {
+&nbsp;                is SaveBookOutcome.Saved -&gt; {
+&nbsp;                    _uiState.update { it.copy(id = outcome.id, isSaving = false) }
+&nbsp;                    _effects.send(BookEditEffect.SaveCompleted)
+&nbsp;                }
+&nbsp;
+&nbsp;                is SaveBookOutcome.Rejected -&gt; _uiState.update {
+&nbsp;                    it.copy(
+&nbsp;                        isSaving = false,
+&nbsp;                        fieldErrors = mapOf(fieldFor(outcome.reason) to messageFor(outcome.reason))
+&nbsp;                    )
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    private fun fieldFor(reason: SaveBookRejection): BookEditField = when (reason) {
+&nbsp;        SaveBookRejection.BLANK_TITLE -&gt; BookEditField.TITLE
+&nbsp;        SaveBookRejection.MISSING_RATING, SaveBookRejection.INVALID_RATING -&gt; BookEditField.RATING
+&nbsp;        SaveBookRejection.FUTURE_DATE_FINISHED -&gt; BookEditField.DATE_FINISHED
+&nbsp;    }
+&nbsp;
+&nbsp;    private fun messageFor(reason: SaveBookRejection): String = when (reason) {
+&nbsp;        SaveBookRejection.BLANK_TITLE -&gt; &quot;Title is required.&quot;
+&nbsp;        SaveBookRejection.MISSING_RATING -&gt; &quot;Rating is required.&quot;
+&nbsp;        SaveBookRejection.INVALID_RATING -&gt; &quot;Rating must be a half-star value between 0.5 and 5.0.&quot;
+&nbsp;        SaveBookRejection.FUTURE_DATE_FINISHED -&gt; &quot;Date finished cannot be in the future.&quot;
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-17 09:46</div>
+</div>
+</body>
+</html>
