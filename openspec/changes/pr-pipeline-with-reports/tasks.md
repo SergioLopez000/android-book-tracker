@@ -8,7 +8,7 @@
 | 400-line budget risk | Medium (within project budget of 800) |
 | Chained PRs recommended | No |
 | Suggested split | Single PR |
-| Delivery strategy | ask-on-risk |
+| Delivery strategy | single-pr |
 | Chain strategy | pending |
 
 Decision needed before apply: No
