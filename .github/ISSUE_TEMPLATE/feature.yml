@@ -1,0 +1,47 @@
+name: Feature
+description: Propose new user-facing functionality
+title: "feat: "
+labels: ["type:feature"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      description: Who needs it, what they want and why.
+      placeholder: As a reader, I want ..., so that ...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria (Given/When/Then)
+      description: One scenario per block.
+      placeholder: |
+        Given ...
+        When ...
+        Then ...
+    validations:
+      required: true
+  - type: textarea
+    id: qa
+    attributes:
+      label: QA notes
+      description: How this should be verified in dev (devices, data, edge cases).
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of Done
+      options:
+        - label: Unit tests written first and green
+        - label: Coverage report reviewed
+        - label: README and specs updated
+        - label: "`qa:approved` label set before moving to Done"
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Informative only; the area label is applied by hand.
+      options:
+        - app
+        - backend
+        - infra

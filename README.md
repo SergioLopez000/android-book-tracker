@@ -188,7 +188,45 @@ GitHub solo interpreta `Closes #N` en PRs hacia la rama por defecto (`main`); en
 2. **Cierre**: los issues se cierran a mano. `Closes #N` en el PR no los cierra: GitHub lo ignora en PRs hacia `dev`, y la promoción a `main` con `promote.yml` tampoco los cierra (comprobado en #39). Orden: `qa:approved` → comentario de resumen → promoción a staging → cerrar el issue → *Done*.
 3. **Resumen**: antes de pasar el issue a *Done*, se publica en él un comentario con lo hecho (PRs, cambios principales y cómo se verificó).
 
-Estados del tablero: *In progress* (inicio) → *In review* (primer PR) → *In dev (QA)* (fusionado a `dev`) → *Done* (`qa:approved` y promovido a staging).
+#### Formularios
+
+`.github/ISSUE_TEMPLATE/` ofrece dos formularios y desactiva los issues en blanco (`blank_issues_enabled: false`):
+
+- **Feature** (`type:feature`): historia de usuario, criterios de aceptación Given/When/Then, notas de QA, checklist de Definition of Done y área.
+- **Bug** (`type:bug`): pasos para reproducir, comportamiento esperado y actual, entorno, severidad y logs.
+
+Los formularios no llevan la clave `projects:`: el tablero (Project #2) añade los issues con su auto-add (`is:issue`). El tablero contiene solo issues, nunca PRs.
+
+#### Transiciones del tablero
+
+| Estado | Cómo se pone |
+|---|---|
+| *Backlog*, *Ready*, *In progress* | A mano |
+| *In review* | Automático: `board-sync.yml` al abrir, reabrir o marcar como listo (*ready for review*) un PR no borrador hacia `dev` |
+| *In dev (QA)* | Automático: `board-sync.yml` al fusionar el PR a `dev` |
+| *Done* | Al cerrar el issue a mano, el workflow integrado "Item closed" lo mueve |
+
+`board-sync.yml` resuelve el issue con `scripts/resolve-issue-number.sh`: gana el número de la rama `<tipo>/<N>-<slug>` y, si la rama no lo tiene, se usa la primera palabra clave `Closes`, `Fixes` o `Resolves` seguida de `#N` en la descripción del PR (`Refs #N` se ignora). Si el issue no está en el tablero, lo añade antes de moverlo. Nunca mueve una tarjeta hacia atrás, nunca cierra el issue ni comenta, y no es un check requerido (`ci-gate` no depende de él). Se omite en PRs de forks y de Dependabot, y si el secreto `PROJECT_TOKEN` no existe solo emite un aviso y termina en verde.
+
+#### Token `PROJECT_TOKEN`
+
+`GITHUB_TOKEN` no puede escribir en Projects v2 de una cuenta personal, así que el workflow usa un PAT clásico.
+
+1. **Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token (classic)**.
+2. Marca **solo** el scope `project` y define una expiración finita (90 días como máximo).
+3. En el repositorio: **Settings → Secrets and variables → Actions → New repository secret**, nombre `PROJECT_TOKEN`.
+
+Rotación: antes de que expire, genera un PAT nuevo con las mismas condiciones, reemplaza el valor del secreto y revoca el anterior. Un token caducado o inválido hace fallar el job con un error de GraphQL (el check no es requerido, pero el fallo queda visible); un secreto ausente solo muestra un aviso.
+
+#### Pasos de administración del tablero (en orden, una sola vez)
+
+1. Crea `PROJECT_TOKEN` (sección anterior), antes de abrir el PR que añade el workflow.
+2. En **Project #2 → Workflows** (solo desde la interfaz web):
+   - **Auto-add to project**: cambia el filtro a `is:issue`.
+   - **Pull request merged**: desactívalo.
+   - **Item closed**: déjalo activado.
+   - **Auto-close issue**: déjalo desactivado.
+3. Archiva los PRs que ya estaban en el tablero (`gh project item-archive 2 --owner SergioLopez000 --id <id>`; es reversible con `--undo`).
 
 ### Contrato de artefactos
 
@@ -219,6 +257,7 @@ Las actualizaciones de seguridad apuntan a `main`. Para que CodeQL y `ci-gate` c
 2. Quita `ci-gate` del ruleset de `dev` si también revertirás el CI original.
 3. Revierte el PR de seguridad y calidad (`ci-gate` vuelve a depender solo de `unit-tests`; se retiran CodeQL, Dependabot y detekt) y, si hace falta, el de CI (restaura `promote.yml`).
 4. Opcional: desactiva las actualizaciones de seguridad y las alertas, desactiva Pages, borra `gh-pages` y restaura los ajustes de squash merge.
+5. Sincronización del tablero, en este orden: revierte `board-sync.yml` (los formularios y los scripts son independientes); borra el secreto `PROJECT_TOKEN` y revoca el PAT; si quieres, restaura los PRs archivados con `gh project item-archive 2 --owner SergioLopez000 --id <id> --undo`; restaura el filtro de auto-add y reactiva "Pull request merged". Las tarjetas ya movidas se quedan como están.
 
 ---
 
