@@ -82,9 +82,9 @@ main (after promote): dependabot.yml active; weekly CodeQL cron
 | PR | `BASE..HEAD` |
 | push | `BEFORE..AFTER` |
 | push, `BEFORE` all zeros | `-1 AFTER` |
-| push, `BEFORE` not a commit in the clone | `-1 AFTER`, plus a `::warning::` on stderr |
+| push, `BEFORE` not a commit in the clone | exit 1 with a `::error::` on stderr (fail closed, never head-only) |
 
-Any SHA that does not match `^[0-9a-f]{40}$` → exit 2 (fail closed).
+Any SHA that does not match `^[0-9a-f]{40}$` → exit 2 (fail closed). An empty or unknown `EVENT_NAME` also exits 2.
 
 **Other ci.yml changes.**
 - `ci-gate`: set `needs: [unit-tests, secret-scan]` and rename the step to "Require the gating jobs to succeed".
@@ -281,7 +281,7 @@ That is well within 800. The OpenSpec change artifacts are not counted, followin
 | Documentation-like paths | N/A: globs only select analysis inputs; nothing is executed by name | — | — |
 | Git repository selection | Applicable | Range only from event SHAs passed via `env:`; `fetch-depth: 0`; scan path `.`; no `git -C` | Harness PR/push cases; `--no-verify` secret probe |
 | Commit state | Applicable | detekt sees only `{staged_files}`. No `.kt` staged → job skipped. Partially staged files are linted from the worktree (same as spotless; accepted) | S1: staged new issue aborts; docs-only commit skips detekt |
-| Push state | Applicable | No new job pushes. Zero or unreachable `before` → head-only, with a warning. Never an empty range | Harness zero/unreachable cases |
+| Push state | Applicable | No new job pushes. All-zeros `before` (new branch) → head commit only. Unreachable `before` → fail closed (non-zero, clear error), never head-only. Never an empty range | Harness zero/unreachable cases |
 | PR commands | Applicable | SHAs and actor only through `env:`. SHAs validated with a regex before `--log-opts` (no option injection) | Harness malformed SHA → exit 2 |
 
 | Risk | Mitigation |
@@ -310,6 +310,17 @@ The archived D11 is not edited (archive rule). This design's D1 refines it. The 
 
 ## Open Questions
 
-- [ ] Should the stale `promote.yml` comment get a one-line update (comment only)? The confirmed decision says "no change".
-- [ ] Spec alignment: the delta covers zero `before` only. Confirm that an unreachable `before` → head-only with a warning (D8) is acceptable, rather than failing closed.
-- [ ] The `--input` separator: 1.x likely uses a comma, not `:`. S1 decides; this does not block the design.
+- [x] Should the stale `promote.yml` comment get a one-line update (comment only)? Resolved (orchestrator): yes, comment-only (task 4.7).
+- [x] Spec alignment: unreachable `before`. Resolved (orchestrator): fail closed (non-zero exit, clear error), no head-only fallback; all-zeros `before` still scans the head commit only.
+- [x] The `--input` separator. Resolved by S1: comma (see Spike Outcomes).
+
+## Spike Outcomes (Phase 0, local)
+
+- **S1 detekt 1.23.8 (PASS).**
+  - `detekt --help`: `--input` takes paths "separated by comma". A colon-joined list crashes the CLI, so the lefthook job uses `IFS=','`.
+  - Run over the whole `app/src` (64 `.kt` files, about 4,100 lines) with the config: no parse/PSI error, about 1.5 s.
+  - A 3-file run takes about 1 s (limit 10 s).
+  - A new issue in a probe file fails the run (non-zero); an issue present in the baseline is not reported.
+  - Every rule id in the overrides table exists in 1.23.8 (checked against `detekt --generate-config`), including `SpacingBetweenPackageAndImports` and `NoTabs`.
+  - Baseline: 17 entries (23 lines), under the 300 limit, so no rule tuning beyond the table was needed.
+- **S4 gitleaks history (PASS).** `gitleaks git --redact --no-banner .` with v8.30.1 scanned 54 commits (about 16 MB): 0 findings. No `.gitleaksignore` is needed (task 4.8 does not apply).
