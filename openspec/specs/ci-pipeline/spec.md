@@ -6,7 +6,7 @@ GitHub Actions orchestration that runs the unit tests and the security scans (gi
 ## ADDED Requirements
 
 ### Requirement: Workflow Triggers and Runner
-`.github/workflows/ci.yml` MUST run on `pull_request` and on `push` to `dev`, with no path filters, on the `ubuntu-24.04` runner. It MUST NOT use `pull_request_target`. Default workflow permissions MUST be `contents: read`; write permissions MUST be granted only to the jobs that need them (report, cleanup; `security-events: write` only for CodeQL). Third-party actions MUST be pinned to a major version.
+`.github/workflows/ci.yml` MUST run on `pull_request` and on `push` to `dev`, with no path filters, on the `ubuntu-24.04` runner. It MUST NOT use `pull_request_target`. Default workflow permissions MUST be `contents: read`; write permissions MUST be granted only to the jobs that need them (report, cleanup; `security-events: write` only for CodeQL). `board-sync.yml` MUST keep `contents: read` and write the project only through the `PROJECT_TOKEN` secret, never through `GITHUB_TOKEN` write scopes. Third-party actions MUST be pinned to a major version.
 
 #### Scenario: PR triggers the pipeline
 - GIVEN a pull request is opened or updated
@@ -19,9 +19,9 @@ GitHub Actions orchestration that runs the unit tests and the security scans (gi
 - THEN `ci.yml` runs
 
 #### Scenario: Least privilege
-- GIVEN `ci.yml`, `pr-cleanup.yml` and `codeql.yml`
+- GIVEN `ci.yml`, `pr-cleanup.yml`, `codeql.yml` and `board-sync.yml`
 - WHEN their permissions are inspected
-- THEN the workflow default is `contents: read`, write scopes appear only on the report and cleanup jobs, `security-events: write` appears only in `codeql.yml`, and no workflow uses `pull_request_target`
+- THEN the workflow default is `contents: read`, write scopes appear only on the report and cleanup jobs, `security-events: write` appears only in `codeql.yml`, `board-sync.yml` requests no write scope, and no workflow uses `pull_request_target`
 
 ### Requirement: No Static Analysis in CI
 CI MUST NOT run quality static analysis. `ci.yml` MUST NOT contain jobs or steps for `spotlessCheck`, `:app:lintDebug`, detekt, actionlint, shellcheck, script harnesses, commit-message validation, or PR-title validation. These quality gates run only locally through the lefthook hooks; skipping them with `--no-verify`, the GitHub web UI, or without `lefthook install` is an explicit, accepted risk. Security scanning is NOT static analysis in this sense and MUST run in CI: gitleaks (`secret-scan`) and CodeQL.
@@ -178,7 +178,7 @@ CI MUST define a job named exactly `ci-gate` that runs with `if: always()`, depe
 - THEN promotion proceeds
 
 ### Requirement: Issue Linking and Manual Closing
-Promotion MUST NOT be relied upon to close issues: the S2 spike (issue #39, 2026-11-17) showed that a fast-forward promotion of a commit with `Closes #N` does not close the issue, and the user chose manual closing over a `promote.yml` fallback. Each issue's branch MUST be created from the issue (`gh issue develop <N> --base dev`), so it is linked in the issue's Development section, and the PR body MUST reference the issue. Before an issue is closed and moved to Done, a summary comment of the work MUST be posted on it. `promote.yml` MUST NOT request `issues: write`.
+Promotion MUST NOT be relied upon to close issues: the S2 spike (issue #39, 2026-11-17) showed that a fast-forward promotion of a commit with `Closes #N` does not close the issue, and the user chose manual closing over a `promote.yml` fallback. Each issue's branch MUST be created from the issue (`gh issue develop <N> --base dev`), so it is linked in the issue's Development section, and the PR body MUST reference the issue. Board Status MAY be updated automatically by `board-sync` (In review on PR open or ready, In dev (QA) on merge), but no automation MUST close an issue or comment on it. Before an issue is closed and moved to Done, a summary comment of the work MUST be posted on it, and the issue MUST be closed by hand. `promote.yml` MUST NOT request `issues: write`.
 
 #### Scenario: Branch linked to the issue
 - GIVEN work starts on issue N
@@ -194,6 +194,16 @@ Promotion MUST NOT be relied upon to close issues: the S2 spike (issue #39, 2026
 - GIVEN issue N has `qa:approved` and its commit is promoted
 - WHEN it is moved to Done
 - THEN a summary comment exists on issue N and the issue is closed by hand
+
+#### Scenario: Board status automated, closing manual
+- GIVEN a PR for issue N is opened or merged and `board-sync` runs
+- WHEN the run finishes
+- THEN issue N's board Status is In review or In dev (QA) and the issue is still open with no automated comment
+
+#### Scenario: No issues write in promote
+- GIVEN `promote.yml`
+- WHEN its permissions are inspected
+- THEN `issues: write` is not requested
 
 ### Requirement: Documentation of CI and Admin Steps
 `README.md` (in Spanish) MUST document the pipeline (tests, reports, secret scan and CodeQL in CI; quality static analysis local-only), a "what runs where" table, how to reach the reports, the artifact contract, an accepted-risk note stating that quality gates are bypassable while secrets are caught in CI, the SonarQube for IDE recommendation, and the manual admin steps in order: enabling Pages from `gh-pages` after the branch exists, adding `ci-gate` (Actions integration) as a required status check to the `dev` ruleset after the first green run, adding the "Require code scanning results" rule after the first green `dev` CodeQL analysis, enabling Dependabot alerts and security updates, and configuring the squash merge message to include the PR description.
@@ -214,7 +224,7 @@ This change MUST NOT add contract, PIT or E2E jobs, SonarCloud or any paid tooli
 #### Scenario: No extra jobs
 - GIVEN the merged workflows
 - WHEN their jobs are listed
-- THEN `ci.yml` has only `unit-tests`, `secret-scan`, `report`, `ci-gate`, and the other workflows are only CodeQL analysis, cleanup and promote
+- THEN `ci.yml` has only `unit-tests`, `secret-scan`, `report`, `ci-gate`, and the other workflows are only CodeQL analysis, cleanup, promote and board sync
 
 ### Requirement: CodeQL Analysis Workflow
 `.github/workflows/codeql.yml` MUST analyze the `java-kotlin` language with `build-mode: manual`, building the app with Gradle using `--no-daemon --no-build-cache` (the in-process Kotlin compile flag is subject to spike S2). It MUST run on `pull_request` to `dev` with no path filters, on `push` to `dev`, and on a weekly `schedule`. Its permissions MUST be `contents: read` and `security-events: write` only. It MUST NOT use `pull_request_target`.
