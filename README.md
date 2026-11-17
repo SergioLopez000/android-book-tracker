@@ -113,44 +113,70 @@ Con el móvil conectado y la Depuración USB activa, ejecuta:
 
 ### Configuración inicial (una sola vez)
 ```bash
-brew install lefthook gitleaks actionlint shellcheck
+brew install lefthook gitleaks actionlint shellcheck detekt
 lefthook install
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
-`lefthook install` activa los hooks locales (pre-commit): `spotlessCheck`, Android Lint (`:app:lintDebug`, solo si tocas fuentes/recursos Android), `gitleaks` (secretos en el índice), `actionlint`, `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
+`lefthook install` activa los hooks locales (pre-commit): `spotlessCheck`, Android Lint (`:app:lintDebug`, solo si tocas fuentes/recursos Android), `detekt` (solo sobre los `.kt` en el índice), `gitleaks` (secretos en el índice), `actionlint`, `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
+
+Versiones: el CI fija gitleaks 8.30.1 y la configuración se probó con detekt 1.23.8. Las versiones de `brew` pueden diferir del CI; si un hook local y el CI discrepan, alinea la versión local.
+
+**SonarQube for IDE** (recomendado, opcional): instala el plugin en tu IDE para ver los problemas de calidad mientras escribes, antes de llegar al hook.
 
 ### Comandos
 | Objetivo | Comando |
 |---|---|
 | Verificar formato | `./gradlew spotlessCheck` |
 | Aplicar formato | `./gradlew spotlessApply` |
+| detekt sobre todo `app/src` | `detekt --input app/src --config config/detekt/detekt.yml --build-upon-default-config --baseline config/detekt/baseline.xml` |
+| Regenerar el baseline de detekt | `detekt --input app/src --config config/detekt/detekt.yml --build-upon-default-config --create-baseline --baseline config/detekt/baseline.xml` (revisa el diff; el CI nunca lo regenera) |
 | Android Lint (con baseline) | `./gradlew :app:lintDebug` |
 | Regenerar el baseline de Lint | `./gradlew :app:updateLintBaseline` (revisa el diff de `app/lint-baseline.xml`) |
 | Reporte de cobertura (Kover) | `./gradlew koverHtmlReportDebug` (sale en `app/build/reports/kover/htmlDebug/index.html`) |
 | Pruebas unitarias | `./gradlew :app:testDebugUnitTest` |
 | Pruebas del validador de commits | `scripts/test-check-commit-msg.sh` |
 | Pruebas del resumen de cobertura | `scripts/test-kover-summary.sh` |
+| Pruebas del rango del escaneo de secretos | `scripts/test-secret-scan-range.sh` |
 
-Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas existentes viven en el baseline. Kover es solo informativo: no hay umbral de cobertura.
+Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas existentes viven en el baseline. detekt usa `config/detekt/detekt.yml` (solo sobrescrituras sobre la configuración por defecto; el estilo y el formato los cubre Spotless) y falla ante cualquier problema nuevo; los existentes viven en `config/detekt/baseline.xml`. `--input` de detekt separa las rutas con comas. Kover es solo informativo: no hay umbral de cobertura.
 
 ---
 
 ## 🤖 Integración Continua (GitHub Actions)
 
-`.github/workflows/ci.yml` corre en cada Pull Request y en cada push a `dev` (sin filtros de rutas). **El CI ejecuta solo las pruebas y los reportes; el análisis estático corre únicamente en local** mediante lefthook (pre-commit: `spotlessCheck`, `:app:lintDebug`, gitleaks, actionlint, shellcheck; commit-msg: Conventional Commits).
+`.github/workflows/ci.yml` corre en cada Pull Request y en cada push a `dev` (sin filtros de rutas). **El CI ejecuta las pruebas, los reportes y el escaneo de secretos; CodeQL corre en su propio workflow (`codeql.yml`). El análisis de calidad corre únicamente en local** mediante lefthook (pre-commit: `spotlessCheck`, `:app:lintDebug`, detekt, gitleaks, actionlint, shellcheck; commit-msg: Conventional Commits).
 
-> **Riesgo aceptado**: como el análisis estático no se repite en CI, un commit hecho con `--no-verify`, desde la web de GitHub o sin `lefthook install` se salta lint, formato, secretos y la validación del mensaje de commit. Decisión explícita del proyecto: el análisis estático es solo local.
+### Qué corre dónde
+
+| Control | Local (lefthook) | CI |
+|---|---|---|
+| Formato (`spotlessCheck`) | Sí | No |
+| Android Lint | Sí | No |
+| detekt | Sí | No |
+| actionlint / shellcheck | Sí | No |
+| Mensaje de commit (Conventional Commits) | Sí | No |
+| Pruebas unitarias + Kover | No | `unit-tests` |
+| Secretos (gitleaks) | Solo el índice | `secret-scan` (rango de commits del evento, no se puede saltar con `--no-verify`) |
+| CodeQL (Kotlin) | No | `codeql.yml`, bloquea por el ruleset |
+| Actualizaciones de dependencias | No | Dependabot |
+
+> **Riesgo aceptado**: los controles de calidad (formato, lint, detekt, shell, workflows y mensaje de commit) no se repiten en CI, así que un commit hecho con `--no-verify`, desde la web de GitHub o sin `lefthook install` se los salta. Decisión explícita del proyecto: la calidad es solo local. Los secretos sí se detectan en CI aunque el hook local se omita.
 
 ```text
-unit-tests ──> ci-gate  (check requerido)
-    └──> report (informativo, no bloquea)
+unit-tests  ─┬─> ci-gate  (check requerido)
+secret-scan ─┘
+unit-tests ──> report (informativo, no bloquea)
+codeql.yml: analyze ──> alertas de code scanning ──> regla del ruleset de dev
 ```
 
 - **`unit-tests`**: `:app:testDebugUnitTest` + Kover XML/HTML.
-- **`ci-gate`**: único check requerido. Falla si `unit-tests` no termina en éxito (un job omitido cuenta como fallo). `report` no lo afecta.
+- **`secret-scan`**: gitleaks 8.30.1 (fijado por sha256) sobre el rango de commits del evento, calculado por `scripts/secret-scan-range.sh`. PR: `BASE..HEAD`; push a `dev`: `BEFORE..AFTER`; rama nueva (`BEFORE` todo ceros): solo el commit final. Un SHA mal formado o un `BEFORE` que no existe en el clon hace fallar el job (nunca escanea menos de lo debido). La salida va con `--redact`.
+- **`ci-gate`**: único check requerido. Falla si `unit-tests` o `secret-scan` no terminan en éxito (un job omitido cuenta como fallo). `report` y CodeQL no lo afectan.
+- **`codeql.yml`**: análisis CodeQL de Kotlin (`build-mode: manual`) en PRs hacia `dev`, pushes a `dev` y un cron semanal. Bloquea mediante la regla "Require code scanning results" del ruleset (alertas High o superiores), no mediante `ci-gate`.
+- **Dependabot** (`.github/dependabot.yml`): actualizaciones de versión semanales de Gradle y GitHub Actions hacia `dev` (`build(deps):` / `ci(deps):`), agrupadas. En PRs de Dependabot `report` no publica ni comenta (su token es de solo lectura).
 - **`report`**: genera Allure 2.46.2 desde el JUnit XML y publica Allure + Kover en la rama `gh-pages` (`pr-<N>/` en PRs, `dev/` en pushes a `dev`), y deja un único comentario sticky en el PR con los enlaces y la cobertura de líneas y ramas. Solo PRs del mismo repositorio; los PRs desde forks solo suben el artefacto `report-site`.
 - **`pr-cleanup.yml`**: borra `pr-<N>/` de `gh-pages` al cerrar el PR.
-- **`promote.yml`**: exige que el último check-run `ci-gate` del SHA (emitido por GitHub Actions) sea `success` (es decir, que las pruebas pasaron); si falta o no es exitoso, la promoción falla.
+- **`promote.yml`**: exige que el último check-run `ci-gate` del SHA (emitido por GitHub Actions) sea `success` (es decir, que las pruebas y el escaneo de secretos pasaron); si falta o no es exitoso, la promoción falla.
 
 Reportes publicados: `https://<usuario>.github.io/android-book-tracker/pr-<N>/allure/` y `.../kover/` (o `dev/` para la rama `dev`).
 
@@ -179,13 +205,20 @@ Las suites futuras (contract, PIT, E2E) se adjuntan con estos nombres sin cambia
 1. Fusiona este cambio a `dev`; el primer push a `dev` crea la rama `gh-pages`.
 2. **Settings → Pages**: fuente `Deploy from a branch`, rama `gh-pages`, carpeta `/ (root)`.
 3. Tras la primera ejecución verde, agrega `ci-gate` (integración *GitHub Actions*) como *required status check* en el ruleset de `dev`.
-4. **Settings → General → Pull Requests**: en squash merge, título = título del PR y mensaje = descripción del PR, para que el commit de `dev` conserve la descripción del PR con sus referencias `#N`.
+4. Tras el primer análisis verde de CodeQL en un push a `dev`, agrega al ruleset de `dev` la regla **Require code scanning results** (herramienta CodeQL, alertas = Errors, severidad de seguridad = High o superior). Si la agregas antes, bloquea todos los PRs.
+5. Activa las alertas de Dependabot y después las actualizaciones de seguridad (**Settings → Advanced Security**, o `PUT /repos/{o}/{r}/vulnerability-alerts` y luego `PUT /repos/{o}/{r}/automated-security-fixes`). Al promover a `main`, `dependabot.yml` y el cron de CodeQL se activan (se leen desde la rama por defecto).
+6. **Settings → General → Pull Requests**: en squash merge, título = título del PR y mensaje = descripción del PR, para que el commit de `dev` conserve la descripción del PR con sus referencias `#N`.
+
+### PRs de seguridad de Dependabot
+
+Las actualizaciones de seguridad apuntan a `main`. Para que CodeQL y `ci-gate` corran contra `dev`: cambia la base del PR a `dev` y **ciérralo y reábrelo** (cambiar la base solo dispara `edited`, que no inicia los workflows). Si `@dependabot rebase` demuestra rebasar sobre `dev`, también sirve.
 
 ### Reversión
 
-1. Quita `ci-gate` del ruleset de `dev`.
-2. Revierte el PR de CI (restaura `promote.yml`).
-3. Opcional: desactiva Pages, borra `gh-pages` y restaura los ajustes de squash merge.
+1. Quita la regla de code scanning del ruleset de `dev` (sin `codeql.yml` bloquearía todos los PRs).
+2. Quita `ci-gate` del ruleset de `dev` si también revertirás el CI original.
+3. Revierte el PR de seguridad y calidad (`ci-gate` vuelve a depender solo de `unit-tests`; se retiran CodeQL, Dependabot y detekt) y, si hace falta, el de CI (restaura `promote.yml`).
+4. Opcional: desactiva las actualizaciones de seguridad y las alertas, desactiva Pages, borra `gh-pages` y restaura los ajustes de squash merge.
 
 ---
 
