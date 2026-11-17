@@ -2,7 +2,7 @@
 
 ## Intent
 
-Issue #3: local gates (#2) can be bypassed (`--no-verify`) and `promote.yml` only warns when the promoted SHA has no checks. Add CI that runs the unit tests on every PR and dev push, publishes linked Allure + Kover reports, and makes `Closes #N` close issues on promotion to `main`.
+Issue #3: local gates (#2) can be bypassed (`--no-verify`) and `promote.yml` only warns when the promoted SHA has no checks. Add CI that runs the unit tests on every PR and dev push, publishes linked Allure + Kover reports, and makes `Closes #N` close issues on promotion to `main`. (Scope change 2026-11-17: S2 showed promotion does not close issues; issues are linked via `gh issue develop` and closed manually after a summary comment.)
 
 ## Scope
 
@@ -54,7 +54,7 @@ Spikes first: Allure 2 JUnit XML (fallback Allure 3), fast-forward issue closing
 | Risk | Likelihood | Mitigation |
 |---|---|---|
 | Allure 2 reads JUnit XML poorly | Med | Spike; Allure 3 fallback |
-| Fast-forward push does not close issues | Med | Throwaway test; promote.yml closes them |
+| Fast-forward push does not close issues | Med (happened) | Throwaway test (#39); manual closing chosen |
 | `gh-pages` push race | Med | Concurrency group, `keep_files` |
 | Pages 10 builds/h, 1 GB cap | Low | Solo repo; per-PR cleanup |
 | Required-check rename blocks merges | Med | Fixed `ci-gate` name; add after first green run |
@@ -72,7 +72,7 @@ Remove `ci-gate` from the `dev` ruleset first, then revert the PR (restores `pro
 ## Success Criteria
 
 - [x] AC1 (superseded): CI has no lint jobs; `ci-gate` fails only when `unit-tests` fails; lint runs in the pre-commit hook.
-- [ ] AC2: a same-repo PR gets one sticky comment linking live Allure and Kover reports with coverage figures.
-- [ ] AC3: a `Closes #N` commit closes the issue when promoted to `main` (throwaway test).
-- [ ] `promote.yml` fails when `ci-gate` is missing or unsuccessful.
-- [ ] `pr-cleanup.yml` removes `pr-<N>/` on close.
+- [x] AC2: a same-repo PR gets one sticky comment linking live Allure and Kover reports with coverage figures.
+- [x] AC3 (superseded): throwaway test run (#39); promotion does not close issues, so issues are closed manually after a summary comment.
+- [x] `promote.yml` fails when `ci-gate` is missing or unsuccessful.
+- [x] `pr-cleanup.yml` removes `pr-<N>/` on close.

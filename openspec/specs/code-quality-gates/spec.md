@@ -88,7 +88,7 @@ The build MUST provide Kover reports `koverHtmlReportDebug` and `koverXmlReportD
 - THEN no task fails because of low coverage
 
 ### Requirement: Pre-commit Hook
-The repository MUST provide a lefthook `pre-commit` configuration that runs (a) Spotless on staged Kotlin/Gradle files, (b) gitleaks over staged changes with redacted output, and (c) actionlint and shellcheck on workflow and shell files. Any failing check MUST make the hook exit non-zero and abort the commit. Android Lint MUST NOT run in pre-commit.
+The `lefthook` `pre-commit` hook MUST run, in parallel: `spotlessCheck` (Kotlin/Gradle sources), Android Lint (`./gradlew --quiet :app:lintDebug`, only when staged files match Android sources, resources or Gradle configuration globs), gitleaks on staged changes, actionlint (workflow files) and shellcheck with the commit-msg script test (shell files). Each job MUST exit non-zero, with a message explaining how to fix it, when its gate fails. The `commit-msg` hook MUST validate Conventional Commits. These hooks are the only enforcement point of static analysis; CI does not repeat them (see `ci-pipeline`).
 
 #### Scenario: Misformatted staged file blocked
 - GIVEN a staged misformatted Kotlin file
@@ -109,6 +109,21 @@ The repository MUST provide a lefthook `pre-commit` configuration that runs (a) 
 - GIVEN staged files that are formatted, secret-free and valid
 - WHEN the pre-commit hook runs
 - THEN it exits 0
+
+#### Scenario: Android source change triggers Lint
+- GIVEN a staged `.kt`, `.kts` or `.xml` file under `app/`
+- WHEN `git commit` runs the pre-commit hook
+- THEN `./gradlew --quiet :app:lintDebug` runs and a new non-baselined issue aborts the commit with a fix hint
+
+#### Scenario: Unrelated change skips Lint
+- GIVEN only documentation files are staged
+- WHEN `git commit` runs the pre-commit hook
+- THEN the Android Lint job is skipped
+
+#### Scenario: Hook bypass is an accepted risk
+- GIVEN a commit made with `--no-verify`
+- WHEN it reaches the remote
+- THEN no CI job re-runs the gates (accepted risk, recorded in the proposal)
 
 ### Requirement: Commit-message Hook
 The repository MUST provide a lefthook `commit-msg` hook backed by `scripts/check-commit-msg.sh` that validates the first line of the message. A valid first line is `type(scope)!: description`, where `type` is exactly one of `feat fix docs style refactor perf test build ci chore revert`, `(scope)` is optional, `!` is optional, and the description is non-empty. Messages beginning with `Merge`, `Revert`, or `fixup!`/`squash!`/`amend!` (git autosquash prefixes) MUST also be accepted. Other messages MUST be rejected with a non-zero exit and an explanatory message.
