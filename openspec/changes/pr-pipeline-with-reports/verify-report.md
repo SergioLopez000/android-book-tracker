@@ -104,15 +104,15 @@ Evidence kinds: RUN = executed locally in this run; LIVE = verified live on 2026
 | Issue Linking and Manual Closing | Summary before closing | Process rule documented in README; user chose manual closing | ✅ COMPLIANT |
 | Documentation of CI and Admin Steps | Admin steps documented | STATIC README CI section lists Pages, required-check, merge-message steps in order; LIVE Pages built, squash PR_TITLE/PR_BODY | ✅ COMPLIANT |
 | Out of Scope Boundaries | No extra jobs | STATIC only unit-tests, report, ci-gate, cleanup, promote | ✅ COMPLIANT |
-| Pre-commit Hook | Misformatted staged file blocked | STATIC lefthook.yml spotless job (glob *.{kt,kts}, spotlessCheck non-zero exit, fix hint); spotlessCheck runnable | ✅ COMPLIANT |
-| Pre-commit Hook | Staged fake secret blocked | STATIC lefthook.yml gitleaks job (git --pre-commit --staged --redact) | ✅ COMPLIANT |
-| Pre-commit Hook | Broken workflow blocked | RUN actionlint exit 0 on clean tree; STATIC lefthook.yml actionlint job on .github/workflows glob | ✅ COMPLIANT |
-| Pre-commit Hook | Clean commit passes | RUN lefthook validate exit 0; all jobs exit 0 on the clean tree (actionlint, shellcheck, harnesses) | ✅ COMPLIANT |
+| Pre-commit Hook | Misformatted staged file blocked | LIVE probe 2026-11-17: staged misformatted ProbeFormat.kt, `lefthook run pre-commit` exit 1, spotlessKotlinCheck format violations + `spotlessApply` hint | ✅ COMPLIANT |
+| Pre-commit Hook | Staged fake secret blocked | LIVE probe 2026-11-17: staged fake AWS key pair, `lefthook run pre-commit` exit 1, gitleaks "leaks found: 2", secret values absent from output | ✅ COMPLIANT |
+| Pre-commit Hook | Broken workflow blocked | LIVE probe 2026-11-17: staged broken probe-broken.yml, `lefthook run pre-commit` exit 1, actionlint reported missing `runs-on` and undefined `github.nope` | ✅ COMPLIANT |
+| Pre-commit Hook | Clean commit passes | LIVE probe 2026-11-17: staged clean probe-clean.md, `lefthook run pre-commit` exit 0; lefthook validate exit 0 | ✅ COMPLIANT |
 | Pre-commit Hook | Android source change triggers Lint | RUN lefthook validate; android-lint job glob and fix hint inspected; command run once green during apply | ✅ COMPLIANT |
 | Pre-commit Hook | Unrelated change skips Lint | STATIC glob limits android-lint to app sources, resources, Gradle config | ✅ COMPLIANT |
 | Pre-commit Hook | Hook bypass is an accepted risk | STATIC no CI re-run of gates (D11) | ✅ COMPLIANT |
 
-**Compliance summary**: 34/39 scenarios fully compliant at runtime/live/offline; the 5 partial ones (static guards only) are user-accepted and counted as complete in the envelope (39/39), tracked as WARNING 2.
+**Compliance summary**: 34/39 scenarios fully compliant at runtime/live/offline (the three Pre-commit Hook block scenarios and Clean commit passes were re-run as live hook probes on 2026-11-17). The 5 CI partial ones (static guards only) were explicitly accepted by the user in chat on 2026-11-17 as statically verified, and are therefore counted as complete in the envelope (39/39), tracked as WARNING 2.
 
 ### Correctness (Static Evidence)
 | Requirement | Status | Notes |
@@ -144,12 +144,12 @@ Evidence kinds: RUN = executed locally in this run; LIVE = verified live on 2026
 
 **WARNING**:
 1. Documented, user-approved TDD exception: the RED step for tasks 1.1-1.3 is not recorded (script and harness landed in the same commit b798f36). The harness exists, is triangulated and passes. Recorded in apply-progress (Engram #92) instead of fabricating evidence.
-2. Five scenarios were exercised only by static guards, never live: "Report on failing tests", "Missing results", "Fork PR", "Concurrent publishes" (accepted by the user) and "Test failure still uploads results".
-3. Pre-commit Hook scenarios Misformatted staged file blocked, Staged fake secret blocked and Broken workflow blocked are verified by lefthook.yml inspection plus clean-tree runs, not by staging a failing file in this run.
+2. Five scenarios were exercised only by static guards, never live: "Report on failing tests", "Missing results", "Fork PR", "Concurrent publishes" and "Test failure still uploads results". All five were explicitly accepted by the user on 2026-11-17 as statically verified; live probes would need throwaway failing or fork PRs.
+3. RESOLVED after this run: the Pre-commit Hook scenarios were probed live by staging a misformatted Kotlin file, a fake secret, a broken workflow and a clean file. Exits were 1/1/1/0 as specified, and the tree was restored after each probe.
 
 **SUGGESTION**:
 1. Run `./gradlew koverHtmlReportDebug :app:lintDebug spotlessCheck` per openspec/config.yaml verify rules if a coverage figure is wanted; not measured here.
 
 ### Verdict
 PASS WITH WARNINGS
-0 CRITICAL, 3 WARNING, 1 SUGGESTION: 102 tests, build, actionlint, shellcheck, harnesses and lefthook all exit 0; delta fixed and totals 13/39 confirmed.
+0 CRITICAL, 2 open WARNING (1 resolved), 1 SUGGESTION: 102 tests, build, actionlint, shellcheck, harnesses and lefthook all exit 0; delta fixed and totals 13/39 confirmed.
