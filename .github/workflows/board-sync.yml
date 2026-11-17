@@ -1,0 +1,54 @@
+# Moves the issue linked to a PR into dev on Project #2: In review on open,
+# In dev (QA) on merge. Never regresses, never closes or comments.
+name: Board sync
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, closed]
+    branches: [dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: board-sync-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: sync
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      PROJECT_ID: PVT_kwHOCe4gqc4BrdLG
+      STATUS_FIELD_ID: PVTSSF_lAHOCe4gqc4BrdLGzhpv1bI
+      OPT_BACKLOG: ff5e3c08
+      OPT_READY: fc42ffad
+      OPT_IN_PROGRESS: 6fd7fc51
+      OPT_IN_REVIEW: a5f0b94c
+      OPT_IN_DEV_QA: beabd43b
+      OPT_DONE: cbf60025
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts
+          persist-credentials: false
+      - name: Sync board status
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          HEAD_REF: ${{ github.head_ref }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          ACTION: ${{ github.event.action }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          MERGED: ${{ github.event.pull_request.merged }}
+        run: |
+          ISSUE="$(scripts/resolve-issue-number.sh "$HEAD_REF" "$PR_BODY")"
+          if [ -z "$ISSUE" ]; then
+            echo "::notice::No linked issue; nothing to sync"
+            exit 0
+          fi
+          ISSUE="$ISSUE" scripts/board-sync.sh
