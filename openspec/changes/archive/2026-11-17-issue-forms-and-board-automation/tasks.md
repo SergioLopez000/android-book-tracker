@@ -32,10 +32,10 @@ Issue #5, branch `chore/5-issue-forms-board`. The project budget is 800 lines, s
 
 ## Phase 0: Spikes
 
-- [ ] 0.1 S1 (OUTWARD, needs A1 and A2 first): on this PR, open -> #5 "In review", merge -> "In dev (QA)"; run logs `moved` both times. Public repo, so `project`-only PAT should suffice; auth error means escalate (option `public_repo`). No secret yet: close and reopen. Merge event missing: escalate. Resolves both design Open Questions.
-- [ ] 0.2 S2 (OUTWARD, after A2): this PR has no PullRequest item on Project #2. Fallback: re-check the filter, escalate.
-- [ ] 0.3 S3 (OUTWARD, before A3): `gh project item-archive 2 --owner SergioLopez000 --id <id>` on 1 PR item, then `--undo`, then archive again. Pass: reappears, then disappears. Fail: stop the bulk archive, escalate.
-- [ ] 0.4 S4 (OUTWARD, after push): New issue page shows only Feature and Bug, labels applied (`type:feature`, `type:bug`). Fallback: fix the YAML in this PR.
+- [x] 0.1 S1 (OUTWARD, needs A1 and A2 first): on this PR, open -> #5 "In review", merge -> "In dev (QA)"; run logs `moved` both times. Public repo, so `project`-only PAT should suffice; auth error means escalate (option `public_repo`). No secret yet: close and reopen. Merge event missing: escalate. Resolves both design Open Questions. Result 2026-11-17: PASS. Opening PR #51 moved #5 to In review (board-sync run 44087830416). The merge (`27f2cef`) moved #5 to In dev (QA) (run 44088627895). #5 stayed OPEN and there were no manual moves. The PAT with only the `project` scope was sufficient.
+- [x] 0.2 S2 (OUTWARD, after A2): this PR has no PullRequest item on Project #2. Fallback: re-check the filter, escalate. Result: PASS. PR #51 never appeared as a PullRequest item on Project #2 (0 items) after the user set auto-add to `is:issue`.
+- [x] 0.3 S3 (OUTWARD, before A3): `gh project item-archive 2 --owner SergioLopez000 --id <id>` on 1 PR item, then `--undo`, then archive again. Pass: reappears, then disappears. Fail: stop the bulk archive, escalate. Result: PASS. The PR #20 item was archived, restored with `--undo` (`isArchived:false` via GraphQL), and archived again in A3. Note: `gh project item-list` lags by several seconds, so archive state is verified through GraphQL `isArchived`.
+- (lifecycle, after promotion to `main`; issue forms only render from the default branch) 0.4 S4 (OUTWARD): New issue page shows only Feature and Bug, labels applied (`type:feature`, `type:bug`). Fallback: fix the YAML in this PR.
 
 ## Phase 1: Issue forms
 
@@ -74,19 +74,19 @@ Issue #5, branch `chore/5-issue-forms-board`. The project budget is 800 lines, s
 
 ## Phase 7: Admin (OUTWARD, user confirmation for each; order matters)
 
-- [ ] 7.1 A1 (user, BEFORE the PR opens): create a classic PAT with only `project`, expiry 90 days or less; add repo secret `PROJECT_TOKEN`.
-- [ ] 7.2 A2 (user, UI, BEFORE the PR opens): auto-add filter `is:issue`; disable "Pull request merged"; keep "Item closed" on, "Auto-close issue" off. Then the assistant verifies workflow states via GraphQL.
-- [ ] 7.3 A3 (assistant, after 7.2 and S3 0.3): re-list with `gh project item-list 2 --owner SergioLopez000 --format json --limit 200`, filter `PullRequest`, confirm 18, archive all.
+- [x] 7.1 A1 (user, BEFORE the PR opens): create a classic PAT with only `project`, expiry 90 days or less; add repo secret `PROJECT_TOKEN`. Done by the user: secret `PROJECT_TOKEN` (first created as `PROJECT_SECRET`, renamed after the check). Verified via `gh secret list`.
+- [x] 7.2 A2 (user, UI, BEFORE the PR opens): auto-add filter `is:issue`; disable "Pull request merged"; keep "Item closed" on, "Auto-close issue" off. Then the assistant verifies workflow states via GraphQL. Done by the user. GraphQL check: Pull request merged=false, Item closed=true, Auto-close issue=false, Auto-add to project=true. The filter is not exposed by the API; S2 proved it.
+- [x] 7.3 A3 (assistant, after 7.2 and S3 0.3): re-list with `gh project item-list 2 --owner SergioLopez000 --format json --limit 200`, filter `PullRequest`, confirm 18, archive all. Done: 18 PullRequest items listed and archived. Verified 18/18 `isArchived:true` via GraphQL.
 
 ## Phase 8: Final (issue #5)
 
-- [ ] 8.1 (OUTWARD) When the PR opens, verify the automation moved #5 to "In review" (S1); fallback is a manual move.
+- [x] 8.1 (OUTWARD) When the PR opens, verify the automation moved #5 to "In review" (S1); fallback is a manual move. Done: automated, see S1. No fallback needed.
 - (lifecycle, not an apply task) 8.2 `sdd-verify` against both spec deltas, including Strict TDD evidence.
-- [ ] 8.3 (OUTWARD) After merge to `dev`, verify #5 moved to "In dev (QA)"; fallback manual.
+- [x] 8.3 (OUTWARD) After merge to `dev`, verify #5 moved to "In dev (QA)"; fallback manual. Done: automated, see S1. No fallback needed.
 - (lifecycle, not an apply task) 8.4 `sdd-archive`: merge deltas into living specs `issue-workflow` and `ci-pipeline`.
 - (lifecycle, not an apply task) 8.5 (OUTWARD) At Done: post the summary comment on #5, close it manually, move to "Done".
-- [ ] 8.6 Delete local branch `chore/5-issue-forms-board` after merge.
-- [ ] 8.7 Record the TDD Cycle Evidence table in `apply-progress` for both scripts (RED commit SHA with failing output, GREEN SHA, TRIANGULATE, REFACTOR).
+- [x] 8.6 Delete local branch `chore/5-issue-forms-board` after merge. Done: the branch was auto-deleted on GitHub and deleted locally after the #51 merge.
+- [x] 8.7 Record the TDD Cycle Evidence table in `apply-progress` for both scripts (RED commit SHA with failing output, GREEN SHA, TRIANGULATE, REFACTOR). Done: recorded in Engram apply-progress (obs #123). Resolver RED `a1967c8` ('resolver not found', exit 1) -> GREEN `20df9fa`, 5/5 mutants killed. board-sync RED `7157c3d` ('board-sync script not found', exit 1) -> GREEN `7dad107`, 10/10 mutants killed. Both harnesses run on bash 3.2.57. REFACTOR: shellcheck clean.
 
 | Task | Test file | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
 |------|-----------|-------|------------|-----|-------|-------------|----------|

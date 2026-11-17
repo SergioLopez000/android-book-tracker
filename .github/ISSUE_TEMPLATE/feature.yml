@@ -22,20 +22,31 @@ body:
         Then ...
     validations:
       required: true
-  - type: textarea
+  - type: checkboxes
     id: qa
     attributes:
+      label: QA checklist
+      description: Ticked during manual QA in dev.
+      options:
+        - label: Tested in dev on a physical device or emulator
+        - label: Acceptance criteria scenarios checked one by one
+        - label: Edge cases and empty or error states checked
+        - label: Result recorded in a comment on this issue
+  - type: textarea
+    id: qa_notes
+    attributes:
       label: QA notes
-      description: How this should be verified in dev (devices, data, edge cases).
+      description: Optional. Devices, data or edge cases to cover.
   - type: checkboxes
     id: dod
     attributes:
       label: Definition of Done
       options:
-        - label: Unit tests written first and green
-        - label: Coverage report reviewed
-        - label: README and specs updated
-        - label: "`qa:approved` label set before moving to Done"
+        - label: SDD change (explore → proposal → spec → design → tasks → apply → verify → archive) linked here
+        - label: Tests written first (Strict TDD) and green in CI
+        - label: Local hooks green, and CodeQL and secret-scan green in CI
+        - label: Manual QA done in dev and recorded in a comment
+        - label: "`qa:approved` label added and promoted to staging"
   - type: dropdown
     id: area
     attributes:

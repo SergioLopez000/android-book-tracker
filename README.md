@@ -192,7 +192,7 @@ GitHub solo interpreta `Closes #N` en PRs hacia la rama por defecto (`main`); en
 
 `.github/ISSUE_TEMPLATE/` ofrece dos formularios y desactiva los issues en blanco (`blank_issues_enabled: false`):
 
-- **Feature** (`type:feature`): historia de usuario, criterios de aceptación Given/When/Then, notas de QA, checklist de Definition of Done y área.
+- **Feature** (`type:feature`): historia de usuario, criterios de aceptación Given/When/Then, checklist de QA en `dev` (con notas opcionales), Definition of Done (cambio SDD enlazado, tests primero y en verde, hooks + CodeQL + secret-scan en verde, QA manual registrada, `qa:approved` y promoción) y área.
 - **Bug** (`type:bug`): pasos para reproducir, comportamiento esperado y actual, entorno, severidad y logs.
 
 Los formularios no llevan la clave `projects:`: el tablero (Project #2) añade los issues con su auto-add (`is:issue`). El tablero contiene solo issues, nunca PRs.
