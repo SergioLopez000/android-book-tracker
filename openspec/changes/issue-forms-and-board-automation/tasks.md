@@ -39,38 +39,38 @@ Issue #5, branch `chore/5-issue-forms-board`. The project budget is 800 lines, s
 
 ## Phase 1: Issue forms
 
-- [ ] 1.1 Create `.github/ISSUE_TEMPLATE/config.yml` with `blank_issues_enabled: false`, no `projects:` key (D11).
-- [ ] 1.2 Create `.github/ISSUE_TEMPLATE/feature.yml`: `labels: [type:feature]`, required `story` and `acceptance`, `qa`, `dod` checkboxes (no SonarCloud), `area` dropdown.
-- [ ] 1.3 Create `.github/ISSUE_TEMPLATE/bug.yml`: `labels: [type:bug]`, required `steps`, `expected`, `actual`, `severity` (low/medium/high/critical), `environment`, `logs` (`render: shell`).
+- [x] 1.1 Create `.github/ISSUE_TEMPLATE/config.yml` with `blank_issues_enabled: false`, no `projects:` key (D11).
+- [x] 1.2 Create `.github/ISSUE_TEMPLATE/feature.yml`: `labels: [type:feature]`, required `story` and `acceptance`, `qa`, `dod` checkboxes (no SonarCloud), `area` dropdown.
+- [x] 1.3 Create `.github/ISSUE_TEMPLATE/bug.yml`: `labels: [type:bug]`, required `steps`, `expected`, `actual`, `severity` (low/medium/high/critical), `environment`, `logs` (`render: shell`).
 
 ## Phase 2: Resolver (TDD, `scripts/resolve-issue-number.sh`)
 
-- [ ] 2.1 RED: create `scripts/test-resolve-issue-number.sh` (style of `scripts/test-secret-scan-range.sh`) with the design case table: branch wins, keyword fallback (`fixes`, `RESOLVED`, `Close:`, second line, first match only), `Refs #5`, `other/repo#5`, `prefixes #4`, `#0`, `#05`, `#12abc`, `feat/12` no slug, `Feat/12-x`, injection (`feat/12-$(touch p)` creates no file), wrong argc -> exit 2.
-- [ ] 2.2 Run the harness with no script; confirm it FAILS; capture output for the evidence table.
-- [ ] 2.3 Commit RED alone (`test(ci): add failing harness for resolve-issue-number`). Script MUST NOT be in it.
-- [ ] 2.4 GREEN: create `scripts/resolve-issue-number.sh` (D3 precedence, `[[ =~ ]]` line by line, no `eval`, output `^[1-9][0-9]*$`). Run harness; all pass; capture output.
-- [ ] 2.5 TRIANGULATE: second inputs per branch (other numbers, CRLF body, multiple branches prefixes); mutant check (body-first order) is caught. REFACTOR: shellcheck clean, re-run. Commit GREEN+REFACTOR (`ci: add issue number resolver`).
+- [x] 2.1 RED: create `scripts/test-resolve-issue-number.sh` (style of `scripts/test-secret-scan-range.sh`) with the design case table: branch wins, keyword fallback (`fixes`, `RESOLVED`, `Close:`, second line, first match only), `Refs #5`, `other/repo#5`, `prefixes #4`, `#0`, `#05`, `#12abc`, `feat/12` no slug, `Feat/12-x`, injection (`feat/12-$(touch p)` creates no file), wrong argc -> exit 2.
+- [x] 2.2 Run the harness with no script; confirm it FAILS; capture output for the evidence table.
+- [x] 2.3 Commit RED alone (`test(ci): add failing harness for resolve-issue-number`). Script MUST NOT be in it.
+- [x] 2.4 GREEN: create `scripts/resolve-issue-number.sh` (D3 precedence, `[[ =~ ]]` line by line, no `eval`, output `^[1-9][0-9]*$`). Run harness; all pass; capture output.
+- [x] 2.5 TRIANGULATE: second inputs per branch (other numbers, CRLF body, multiple branches prefixes); mutant check (body-first order) is caught. REFACTOR: shellcheck clean, re-run. Commit GREEN+REFACTOR (`ci: add issue number resolver`).
 
 ## Phase 3: board-sync script (TDD, `scripts/board-sync.sh`)
 
-- [ ] 3.1 RED: create `scripts/test-board-sync.sh` with a `gh` stub on `PATH` (logs argv, returns `STUB_DIR/<op>.json`) and the design cases: open -> In review from Backlog, Ready, In progress, empty; noop when In review/In dev (QA)/Done; merged -> In dev (QA) from In review and Backlog; merged when Done noop; draft noop; closed unmerged noop; `ready_for_review`; item missing -> M1 then M2; item only on another project -> M1; issue null noop; unknown optionId noop + warning; empty token -> notice, exit 0, no `gh` call; Q1 error non-zero; `ISSUE=1;x` exit 2.
-- [ ] 3.2 Run the harness with no script; confirm it FAILS; capture output.
-- [ ] 3.3 Commit RED alone (`test(ci): add failing harness for board-sync`). Script MUST NOT be in it.
-- [ ] 3.4 GREEN: create `scripts/board-sync.sh` (env contract, rank map by option ID, Q1/M1/M2 via `gh api graphql -F/-f`, one `noop:`/`moved:` line). Run harness; all pass.
-- [ ] 3.5 TRIANGULATE: second case per rank and event; assert ordered mutation list; mutant (compare by name, or always overwrite) is caught. REFACTOR: shellcheck clean, re-run. Commit GREEN+REFACTOR (`ci: add board sync script`).
+- [x] 3.1 RED: create `scripts/test-board-sync.sh` with a `gh` stub on `PATH` (logs argv, returns `STUB_DIR/<op>.json`) and the design cases: open -> In review from Backlog, Ready, In progress, empty; noop when In review/In dev (QA)/Done; merged -> In dev (QA) from In review and Backlog; merged when Done noop; draft noop; closed unmerged noop; `ready_for_review`; item missing -> M1 then M2; item only on another project -> M1; issue null noop; unknown optionId noop + warning; empty token -> notice, exit 0, no `gh` call; Q1 error non-zero; `ISSUE=1;x` exit 2.
+- [x] 3.2 Run the harness with no script; confirm it FAILS; capture output.
+- [x] 3.3 Commit RED alone (`test(ci): add failing harness for board-sync`). Script MUST NOT be in it.
+- [x] 3.4 GREEN: create `scripts/board-sync.sh` (env contract, rank map by option ID, Q1/M1/M2 via `gh api graphql -F/-f`, one `noop:`/`moved:` line). Run harness; all pass.
+- [x] 3.5 TRIANGULATE: second case per rank and event; assert ordered mutation list; mutant (compare by name, or always overwrite) is caught. REFACTOR: shellcheck clean, re-run. Commit GREEN+REFACTOR (`ci: add board sync script`).
 
 ## Phase 4: Workflow
 
-- [ ] 4.1 Create `.github/workflows/board-sync.yml` per the design skeleton (pinned IDs, same-repo and non-Dependabot guard, `concurrency` per PR, `contents: read`, `PROJECT_TOKEN` in step env only, no `${{ }}` in `run`). `actionlint` clean.
+- [x] 4.1 Create `.github/workflows/board-sync.yml` per the design skeleton (pinned IDs, same-repo and non-Dependabot guard, `concurrency` per PR, `contents: read`, `PROJECT_TOKEN` in step env only, no `${{ }}` in `run`). `actionlint` clean.
 
 ## Phase 5: Docs
 
-- [ ] 5.1 `README.md` (Spanish): "Flujo de issues" (forms, branch/`Closes #N` convention, automatic moves, manual states, board holds issues only), admin steps A1-A3 in order, PAT expiry and rotation, rollback order.
-- [ ] 5.2 `openspec/config.yaml`: if absent, add the two shell harness commands to the verify rule (detekt entry exists).
+- [x] 5.1 `README.md` (Spanish): "Flujo de issues" (forms, branch/`Closes #N` convention, automatic moves, manual states, board holds issues only), admin steps A1-A3 in order, PAT expiry and rotation, rollback order.
+- [x] 5.2 `openspec/config.yaml`: if absent, add the two shell harness commands to the verify rule (detekt entry exists).
 
 ## Phase 6: Local verify
 
-- [ ] 6.1 Run `bash scripts/test-resolve-issue-number.sh`, `bash scripts/test-board-sync.sh`, `bash scripts/test-secret-scan-range.sh`, `bash scripts/test-kover-summary.sh`, `shellcheck scripts/*.sh`, `actionlint`, `lefthook validate`.
+- [x] 6.1 Run `bash scripts/test-resolve-issue-number.sh`, `bash scripts/test-board-sync.sh`, `bash scripts/test-secret-scan-range.sh`, `bash scripts/test-kover-summary.sh`, `shellcheck scripts/*.sh`, `actionlint`, `lefthook validate`.
 
 ## Phase 7: Admin (OUTWARD, user confirmation for each; order matters)
 
