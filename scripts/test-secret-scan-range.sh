@@ -14,15 +14,22 @@ fi
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 
-# Throwaway repo with two commits: c1 and c2 exist, FAR (valid hex) does not.
+# Throwaway repo: c1, c2 and a merge commit m exist; FAR (valid hex) does not.
 repo="$tmp/repo"
 git init -q "$repo"
-git -C "$repo" -c user.name=t -c user.email=t@t -c commit.gpgsign=false commit -q --allow-empty -m c1
-git -C "$repo" -c user.name=t -c user.email=t@t -c commit.gpgsign=false commit -q --allow-empty -m c2
-c1="$(git -C "$repo" rev-parse HEAD~1)"
-c2="$(git -C "$repo" rev-parse HEAD)"
+g() { git -C "$repo" -c user.name=t -c user.email=t@t -c commit.gpgsign=false "$@"; }
+g commit -q --allow-empty -m c1
+g commit -q --allow-empty -m c2
+c1="$(g rev-parse HEAD~1)"
+c2="$(g rev-parse HEAD)"
+g checkout -q -b side "$c1"
+g commit -q --allow-empty -m side
+g checkout -q -
+g merge -q --no-ff side -m merge
+m="$(g rev-parse HEAD)"
 far="0123456789abcdef0123456789abcdef01234567"
 zeros="0000000000000000000000000000000000000000"
+c2_upper="$(tr 'a-f' 'A-F' <<<"$c2")"
 
 failures=0
 # check <name> <want_out> <want_exit|nz> <want_err: any|none> -- VAR=value...
@@ -63,12 +70,26 @@ check push-unreachable-before "" nz any -- EVENT_NAME=push BEFORE_SHA="$far" AFT
 
 # Malformed SHAs (short, uppercase, option-like) exit 2 before any git call.
 check push-short-before "" 2 any -- EVENT_NAME=push BEFORE_SHA="${c1:0:7}" AFTER_SHA="$c2"
-check push-uppercase-after "" 2 any -- EVENT_NAME=push BEFORE_SHA="$c1" AFTER_SHA="${c2^^}"
+check push-uppercase-after "" 2 any -- EVENT_NAME=push BEFORE_SHA="$c1" AFTER_SHA="$c2_upper"
 check pr-option-injection "" 2 any -- EVENT_NAME=pull_request BASE_SHA="--output=x" HEAD_SHA="$c2"
 
 # Unknown or empty event names are rejected.
 check empty-event "" nz any -- EVENT_NAME= BEFORE_SHA="$c1" AFTER_SHA="$c2"
 check unknown-event "" nz any -- EVENT_NAME=schedule BEFORE_SHA="$c1" AFTER_SHA="$c2"
+
+# Triangulation: different SHAs and the neighbouring edge of every branch.
+check pr-merge-commit-head "$c1..$m" 0 none -- EVENT_NAME=pull_request BASE_SHA="$c1" HEAD_SHA="$m"
+check push-merge-commit-after "$c2..$m" 0 none -- EVENT_NAME=push BEFORE_SHA="$c2" AFTER_SHA="$m"
+check push-new-branch-merge-head "-1 $m" 0 none -- EVENT_NAME=push BEFORE_SHA="$zeros" AFTER_SHA="$m"
+check push-unreachable-all-f "" nz any -- EVENT_NAME=push BEFORE_SHA="$(printf 'f%.0s' {1..40})" AFTER_SHA="$m"
+check push-39-zeros-rejected "" 2 any -- EVENT_NAME=push BEFORE_SHA="${zeros:1}" AFTER_SHA="$c2"
+check push-41-zeros-rejected "" 2 any -- EVENT_NAME=push BEFORE_SHA="${zeros}0" AFTER_SHA="$c2"
+check push-option-injection-before "" 2 any -- EVENT_NAME=push BEFORE_SHA="--output=x" AFTER_SHA="$c2"
+check push-missing-after "" 2 any -- EVENT_NAME=push BEFORE_SHA="$c1"
+check pr-option-injection-head "" 2 any -- EVENT_NAME=pull_request BASE_SHA="$c1" HEAD_SHA="--upload-pack=x"
+check pr-uppercase-base "" 2 any -- EVENT_NAME=pull_request BASE_SHA="$c2_upper" HEAD_SHA="$c2"
+check pr-missing-head "" 2 any -- EVENT_NAME=pull_request BASE_SHA="$c1"
+check missing-event "" nz any -- BEFORE_SHA="$c1" AFTER_SHA="$c2"
 
 if [[ "$failures" -gt 0 ]]; then
   echo "$failures case(s) failed"
