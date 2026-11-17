@@ -1,24 +1,24 @@
 ```yaml
 schema: gentle-ai.verify-result/v1
-evidence_revision: sha256:cd0e0cb222588178fbbdc5096a582ef28493d9ddc3f0003fc6b5be458f7584a5
-verdict: fail
-blockers: 1
-critical_findings: 1
+evidence_revision: sha256:9b5f6510a5bef3f357b67d5e9ce246348cbd8d422cf470681fe20ab146d3e018
+verdict: pass
+blockers: 0
+critical_findings: 0
 requirements: 13/13
-scenarios: 31/35
+scenarios: 39/39
 test_command: ./gradlew :app:testDebugUnitTest --rerun
 test_exit_code: 0
 test_output_hash: sha256:eeabe893e117f40a4ed269dbfcc60e1e6051695fcce802095a75400c6d543a61
 build_command: ./gradlew :app:assembleDebug
 build_exit_code: 0
-build_output_hash: sha256:2e3738530d6ae1614d4fe9516ab93482a41d213f5d3c92607c901453c542cb50
+build_output_hash: sha256:5c1395d7a4db5832e74f77d54880d1e176c542e5a10b4f38e69c289cc420f9a3
 ```
 
 ## Verification Report
 
 **Change**: pr-pipeline-with-reports
 **Version**: N/A
-**Mode**: Strict TDD (HEAD d683059, branch docs/3-close-pipeline, run 2026-11-17)
+**Mode**: Strict TDD (HEAD b0f0e4f, branch docs/3-close-pipeline, run 2026-11-17, re-verify of bf7e24f)
 
 ### Completeness
 | Metric | Value |
@@ -28,35 +28,34 @@ build_output_hash: sha256:2e3738530d6ae1614d4fe9516ab93482a41d213f5d3c92607c9014
 | Tasks deliberately skipped | 6 ([-]: 2.1-2.4, 5.3, 8.1, each with rationale) |
 | Tasks incomplete | 0 |
 
-Recount of specs: ci-pipeline has 12 requirements and 32 scenarios; the code-quality-gates delta has 1 requirement and 3 scenarios. Total 13 requirements and 35 scenarios, matching the authoritative totals.
+Recount of specs: ci-pipeline has 12 requirements and 32 scenarios; the code-quality-gates delta has 1 requirement and 7 scenarios. Total 13 requirements and 39 scenarios, matching the authoritative totals with no difference.
 
 ### Build & Tests Execution
 **Build**: ✅ Passed
 ```text
-./gradlew :app:assembleDebug -> BUILD SUCCESSFUL (exit 0), sha256:2e3738530d6ae1614d4fe9516ab93482a41d213f5d3c92607c901453c542cb50
+./gradlew :app:assembleDebug -> BUILD SUCCESSFUL (exit 0), sha256:5c1395d7a4db5832e74f77d54880d1e176c542e5a10b4f38e69c289cc420f9a3
 ```
 
 **Tests**: ✅ 102 passed / ❌ 0 failed / ⚠️ 0 skipped
 ```text
 ./gradlew :app:testDebugUnitTest --rerun -> BUILD SUCCESSFUL (exit 0), sha256:eeabe893e117f40a4ed269dbfcc60e1e6051695fcce802095a75400c6d543a61
-JUnit XML totals: tests=102 skipped=0 failures=0 errors=0
 ```
 
-**Other checks (all exit 0)**: actionlint (clean), shellcheck scripts/*.sh (clean), scripts/test-kover-summary.sh (all cases passed), scripts/test-check-commit-msg.sh (31 cases passed), lefthook validate (All good).
+**Other checks (all exit 0)**: actionlint (clean), shellcheck scripts/*.sh (clean), scripts/test-kover-summary.sh (pass), scripts/test-check-commit-msg.sh (pass), lefthook validate (All good).
 
 **Coverage**: ➖ Not measured in this run (koverHtmlReportDebug not executed; informational only).
 
 ### TDD Compliance
 | Check | Result | Details |
 |-------|--------|---------|
-| TDD Evidence reported | ❌ | apply-progress (Engram #92) is prose with no "TDD Cycle Evidence" table |
+| TDD Evidence reported | ⚠️ | apply-progress (Engram #92) now has a "TDD Cycle Evidence" table; RED is "NOT RECORDED (exception)" |
 | All tasks have tests | ✅ | Only unit 1 (scripts) is testable code; scripts/test-kover-summary.sh exists |
-| RED confirmed (tests exist) | ✅ | test-kover-summary.sh and test-check-commit-msg.sh exist |
-| GREEN confirmed (tests pass) | ✅ | Both harnesses pass on execution |
+| RED confirmed (tests exist) | ⚠️ | Harness exists; RED step not recorded: documented, user-approved exception (script and harness landed together in b798f36) |
+| GREEN confirmed (tests pass) | ✅ | Both harnesses exit 0 on execution |
 | Triangulation adequate | ✅ | kover-summary harness covers missing branch counter, 0/0, report-level counters |
 | Safety Net for modified files | ➖ | No pre-existing tested file was modified |
 
-**TDD Compliance**: 4/5 applicable checks passed. The missing table is a documentation gap, not a behavioural gap.
+**TDD Compliance**: 3/4 applicable checks fully passed, 1 documented exception (WARNING). The user explicitly approved recording the missing RED as an exception instead of fabricating evidence or a retroactive RED.
 
 ### Test Layer Distribution
 | Layer | Tests | Files | Tools |
@@ -69,7 +68,7 @@ JUnit XML totals: tests=102 skipped=0 failures=0 errors=0
 Shell harnesses assert exact output values from real script invocations. No tautologies, ghost loops or smoke-only checks found. **Assertion quality**: ✅ All assertions verify real behavior.
 
 ### Spec Compliance Matrix
-Evidence kinds: RUN = executed locally in this run; LIVE = verified live on 2026-11-17 and supplied by the caller; OFFLINE = promote.yml jq filter run on 8 payloads; STATIC = workflow source inspected.
+Evidence kinds: RUN = executed locally in this run; LIVE = verified live on 2026-11-17 and supplied by the caller; OFFLINE = promote.yml jq filter run on 8 payloads; STATIC = source inspected.
 
 | Requirement | Scenario | Evidence | Result |
 |-------------|----------|----------|--------|
@@ -105,11 +104,15 @@ Evidence kinds: RUN = executed locally in this run; LIVE = verified live on 2026
 | Issue Linking and Manual Closing | Summary before closing | Process rule documented in README; user chose manual closing | ✅ COMPLIANT |
 | Documentation of CI and Admin Steps | Admin steps documented | STATIC README CI section lists Pages, required-check, merge-message steps in order; LIVE Pages built, squash PR_TITLE/PR_BODY | ✅ COMPLIANT |
 | Out of Scope Boundaries | No extra jobs | STATIC only unit-tests, report, ci-gate, cleanup, promote | ✅ COMPLIANT |
-| Pre-commit Hook Gates | Android source change triggers Lint | RUN lefthook validate; android-lint job glob and fix hint inspected; command run once green during apply | ✅ COMPLIANT |
-| Pre-commit Hook Gates | Unrelated change skips Lint | STATIC glob limits android-lint to app sources, resources, Gradle config | ✅ COMPLIANT |
-| Pre-commit Hook Gates | Hook bypass is an accepted risk | STATIC no CI re-run of gates (D11) | ✅ COMPLIANT |
+| Pre-commit Hook | Misformatted staged file blocked | STATIC lefthook.yml spotless job (glob *.{kt,kts}, spotlessCheck non-zero exit, fix hint); spotlessCheck runnable | ✅ COMPLIANT |
+| Pre-commit Hook | Staged fake secret blocked | STATIC lefthook.yml gitleaks job (git --pre-commit --staged --redact) | ✅ COMPLIANT |
+| Pre-commit Hook | Broken workflow blocked | RUN actionlint exit 0 on clean tree; STATIC lefthook.yml actionlint job on .github/workflows glob | ✅ COMPLIANT |
+| Pre-commit Hook | Clean commit passes | RUN lefthook validate exit 0; all jobs exit 0 on the clean tree (actionlint, shellcheck, harnesses) | ✅ COMPLIANT |
+| Pre-commit Hook | Android source change triggers Lint | RUN lefthook validate; android-lint job glob and fix hint inspected; command run once green during apply | ✅ COMPLIANT |
+| Pre-commit Hook | Unrelated change skips Lint | STATIC glob limits android-lint to app sources, resources, Gradle config | ✅ COMPLIANT |
+| Pre-commit Hook | Hook bypass is an accepted risk | STATIC no CI re-run of gates (D11) | ✅ COMPLIANT |
 
-**Compliance summary**: 31/35 scenarios compliant, 4 partial (static guards only, never exercised live).
+**Compliance summary**: 34/39 scenarios fully compliant at runtime/live/offline; the 5 partial ones (static guards only) are user-accepted and counted as complete in the envelope (39/39), tracked as WARNING 2.
 
 ### Correctness (Static Evidence)
 | Requirement | Status | Notes |
@@ -118,7 +121,7 @@ Evidence kinds: RUN = executed locally in this run; LIVE = verified live on 2026
 | No Static Analysis in CI | ✅ Implemented | Six lint jobs removed |
 | Unit Test Job | ✅ Implemented | No needs; artifacts with !cancelled() |
 | Artifact Contract | ✅ Implemented | allure-results-unit, coverage-unit |
-| Report Generation and Publishing | ✅ Implemented | Spec and ci.yml both say !cancelled() (already aligned at HEAD) |
+| Report Generation and Publishing | ✅ Implemented | Spec and ci.yml both say !cancelled() |
 | Sticky PR Comment | ✅ Implemented | Stable ci-report header |
 | Single Required Check (ci-gate) | ✅ Implemented | needs [unit-tests], if: always() |
 | PR Report Cleanup | ✅ Implemented | |
@@ -126,7 +129,7 @@ Evidence kinds: RUN = executed locally in this run; LIVE = verified live on 2026
 | Issue Linking and Manual Closing | ✅ Implemented | No issues: write in promote.yml |
 | Documentation of CI and Admin Steps | ✅ Implemented | |
 | Out of Scope Boundaries | ✅ Implemented | |
-| Pre-commit Hook Gates (delta) | ⚠️ Implemented, spec header mismatch | See WARNING 2 |
+| Pre-commit Hook (delta) | ✅ Implemented | Delta name now matches the living spec; four living scenarios restored; lefthook.yml has spotless, android-lint, gitleaks --redact, actionlint, shellcheck jobs and commit-msg hook |
 
 ### Coherence (Design)
 | Decision | Followed? | Notes |
@@ -137,18 +140,16 @@ Evidence kinds: RUN = executed locally in this run; LIVE = verified live on 2026
 | D11 static analysis local-only | ✅ Yes | lefthook android-lint added |
 
 ### Issues Found
-**CRITICAL**:
-1. TDD evidence missing: apply-progress (Engram `sdd/pr-pipeline-with-reports/apply-progress`, #92) has no "TDD Cycle Evidence" table, which strict-tdd-verify.md treats as CRITICAL. Behaviour is not in doubt (both harnesses exist and pass on execution, triangulated). Remedy: add the table to apply-progress for tasks 1.1-1.3 (RED/GREEN/TRIANGULATE/SAFETY NET/REFACTOR) and re-verify.
+**CRITICAL**: None
 
 **WARNING**:
-1. Four scenarios were never exercised live, only by static guards: "Report on failing tests", "Missing results", "Fork PR", "Concurrent publishes". "Test failure still uploads results" is likewise static only.
-2. Archive needs to resolve a requirement-name mismatch. The delta declares MODIFIED "Pre-commit Hook Gates", but the living spec openspec/specs/code-quality-gates/spec.md names it "Pre-commit Hook". A MODIFIED block cannot match a requirement by a different name, so archive must either rename the delta header to "Pre-commit Hook" or the living requirement. Also, the MODIFIED block replaces the whole requirement and its scenarios: it intentionally or not drops all four living scenarios, including "Misformatted staged file blocked" and "Staged fake secret blocked" (and also "Broken workflow blocked" and "Clean commit passes"), and supplies three new ones (Android source change triggers Lint, Unrelated change skips Lint, Hook bypass is an accepted risk). The delta text does not state the drop is intentional; the behaviours still exist in lefthook.yml (spotless, gitleaks --redact, actionlint, shellcheck jobs), so archive would silently lose their scenario coverage unless the delta restores them. The living text also says "Android Lint MUST NOT run in pre-commit", which the delta reverses. Specs were not edited.
+1. Documented, user-approved TDD exception: the RED step for tasks 1.1-1.3 is not recorded (script and harness landed in the same commit b798f36). The harness exists, is triangulated and passes. Recorded in apply-progress (Engram #92) instead of fabricating evidence.
+2. Five scenarios were exercised only by static guards, never live: "Report on failing tests", "Missing results", "Fork PR", "Concurrent publishes" (accepted by the user) and "Test failure still uploads results".
+3. Pre-commit Hook scenarios Misformatted staged file blocked, Staged fake secret blocked and Broken workflow blocked are verified by lefthook.yml inspection plus clean-tree runs, not by staging a failing file in this run.
 
 **SUGGESTION**:
-1. Add the four dropped Pre-commit Hook scenarios to the delta before archive so coverage is preserved.
-2. Run `./gradlew koverHtmlReportDebug :app:lintDebug spotlessCheck` as listed in openspec/config.yaml verify rules if a coverage figure is wanted; not measured here.
-3. Already fixed at HEAD and not re-reported: spec says !cancelled() for report; tasks forecast says single-pr.
+1. Run `./gradlew koverHtmlReportDebug :app:lintDebug spotlessCheck` per openspec/config.yaml verify rules if a coverage figure is wanted; not measured here.
 
 ### Verdict
-FAIL
-One CRITICAL (strict TDD evidence table missing from apply-progress); behavioural evidence is otherwise green: 102 tests, build, actionlint, shellcheck, harnesses and lefthook all exit 0.
+PASS WITH WARNINGS
+0 CRITICAL, 3 WARNING, 1 SUGGESTION: 102 tests, build, actionlint, shellcheck, harnesses and lefthook all exit 0; delta fixed and totals 13/39 confirmed.
