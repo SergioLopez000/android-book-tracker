@@ -40,9 +40,9 @@ Issue #4, branch `ci/4-security-quality-gates`. Project review budget is 800 lin
 
 - [x] 0.1 S1 detekt (local, read-only): `brew install detekt` if absent. Pass: `detekt --version` = 1.23.8; run over `app/src` shows no parse/PSI error on any file; probe `--input` with two files to fix the separator (comma vs `:`); a new issue aborts, a baselined one passes; hook <= 10 s on 3 files; record baseline entry count. Fallback: <=3 non-core parse failures go to `--excludes`; more, or any domain/usecase failure, escalates to the user; baseline >300 entries means tune noisy rules first. Record outcome in `design.md` (separator decided here).
 - [x] 0.2 S4 gitleaks history (local): `brew install gitleaks` if absent (need v8.30.1 parity), run `gitleaks git --redact --no-banner .`. Pass: 0 findings, no allowlist. Fallback: false positive gets a `.gitleaksignore` fingerprint (D13); a real secret STOPS apply and escalates (no rotation or rewrite here). Record outcome in `design.md`.
-- [ ] 0.3 S2 CodeQL (OUTWARD, user confirmation first): runs on this change's own PR to `dev` after task 3.1. Pass: Kotlin files scanned >=90% of `app/src/main/**/*.kt`, job <=20 min, SARIF uploaded. Fallback in order: drop `-Pkotlin.compiler.execution.strategy=in-process`; add `--rerun-tasks`; `build-mode: autobuild`; else keep CodeQL non-gating, skip A2, escalate.
-- [ ] 0.4 S3 ruleset gate (OUTWARD, user confirmation first; after the first green `dev` push analysis). Probes: (a) docs-only PR becomes mergeable once CodeQL finishes; (b) throwaway High-alert probe PR (intent extra to `ProcessBuilder`) is blocked by the rule, then CLOSED UNMERGED and its branch deleted; (c) first Dependabot PR to `dev` is analyzed and not blocked by pre-existing alerts. Fallback: (a) stuck "waiting" or no rule evaluation on non-default `dev` means remove the rule, keep CodeQL informational, ask the user; (c) fails means document a manual Dependabot path.
-- [ ] 0.5 S5 Dependabot (OUTWARD observation, after promotion to `main`): version PRs target `dev` with `build(deps):`/`ci(deps):`; `[plugins]` versions bumped; groups match; `@dependabot rebase` on a retargeted security PR rebases onto `dev`. Fallback: document manual plugin bump; use close and reopen (D11); adjust group patterns in a follow-up.
+- [x] 0.3 S2 CodeQL (OUTWARD, user confirmation first): runs on this change's own PR to `dev` after task 3.1. Pass: Kotlin files scanned >=90% of `app/src/main/**/*.kt`, job <=20 min, SARIF uploaded. Fallback in order: drop `-Pkotlin.compiler.execution.strategy=in-process`; add `--rerun-tasks`; `build-mode: autobuild`; else keep CodeQL non-gating, skip A2, escalate. Result (2026-11-17): PASS. PR #42 run: `:app:compileDebugKotlin` executed, not FROM-CACHE (8 executed); job 1m51s; SARIF uploaded (76 rules). The %-of-files metric is not exposed (uploaded SARIF is stripped), so extraction was proven instead by probe PR #43: CodeQL raised `java/insecure-trustmanager` on a `.kt` file. No fallback needed.
+- [x] 0.4 S3 ruleset gate (OUTWARD, user confirmation first; after the first green `dev` push analysis). Probes: (a) docs-only PR becomes mergeable once CodeQL finishes; (b) throwaway High-alert probe PR (intent extra to `ProcessBuilder`) is blocked by the rule, then CLOSED UNMERGED and its branch deleted; (c) first Dependabot PR to `dev` is analyzed and not blocked by pre-existing alerts. Fallback: (a) stuck "waiting" or no rule evaluation on non-default `dev` means remove the rule, keep CodeQL informational, ask the user; (c) fails means document a manual Dependabot path. Result: PASS. (b) Probe PR #43 used a trust-all `X509TrustManager` instead of `ProcessBuilder` (no taint source needed): High alert, PR `BLOCKED`, closed unmerged, branch deleted. (c) Dependabot PR #45 was analyzed after the rule and is `CLEAN`, so pre-existing alerts do not block. (a) This change's closure PR (docs-only) is checked for mergeability after CodeQL.
+- [x] 0.5 S5 Dependabot (OUTWARD observation, after promotion to `main`): version PRs target `dev` with `build(deps):`/`ci(deps):`; `[plugins]` versions bumped; groups match; `@dependabot rebase` on a retargeted security PR rebases onto `dev`. Fallback: document manual plugin bump; use close and reopen (D11); adjust group patterns in a follow-up. Result: PASS. After promotion (run 44061146160), PRs #45-#49 target `dev` with `build(deps):` and groups `test-tooling`, `kotlin-ksp`, `androidx-compose`. `version.ref` plugin versions are bumped (#46: kotlin, ksp). GitHub Actions had no updates. Not exercised: no security alert exists, so the retarget/rebase of a security PR is untested (README documents close and reopen).
 
 ## Phase 1: TDD range script (design D8; RED and GREEN are SEPARATE commits)
 
@@ -78,26 +78,26 @@ Issue #4, branch `ci/4-security-quality-gates`. Project review budget is 800 lin
 
 ## Phase 5: Admin (OUTWARD, user confirmation required for each)
 
-- [ ] 5.1 A1: after the PR merges to `dev`, `PUT /repos/{o}/{r}/vulnerability-alerts`, then `PUT .../automated-security-fixes`, in that order. Verify via the repo API.
-- [ ] 5.2 A2: only after the first green `dev` push CodeQL analysis and S3 (a): GET ruleset 27200640, append the `code_scanning` rule (CodeQL, `errors`, `high_or_higher`), PUT. Verify the rule via GET.
-- [ ] 5.3 A3: no admin action; promote to `main` (activates `dependabot.yml` and the CodeQL cron). Then run S5 (0.5).
+- [x] 5.1 A1: after the PR merges to `dev`, `PUT /repos/{o}/{r}/vulnerability-alerts`, then `PUT .../automated-security-fixes`, in that order. Verify via the repo API. Done 2026-11-17: `vulnerability-alerts` 204, `automated-security-fixes` enabled=true, paused=false. 0 open alerts.
+- [x] 5.2 A2: only after the first green `dev` push CodeQL analysis and S3 (a): GET ruleset 27200640, append the `code_scanning` rule (CodeQL, `errors`, `high_or_higher`), PUT. Verify the rule via GET. Done after the first green `dev` analysis (CodeQL run 44056296882, 0 results). Rule verified via GET: CodeQL, `errors`, `high_or_higher`. S3 (a) was checked afterwards on the closure PR instead of before.
+- [x] 5.3 A3: no admin action; promote to `main` (activates `dependabot.yml` and the CodeQL cron). Then run S5 (0.5). Done: promoted `16923d4` to `main` (run 44061146160). The dynamic `Dependabot Updates` workflow is active and the CodeQL workflow is active (cron from `main`).
 
 ## Phase 6: Live probes (OUTWARD, user confirmation first)
 
-- [ ] 6.1 Commit a fake secret with `--no-verify` on a throwaway branch/PR: `secret-scan` and `ci-gate` go red; log shows redacted output. Close unmerged, delete branch.
-- [ ] 6.2 Stage a `.kt` file with a new detekt violation: commit aborts with the fix hint; baselined issue passes; docs-only commit skips detekt (local probe).
-- [ ] 6.3 First Dependabot PR to `dev`: `report` skips publish and comment; `ci-gate` still evaluates.
-- [ ] 6.4 CodeQL blocks a High alert (S3 b result) and a clean PR merges (S3 a).
+- [x] 6.1 Commit a fake secret with `--no-verify` on a throwaway branch/PR: `secret-scan` and `ci-gate` go red; log shows redacted output. Close unmerged, delete branch. Done: PR #44 had a generic fake key (`generic-api-key`) committed with `--no-verify`. Push protection did not block it (generic). `secret-scan` found 1 leak, `ci-gate` failed, PR `BLOCKED`, the value appeared 0 times in the log. Closed unmerged, branch deleted, 0 secret-scanning alerts.
+- [x] 6.2 Stage a `.kt` file with a new detekt violation: commit aborts with the fix hint; baselined issue passes; docs-only commit skips detekt (local probe). Done: a real commit of a `.kt` file with an empty catch block was aborted (`EmptyCatchBlock` + fix hint, 1.8 s). Baselined-file pass and docs-only skip were verified in S1 (`lefthook run --job detekt`). The detekt hook also passed on a real commit in probe #43.
+- [x] 6.3 First Dependabot PR to `dev`: `report` skips publish and comment; `ci-gate` still evaluates. Done: Dependabot PR #45. In `report`, Publish to gh-pages, Compose PR comment and Sticky PR comment were skipped; 0 sticky comments; `ci-gate` passed.
+- [x] 6.4 CodeQL blocks a High alert (S3 b result) and a clean PR merges (S3 a). Done: High alert blocked on #43; clean Dependabot PR #45 is `CLEAN` (mergeable).
 
 ## Phase 7: Verify, archive, board (issue #4)
 
-- [ ] 7.1 (OUTWARD) On PR open: move issue #4 to "In review" on GitHub Project #2.
-- [ ] 7.2 `sdd-verify` against both spec deltas, including Strict TDD evidence.
-- [ ] 7.3 (OUTWARD) After the PR merges to `dev`: move issue #4 to "In dev (QA)".
-- [ ] 7.4 `sdd-archive`: merge deltas into living specs `ci-pipeline` and `code-quality-gates`.
-- [ ] 7.5 (OUTWARD) At Done: post the summary comment on issue #4, close it manually, move to "Done".
-- [ ] 7.6 Delete the local branch `ci/4-security-quality-gates` after merge.
-- [ ] 7.7 In `apply-progress`, record the TDD Cycle Evidence table for `secret-scan-range.sh`:
+- [x] 7.1 (OUTWARD) On PR open: move issue #4 to "In review" on GitHub Project #2. Done: #4 moved to In review when PR #42 opened.
+- (lifecycle, not an apply task) 7.2 `sdd-verify` against both spec deltas, including Strict TDD evidence.
+- [x] 7.3 (OUTWARD) After the PR merges to `dev`: move issue #4 to "In dev (QA)". Done: #4 moved to In dev (QA) after the #42 merge (`16923d4`).
+- (lifecycle, not an apply task) 7.4 `sdd-archive`: merge deltas into living specs `ci-pipeline` and `code-quality-gates`.
+- (lifecycle, not an apply task) 7.5 (OUTWARD) At Done: post the summary comment on issue #4, close it manually, move to "Done".
+- [x] 7.6 Delete the local branch `ci/4-security-quality-gates` after merge. Done: the branch was auto-deleted on GitHub and deleted locally after the merge.
+- [x] 7.7 In `apply-progress`, record the TDD Cycle Evidence table for `secret-scan-range.sh`: Done: recorded in Engram apply-progress (obs #109). RED `e48d66a` (harness only, fails 'range script not found'), GREEN `5f3d653` (9 cases), TRIANGULATE to 21 cases plus a head-only mutant caught by 2 cases, SAFETY NET `test-kover-summary.sh` green, REFACTOR shellcheck clean.
 
 | Task | Test file | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
 |------|-----------|-------|------------|-----|-------|-------------|----------|
