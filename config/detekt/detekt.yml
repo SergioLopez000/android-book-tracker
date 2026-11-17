@@ -1,0 +1,40 @@
+# Overrides only; always run with --build-upon-default-config (see lefthook.yml).
+# Style and formatting belong to Spotless/ktlint, so the duplicate rules stay off.
+style:
+  MaxLineLength:
+    active: false
+  NewLineAtEndOfFile:
+    active: false
+  WildcardImport:
+    active: false
+  UnusedImports:
+    active: false
+  ModifierOrder:
+    active: false
+  TrailingWhitespace:
+    active: false
+  NoTabs:
+    active: false
+  SpacingBetweenPackageAndImports:
+    active: false
+  # Compose tuning
+  MagicNumber:
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+  UnusedPrivateMember:
+    ignoreAnnotated: ['Preview']
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+  TopLevelPropertyNaming:
+    constantPattern: '[A-Z][A-Za-z0-9]*'
+
+complexity:
+  LongParameterList:
+    functionThreshold: 8
+    ignoreDefaultParameters: true
+  LongMethod:
+    ignoreAnnotated: ['Composable']
+  TooManyFunctions:
+    ignoreAnnotatedFunctions: ['Preview']

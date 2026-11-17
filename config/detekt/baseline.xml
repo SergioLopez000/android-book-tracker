@@ -1,0 +1,23 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>LongParameterList:BookEditScreen.kt$( state: BookEditUiState, onTitleChanged: (String) -&gt; Unit, onAuthorChanged: (String) -&gt; Unit, onRatingChanged: (Float) -&gt; Unit, onReviewChanged: (String) -&gt; Unit, onSearchQueryChanged: (String) -&gt; Unit, onSearchRequested: () -&gt; Unit, onResultSelected: (BookMetadata) -&gt; Unit, onSaveRequested: () -&gt; Unit, onCancelRequested: () -&gt; Unit, modifier: Modifier = Modifier )</ID>
+    <ID>MagicNumber:HttpUrlConnectionClient.kt$HttpUrlConnectionClient$200</ID>
+    <ID>MagicNumber:HttpUrlConnectionClient.kt$HttpUrlConnectionClient$299</ID>
+    <ID>MagicNumber:StarRating.kt$0.5f</ID>
+    <ID>MagicNumber:StarRating.kt$5</ID>
+    <ID>ReturnCount:SaveBookUseCase.kt$SaveBookUseCase$suspend operator fun invoke(request: SaveBookRequest): SaveBookOutcome</ID>
+    <ID>SwallowedException:SaveBookUseCase.kt$SaveBookUseCase$invalid: IllegalArgumentException</ID>
+    <ID>TooManyFunctions:BookEditViewModel.kt$BookEditViewModel : ViewModel</ID>
+    <ID>TopLevelPropertyNaming:MainActivity.kt$// Sentinel for "no book id" (add mode) — NavType.LongType has no nullable // variant, so the optional edit argument (design: "edit takes an optional // bookId arg for edit-vs-add mode") is modeled as this out-of-range default. private const val NO_BOOK_ID = -1L</ID>
+    <ID>TopLevelPropertyNaming:MainActivity.kt$private const val ARG_BOOK_ID = "bookId"</ID>
+    <ID>TopLevelPropertyNaming:MainActivity.kt$private const val ROUTE_EDIT = "edit"</ID>
+    <ID>TopLevelPropertyNaming:MainActivity.kt$private const val ROUTE_LIST = "list"</ID>
+    <ID>TopLevelPropertyNaming:StarRating.kt$private const val INNER_RADIUS_RATIO = 0.4f</ID>
+    <ID>TopLevelPropertyNaming:StarRating.kt$private const val STAR_COUNT = 5</ID>
+    <ID>TopLevelPropertyNaming:StarRating.kt$private const val STAR_STROKE_WIDTH_DP = 2f</ID>
+    <ID>UnusedParameter:BookListScreen.kt$onMinRatingSelected: (Float) -&gt; Unit</ID>
+    <ID>UnusedParameter:BookListScreen.kt$onSortSelected: (BookSort) -&gt; Unit</ID>
+  </CurrentIssues>
+</SmellBaseline>
