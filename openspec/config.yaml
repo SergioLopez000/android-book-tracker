@@ -26,6 +26,7 @@ testing:
     linter: { available: true, command: "./gradlew :app:lintDebug" }
     type_checker: { available: true, command: "Kotlin compiler (./gradlew :app:compileDebugKotlin)" }
     formatter: { available: true, command: "./gradlew spotlessCheck" }
+    static_analysis: { available: true, tool: "detekt 1.23.8 CLI (brew)", command: "detekt --input app/src --config config/detekt/detekt.yml --build-upon-default-config --baseline config/detekt/baseline.xml" }
 
 rules:
   proposal:
@@ -40,5 +41,6 @@ rules:
     - Write a failing test, make it pass, then refactor. Run ./gradlew :app:testDebugUnitTest.
   verify:
     - Run ./gradlew :app:testDebugUnitTest; also ./gradlew spotlessCheck :app:lintDebug koverHtmlReportDebug.
+    - Run detekt (quality.static_analysis.command); it must report no new issues beyond config/detekt/baseline.xml.
   archive:
     - Do not modify archived changes.
