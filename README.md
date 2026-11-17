@@ -154,6 +154,16 @@ unit-tests ──> ci-gate  (check requerido)
 
 Reportes publicados: `https://<usuario>.github.io/android-book-tracker/pr-<N>/allure/` y `.../kover/` (o `dev/` para la rama `dev`).
 
+### Flujo de issues
+
+GitHub solo interpreta `Closes #N` en PRs hacia la rama por defecto (`main`); en un PR hacia `dev` la palabra clave se ignora y no crea enlace. Por eso:
+
+1. **Enlace**: crea la rama desde el issue con `gh issue develop <N> --base dev --name <tipo>/<N>-<slug> --checkout`. La rama y su PR aparecen en la sección *Development* del issue.
+2. **Cierre**: la descripción del PR incluye `Closes #N`. Con squash merge, el mensaje del commit en `dev` es la descripción del PR, y el issue se cierra cuando ese commit llega a `main` mediante `promote.yml`.
+3. **Resumen**: antes de pasar el issue a *Done*, se publica en él un comentario con lo hecho (PRs, cambios principales y cómo se verificó).
+
+Estados del tablero: *In progress* (inicio) → *In review* (primer PR) → *In dev (QA)* (fusionado a `dev`) → *Done* (`qa:approved` y promovido a staging).
+
 ### Contrato de artefactos
 
 | Artefacto | Contenido |
