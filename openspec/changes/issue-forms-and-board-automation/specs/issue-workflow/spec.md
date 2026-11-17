@@ -6,12 +6,22 @@ Structured issue intake through GitHub issue forms, and automation of only the I
 ## ADDED Requirements
 
 ### Requirement: Feature Issue Form
-`.github/ISSUE_TEMPLATE/feature.yml` MUST define a form with: a user story, acceptance criteria in Given/When/Then, a QA checklist, and a Definition of Done checklist that MUST NOT mention SonarCloud.
+`.github/ISSUE_TEMPLATE/feature.yml` MUST define a form with: a user story, acceptance criteria in Given/When/Then, a QA checklist (checkboxes: tested in dev on a device or emulator, acceptance scenarios checked, edge and error states checked, result recorded in a comment), optional QA notes, and a Definition of Done checklist with exactly these items: SDD change linked, tests written first and green in CI, local hooks plus CodeQL and secret-scan green, manual QA in dev recorded in a comment, `qa:approved` added and promoted to staging. The Definition of Done MUST NOT mention SonarCloud.
 
 #### Scenario: Feature form fields
 - GIVEN `feature.yml`
 - WHEN its fields are listed
 - THEN it has user story, Given/When/Then, QA checklist and Definition of Done fields
+
+#### Scenario: QA is a checklist
+- GIVEN `feature.yml`
+- WHEN the QA field is read
+- THEN it is a checkboxes field with the four QA items, and free-text QA notes are optional
+
+#### Scenario: DoD matches the project workflow
+- GIVEN `feature.yml`
+- WHEN its Definition of Done is read
+- THEN it lists SDD change linked, tests first and green in CI, hooks plus CodeQL and secret-scan green, manual QA recorded, and `qa:approved` plus promotion
 
 #### Scenario: DoD without SonarCloud
 - GIVEN `feature.yml`
