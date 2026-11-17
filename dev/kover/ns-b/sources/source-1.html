@@ -5,7 +5,7 @@
 <html id="htmlId">
 <head>
   <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
-  <title>app Coverage Report > BookMetadataSource</title>
+  <title>app Coverage Report > BookRepository</title>
   <style type="text/css">
     @import "../../css/coverage.css";
     @import "../../css/idea.min.css";
@@ -22,7 +22,7 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
     <a href="../index.html">com.librosleidos.domain.port</a>
 </div>
 
-<h1>Coverage Summary for Class: BookMetadataSource (com.librosleidos.domain.port)</h1>
+<h1>Coverage Summary for Class: BookRepository (com.librosleidos.domain.port)</h1>
 
 <table class="coverageStats">
 <tr>
@@ -33,7 +33,7 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
 </th>
 </tr>
 <tr>
-  <td class="name">BookMetadataSource</td>
+  <td class="name">BookRepository</td>
     <td class="coverageStat"/>
 </tr>
 
@@ -46,18 +46,22 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
 <pre>
 <code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.domain.port
 &nbsp;
-&nbsp;import com.librosleidos.domain.model.BookMetadata
+&nbsp;import com.librosleidos.domain.model.Book
+&nbsp;import com.librosleidos.domain.model.BookSort
+&nbsp;import kotlinx.coroutines.flow.Flow
 &nbsp;
 &nbsp;/**
-&nbsp; * Metadata lookup port (design: Interfaces / Contracts). Implemented by
-&nbsp; * `data/remote/OpenLibraryMetadataSource`, `GoogleBooksMetadataSource` and
-&nbsp; * their `ChainedMetadataSource` composite in Phase 4.
+&nbsp; * Persistence port for [Book]s (design: Interfaces / Contracts). Implemented
+&nbsp; * by `data/local/BookRepositoryImpl` in Phase 3 against Room.
 &nbsp; *
-&nbsp; * Returns [Result] rather than a bare list so callers can distinguish a
-&nbsp; * provider failure from a genuine no-match (design D3).
+&nbsp; * Task 4.3 (design D8): `fromEpochDay` is a nullable lower bound over
+&nbsp; * `dateFinished` — `null` means no date-range constraint (&quot;histórico&quot;).
 &nbsp; */
-&nbsp;interface BookMetadataSource {
-&nbsp;    suspend fun search(query: String): Result&lt;List&lt;BookMetadata&gt;&gt;
+&nbsp;interface BookRepository {
+&nbsp;    fun observeBooks(sort: BookSort, minRating: Float, fromEpochDay: Long?): Flow&lt;List&lt;Book&gt;&gt;
+&nbsp;    suspend fun findById(id: Long): Book?
+&nbsp;    suspend fun save(book: Book): Long
+&nbsp;    suspend fun delete(id: Long)
 &nbsp;}
 </code>
 </pre>
@@ -82,7 +86,7 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2026-11-17 11:57</div>
+    <div style="float:right;">generated on 2026-11-17 12:01</div>
 </div>
 </body>
 </html>
