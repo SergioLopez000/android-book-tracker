@@ -1,7 +1,7 @@
 ## Capability: code-quality-gates
 
 ### Purpose
-Local quality gates (format, Android Lint, Compose lint, coverage report, secret scan, workflow lint, commit-message check) where existing debt is baselined and passes, and new violations fail with a non-zero exit code.
+Local quality gates (format, Android Lint, detekt, Compose lint, coverage report, secret scan, workflow lint, commit-message check) where existing debt is baselined and passes, and new violations fail with a non-zero exit code. Secrets are additionally scanned in CI (see `ci-pipeline`).
 
 ## ADDED Requirements
 
@@ -88,7 +88,7 @@ The build MUST provide Kover reports `koverHtmlReportDebug` and `koverXmlReportD
 - THEN no task fails because of low coverage
 
 ### Requirement: Pre-commit Hook
-The `lefthook` `pre-commit` hook MUST run, in parallel: `spotlessCheck` (Kotlin/Gradle sources), Android Lint (`./gradlew --quiet :app:lintDebug`, only when staged files match Android sources, resources or Gradle configuration globs), gitleaks on staged changes, actionlint (workflow files) and shellcheck with the commit-msg script test (shell files). Each job MUST exit non-zero, with a message explaining how to fix it, when its gate fails. The `commit-msg` hook MUST validate Conventional Commits. These hooks are the only enforcement point of static analysis; CI does not repeat them (see `ci-pipeline`).
+The `lefthook` `pre-commit` hook MUST run, in parallel: `spotlessCheck` (Kotlin/Gradle sources), Android Lint (`./gradlew --quiet :app:lintDebug`, only when staged files match Android sources, resources or Gradle configuration globs), detekt (staged `.kt` files, see Detekt Gate With Baseline), gitleaks on staged changes, actionlint (workflow files) and shellcheck with the commit-msg script test (shell files). Each job MUST exit non-zero, with a message explaining how to fix it, when its gate fails. The `commit-msg` hook MUST validate Conventional Commits. These hooks are the only enforcement point of quality static analysis; CI does not repeat them (see `ci-pipeline`). Secrets are the exception: gitleaks also runs in CI, so bypassing the hook does not let a secret through.
 
 #### Scenario: Misformatted staged file blocked
 - GIVEN a staged misformatted Kotlin file
@@ -120,10 +120,15 @@ The `lefthook` `pre-commit` hook MUST run, in parallel: `spotlessCheck` (Kotlin/
 - WHEN `git commit` runs the pre-commit hook
 - THEN the Android Lint job is skipped
 
-#### Scenario: Hook bypass is an accepted risk
+#### Scenario: Staged Kotlin triggers detekt
+- GIVEN a staged `.kt` file
+- WHEN `git commit` runs the pre-commit hook
+- THEN the detekt job runs in parallel with the other jobs
+
+#### Scenario: Hook bypass is an accepted risk for quality only
 - GIVEN a commit made with `--no-verify`
 - WHEN it reaches the remote
-- THEN no CI job re-runs the gates (accepted risk, recorded in the proposal)
+- THEN no CI job re-runs the quality gates (accepted risk), but `secret-scan` still scans it for secrets
 
 ### Requirement: Commit-message Hook
 The repository MUST provide a lefthook `commit-msg` hook backed by `scripts/check-commit-msg.sh` that validates the first line of the message. A valid first line is `type(scope)!: description`, where `type` is exactly one of `feat fix docs style refactor perf test build ci chore revert`, `(scope)` is optional, `!` is optional, and the description is non-empty. Messages beginning with `Merge`, `Revert`, or `fixup!`/`squash!`/`amend!` (git autosquash prefixes) MUST also be accepted. Other messages MUST be rejected with a non-zero exit and an explanatory message.
@@ -177,14 +182,42 @@ Adding the quality tooling MUST NOT change runtime behavior or break existing te
 - THEN it exits 0
 
 ### Requirement: Documented Setup
-`README.md` MUST document contributor setup (installing `lefthook`, `gitleaks`, `actionlint`, `shellcheck`; running `lefthook install`) and the commands for format check, lint, coverage report and tests, and lint-baseline regeneration. `openspec/config.yaml` MUST reflect the available formatter, linter and coverage tooling.
+`README.md` MUST document contributor setup (installing `lefthook`, `gitleaks`, `actionlint`, `shellcheck`, `detekt`; running `lefthook install`) and the commands for format check, lint, detekt, coverage report and tests, and lint-baseline regeneration. `openspec/config.yaml` MUST reflect the available formatter, linter, static analyzer and coverage tooling.
 
 #### Scenario: README lists setup and commands
 - GIVEN `README.md`
 - WHEN it is read
-- THEN it names the four binaries, `lefthook install`, `spotlessCheck`, `:app:lintDebug`, `koverHtmlReportDebug`, and `:app:testDebugUnitTest`
+- THEN it names the five binaries, `lefthook install`, `spotlessCheck`, `:app:lintDebug`, the detekt command, `koverHtmlReportDebug`, and `:app:testDebugUnitTest`
 
 #### Scenario: Config reflects tooling
 - GIVEN `openspec/config.yaml`
 - WHEN it is read
-- THEN formatter, linter and coverage are no longer marked unavailable
+- THEN formatter, linter, detekt and coverage are no longer marked unavailable
+
+### Requirement: Detekt Gate With Baseline
+The repository MUST provide detekt 1.23.8 configuration in `config/detekt/detekt.yml` and a baseline in `config/detekt/baseline.xml`. detekt MUST run through the detekt CLI as a lefthook pre-commit job over staged `.kt` files only, MUST NOT enable the ktlint-wrapper rules, and MUST have style rules duplicating ktlint disabled and Compose-friendly naming allowed. Issues in the baseline MUST NOT fail the job; any new issue MUST fail it with a non-zero exit and a message that prints how to fix it.
+
+#### Scenario: Baselined tree passes
+- GIVEN staged `.kt` files whose only detekt issues are in the baseline
+- WHEN the pre-commit hook runs
+- THEN the detekt job exits 0
+
+#### Scenario: New issue fails with fix hint
+- GIVEN a staged `.kt` file with a detekt issue absent from the baseline
+- WHEN the pre-commit hook runs
+- THEN the detekt job exits non-zero, reports the issue and prints a fix hint
+
+#### Scenario: Non-Kotlin change skips detekt
+- GIVEN only non-`.kt` files are staged
+- WHEN the pre-commit hook runs
+- THEN the detekt job is skipped
+
+#### Scenario: Composable PascalCase name allowed
+- GIVEN a staged `@Composable` function named in PascalCase
+- WHEN detekt runs
+- THEN no naming issue is reported for it
+
+#### Scenario: Not repeated in CI
+- GIVEN the merged workflows
+- WHEN their steps are inspected
+- THEN no workflow runs detekt
