@@ -5,9 +5,29 @@ Delta for change `pr-pipeline-with-reports`: static analysis runs only locally, 
 
 ## MODIFIED Requirements
 
-### Requirement: Pre-commit Hook Gates
+### Requirement: Pre-commit Hook
 The `lefthook` `pre-commit` hook MUST run, in parallel: `spotlessCheck` (Kotlin/Gradle sources), Android Lint (`./gradlew --quiet :app:lintDebug`, only when staged files match Android sources, resources or Gradle configuration globs), gitleaks on staged changes, actionlint (workflow files) and shellcheck with the commit-msg script test (shell files). Each job MUST exit non-zero, with a message explaining how to fix it, when its gate fails. The `commit-msg` hook MUST validate Conventional Commits. These hooks are the only enforcement point of static analysis; CI does not repeat them (see `ci-pipeline`).
 (Previously: the pre-commit hook ran spotlessCheck, gitleaks, actionlint and shellcheck; Android Lint ran only on demand and in CI.)
+
+#### Scenario: Misformatted staged file blocked
+- GIVEN a staged misformatted Kotlin file
+- WHEN the pre-commit hook runs
+- THEN it exits non-zero
+
+#### Scenario: Staged fake secret blocked
+- GIVEN a staged file containing a fake secret matching a gitleaks rule
+- WHEN the pre-commit hook runs
+- THEN it exits non-zero and the secret value is redacted in the output
+
+#### Scenario: Broken workflow blocked
+- GIVEN a staged `.github/workflows/*.yml` file with an actionlint error
+- WHEN the pre-commit hook runs
+- THEN it exits non-zero and reports the actionlint error
+
+#### Scenario: Clean commit passes
+- GIVEN staged files that are formatted, secret-free and valid
+- WHEN the pre-commit hook runs
+- THEN it exits 0
 
 #### Scenario: Android source change triggers Lint
 - GIVEN a staged `.kt`, `.kts` or `.xml` file under `app/`
