@@ -158,7 +158,7 @@ Reportes publicados: `https://<usuario>.github.io/android-book-tracker/pr-<N>/al
 
 GitHub solo interpreta `Closes #N` en PRs hacia la rama por defecto (`main`); en un PR hacia `dev` la palabra clave se ignora y no crea enlace. Por eso:
 
-1. **Enlace**: crea la rama desde el issue con `gh issue develop <N> --base dev --name <tipo>/<N>-<slug> --checkout`. La rama y su PR aparecen en la sección *Development* del issue.
+1. **Enlace**: crea la rama desde el issue con `gh issue develop <N> --base dev --name <tipo>/<N>-<slug> --checkout`. La rama aparece en la sección *Development* del issue y el PR queda en su historial gracias a la mención `#N` de la descripción. La API de GitHub no permite enlazar un PR hacia `dev` en *Development*; solo se puede hacer a mano desde la web.
 2. **Cierre**: la descripción del PR incluye `Closes #N`. Con squash merge, el mensaje del commit en `dev` es la descripción del PR, y el issue se cierra cuando ese commit llega a `main` mediante `promote.yml`.
 3. **Resumen**: antes de pasar el issue a *Done*, se publica en él un comentario con lo hecho (PRs, cambios principales y cómo se verificó).
 
