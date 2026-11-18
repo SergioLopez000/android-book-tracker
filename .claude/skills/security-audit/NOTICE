@@ -1,0 +1,6 @@
+security-audit skill
+
+This skill is vendored unmodified from
+https://github.com/cloudflare/security-audit-skill (skills/security-audit),
+commit c1c8a8c1471069fb0e188eeaff69b8e8db6564a8 (2026-09-14),
+licensed under the MIT License. A copy of the license is in LICENSE.txt.
