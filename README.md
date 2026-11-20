@@ -3,7 +3,7 @@
 [![Android Build](https://img.shields.io/badge/Platform-Android-green.svg?style=flat-square)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-blue.svg?style=flat-square)](https://kotlinlang.org)
 [![TDD](https://img.shields.io/badge/Methodology-Strict_TDD-red.svg?style=flat-square)](#-disciplina-strict-tdd)
-[![Tests Passing](https://img.shields.io/badge/Tests-101%20/%20101%20Passed-brightgreen.svg?style=flat-square)](#-testing-strategy)
+[![Tests Passing](https://img.shields.io/badge/Tests-102%20/%20102%20Passed-brightgreen.svg?style=flat-square)](#-testing-strategy)
 
 **Rincón de Lectura** es una aplicación Android nativa, local-first y de un solo usuario, diseñada como biblioteca personal para registrar, calificar y reseñar libros leídos. 
 
@@ -64,7 +64,7 @@ Cada caso de uso, consulta SQL, mapeo de datos, lógica de ViewModel y comportam
 | **ViewModel (Unit)** | Transiciones de estado de interfaz (`UiState`), re-consultas reactivas. | Kotlin Coroutines Test + Turbine | Evaluación de flujos asíncronos (`StateFlow`). |
 | **Compose UI (Integration)** | Renderizado del tema oscuro, interacciones táctiles en estrellas, flujos de diálogo. | Robolectric + `createComposeRule` + `CoilTestRule` | Pruebas visuales y de interacción sobre la JVM sin emulador. |
 
-Actualmente la suite cuenta con **101 tests unitarios y de integración con 100% de éxito**.
+Actualmente la suite cuenta con **102 tests unitarios y de integración con 100% de éxito**.
 
 ---
 
