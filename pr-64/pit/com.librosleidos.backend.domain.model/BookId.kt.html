@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <link rel="stylesheet" type="text/css" href="../style.css">
+</head>
+<body>
+
+
+<h1>BookId.kt</h1>
+
+<table class="src">
+
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@1b7c473a_1'/>
+1
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@1b7c473a_1'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>package com.librosleidos.backend.domain.model</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@1b7c473a_2'/>
+2
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@1b7c473a_2'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''></span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@1b7c473a_3'/>
+3
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@1b7c473a_3'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>@JvmInline</span></pre></td></tr>
+
+<tr>
+<td class='uncovered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@1b7c473a_4'/>
+4
+</td>
+<td class='survived'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@1b7c473a_4'>1</a>
+<span>
+1. getValue : replaced long return with 0 for com/librosleidos/backend/domain/model/BookId::getValue &rarr; NO_COVERAGE<br/>
+
+</span>
+</span>
+</td>
+<td class='uncovered'><pre><span  class='survived'>value class BookId(val value: Long) {</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@1b7c473a_5'/>
+5
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@1b7c473a_5'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    init {</span></pre></td></tr>
+
+<tr>
+<td class='covered'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@1b7c473a_6'/>
+6
+</td>
+<td class='killed'>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@1b7c473a_6'>4</a>
+<span>
+1. constructor-impl : negated conditional &rarr; KILLED<br/>
+2. constructor-impl : replaced long return with 0 for com/librosleidos/backend/domain/model/BookId::constructor-impl &rarr; KILLED<br/>
+3. constructor-impl : negated conditional &rarr; KILLED<br/>
+4. constructor-impl : changed conditional boundary &rarr; KILLED<br/>
+
+</span>
+</span>
+</td>
+<td class='covered'><pre><span  class='killed'>        require(value &#62; 0) { &#34;BookId must be positive&#34; }</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@1b7c473a_7'/>
+7
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@1b7c473a_7'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>    }</span></pre></td></tr>
+
+<tr>
+<td class='na'>
+<a name='org.pitest.mutationtest.report.html.SourceFile@1b7c473a_8'/>
+8
+</td>
+<td class=''>
+<span class='pop'>
+<a href='#grouporg.pitest.mutationtest.report.html.SourceFile@1b7c473a_8'></a>
+<span>
+</span>
+</span>
+</td>
+<td class=''><pre><span  class=''>}</span></pre></td></tr>
+
+
+
+<tr><td></td><td></td><td><h2>Mutations</h2></td></tr>
+
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@1b7c473a_4'>4</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@1b7c473a_4'/> 
+
+<p class='NO_COVERAGE'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>getValue<br/><b>Killed by : </b>none</span></span> replaced long return with 0 for com/librosleidos/backend/domain/model/BookId::getValue &rarr; NO_COVERAGE</span>
+</div> 
+</td>
+</tr>
+<tr>
+<td><a href='#org.pitest.mutationtest.report.html.SourceFile@1b7c473a_6'>6</a></td> 
+<td></td>
+<td>
+
+<a name='grouporg.pitest.mutationtest.report.html.SourceFile@1b7c473a_6'/> 
+
+<p class='KILLED'><span class='pop'>1.<span><b>1</b><br/><b>Location : </b>constructor-impl<br/><b>Killed by : </b>com.librosleidos.backend.domain.model.ValueObjectsTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.model.ValueObjectsTest]/[method:book id must be positive()]</span></span> negated conditional &rarr; KILLED</span>
+</div> <p class='KILLED'><span class='pop'>2.<span><b>2</b><br/><b>Location : </b>constructor-impl<br/><b>Killed by : </b>com.librosleidos.backend.domain.model.ValueObjectsTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.model.ValueObjectsTest]/[method:book id must be positive()]</span></span> replaced long return with 0 for com/librosleidos/backend/domain/model/BookId::constructor-impl &rarr; KILLED</span>
+</div> <p class='KILLED'><span class='pop'>3.<span><b>3</b><br/><b>Location : </b>constructor-impl<br/><b>Killed by : </b>com.librosleidos.backend.domain.model.ValueObjectsTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.model.ValueObjectsTest]/[method:book id must be positive()]</span></span> negated conditional &rarr; KILLED</span>
+</div> <p class='KILLED'><span class='pop'>4.<span><b>4</b><br/><b>Location : </b>constructor-impl<br/><b>Killed by : </b>com.librosleidos.backend.domain.model.ValueObjectsTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.model.ValueObjectsTest]/[method:book id must be positive()]</span></span> changed conditional boundary &rarr; KILLED</span>
+</div> 
+</td>
+</tr>
+
+</table>
+
+
+<h2>Active mutators</h2>
+<ul>
+<li class='mutator'>CONDITIONALS_BOUNDARY</li>
+<li class='mutator'>EMPTY_RETURNS</li>
+<li class='mutator'>FALSE_RETURNS</li>
+<li class='mutator'>INCREMENTS</li>
+<li class='mutator'>INVERT_NEGS</li>
+<li class='mutator'>MATH</li>
+<li class='mutator'>NEGATE_CONDITIONALS</li>
+<li class='mutator'>NULL_RETURNS</li>
+<li class='mutator'>PRIMITIVE_RETURNS</li>
+<li class='mutator'>TRUE_RETURNS</li>
+<li class='mutator'>VOID_METHOD_CALLS</li>
+
+</ul>
+
+<h2>Tests examined</h2>
+<ul>
+<li>com.librosleidos.backend.domain.model.ValueObjectsTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.model.ValueObjectsTest]/[method:book id must be positive()] (0 ms)</li><li>com.librosleidos.backend.domain.usecase.BookUseCasesTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.usecase.BookUseCasesTest]/[method:get returns not found for an unknown id()] (0 ms)</li><li>com.librosleidos.backend.domain.model.AccessorsTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.model.AccessorsTest]/[method:value objects expose exactly what they were built with()] (3 ms)</li><li>com.librosleidos.backend.domain.model.AccessorsTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.model.AccessorsTest]/[method:a book exposes every field()] (1 ms)</li><li>com.librosleidos.backend.domain.usecase.BookUseCasesTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.usecase.BookUseCasesTest]/[method:get of another owner's book is not found()] (1 ms)</li><li>com.librosleidos.backend.domain.usecase.BookUseCasesTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.usecase.BookUseCasesTest]/[method:list returns only the caller's books()] (0 ms)</li><li>com.librosleidos.backend.domain.usecase.BookUseCasesTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.usecase.BookUseCasesTest]/[method:update changes the owner's book()] (1 ms)</li><li>com.librosleidos.backend.domain.usecase.BookUseCasesTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.usecase.BookUseCasesTest]/[method:delete removes the owner's book()] (2 ms)</li><li>com.librosleidos.backend.domain.usecase.BookUseCasesTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.usecase.BookUseCasesTest]/[method:update of another owner's book is not found and changes nothing()] (2 ms)</li><li>com.librosleidos.backend.domain.usecase.BookUseCasesTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.usecase.BookUseCasesTest]/[method:delete of another owner's book is not found and changes nothing()] (3 ms)</li><li>com.librosleidos.backend.domain.usecase.BookUseCasesTest.[engine:junit-jupiter]/[class:com.librosleidos.backend.domain.usecase.BookUseCasesTest]/[method:create stores the book for the owner and returns it()] (121 ms)</li>
+</ul>
+
+<br/>
+
+Report generated by <a href='https://pitest.org'>PIT</a> 1.30.2 <a href='https://github.com/sponsors/hcoles'>support</a>
+
+</body>
+</html>
