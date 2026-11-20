@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prints "line=<pct> branch=<pct>" from the report-level counters of a
+# Prints "line=<pct> branch=<pct>" from the report-level counters of an Android or JVM
 # Kover/JaCoCo XML report. A counter that is missing or has 0 total is "n/a".
 # Usage: scripts/kover-summary.sh <report.xml>
 set -euo pipefail

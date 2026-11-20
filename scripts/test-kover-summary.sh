@@ -61,6 +61,31 @@ check multiline-counters \
   covered="3"/>
 </report>' 'line=75.0 branch=n/a' 0
 
+# A JVM (non-Android) Kover report: same JaCoCo-style layout, report-level counters
+# last, nested method/class/sourcefile counters and <line> elements to be ignored.
+check jvm-report \
+  '<?xml version="1.0" ?>
+<report name="Kover Gradle Plugin XML report for :">
+<package name="com/example/backend">
+<class name="com/example/backend/App" sourcefilename="App.kt">
+<method name="&lt;init&gt;" desc="()V">
+<counter type="BRANCH" missed="9" covered="9"/>
+<counter type="LINE" missed="9" covered="1"/>
+</method>
+<counter type="LINE" missed="9" covered="1"/>
+</class>
+<sourcefile name="App.kt">
+<line nr="3" mi="0" ci="2" mb="0" cb="0"/>
+<counter type="LINE" missed="9" covered="1"/>
+</sourcefile>
+<counter type="LINE" missed="9" covered="1"/>
+</package>
+<counter type="INSTRUCTION" missed="8" covered="64"/>
+<counter type="BRANCH" missed="2" covered="6"/>
+<counter type="LINE" missed="1" covered="13"/>
+<counter type="METHOD" missed="1" covered="8"/>
+</report>' 'line=92.9 branch=75.0' 0
+
 check not-xml \
   'this is not a report' 'line=n/a branch=n/a' 0
 
