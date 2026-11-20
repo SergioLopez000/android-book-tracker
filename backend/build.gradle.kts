@@ -63,6 +63,24 @@ testing {
                 runtimeOnly(libs.postgresql)
             }
         }
+        register<JvmTestSuite>("contractTest") {
+            useJUnitJupiter()
+            dependencies {
+                implementation(project())
+                implementation(platform(SpringBootPlugin.BOM_COORDINATES))
+                implementation(libs.spring.boot.starter.test)
+                implementation(libs.spring.boot.starter.security)
+                implementation(libs.kotlin.test.junit5)
+                implementation(libs.spring.boot.starter.jdbc)
+                implementation(libs.spring.boot.testcontainers)
+                implementation(libs.testcontainers.junit)
+                implementation(libs.testcontainers.postgresql)
+                implementation(libs.rest.assured)
+                implementation(libs.openapi.validator.restassured)
+                implementation(libs.openapi.validator.core)
+                runtimeOnly(libs.postgresql)
+            }
+        }
     }
 }
 
@@ -71,7 +89,7 @@ tasks.bootJar {
 }
 
 tasks.named("check") {
-    dependsOn(testing.suites.named("integrationTest"))
+    dependsOn(testing.suites.named("integrationTest"), testing.suites.named("contractTest"))
 }
 
 kover {

@@ -1,4 +1,5 @@
-# Runs the app unit tests, the backend tests (JDK 21, Testcontainers) and the
+# Runs the app unit tests, the backend tests and REST Assured contract tests with
+# the PIT mutation gate (JDK 21, Testcontainers) and the
 # secret scan on every pull request and dev push, then publishes Allure and
 # Kover reports to gh-pages. Quality checks (lint, format, detekt, shell,
 # workflows, commit messages) run ONLY locally via lefthook, never here; secrets
@@ -90,6 +91,50 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  contract-tests:
+    name: contract-tests
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/dev' }}
+          build-root-directory: backend
+      # PIT fails the build below its mutationThreshold (80); --continue still produces every report.
+      - run: ./gradlew contractTest pitest koverXmlReport koverHtmlReport --continue
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: allure-results-contract
+          path: backend/build/test-results/contractTest/*.xml
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload coverage
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-contract
+          path: backend/build/reports/kover
+          if-no-files-found: ignore
+          retention-days: 14
+      # Named pit-*, outside the coverage-* pattern, so the report job reads it separately.
+      - name: Upload PIT report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: pit-contract
+          path: backend/build/reports/pitest
+          if-no-files-found: ignore
+          retention-days: 14
+
   secret-scan:
     name: secret-scan
     runs-on: ubuntu-24.04
@@ -117,7 +162,7 @@ jobs:
 
   report:
     name: report
-    needs: [unit-tests, backend-tests]
+    needs: [unit-tests, backend-tests, contract-tests]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     permissions:
@@ -150,6 +195,12 @@ jobs:
         with:
           pattern: coverage-*
           path: coverage
+      - name: Download PIT report
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          pattern: pit-*
+          path: pit
       - name: Detect results
         id: detect
         run: |
@@ -197,12 +248,25 @@ jobs:
           [ -n "$backend_html" ] && cp -r "$backend_html" site/kover-backend
           app_coverage="$(coverage_of coverage/coverage-unit reportDebug.xml)"
           backend_coverage="$(coverage_of coverage/coverage-backend report.xml)"
-          coverage="app ${app_coverage}; backend ${backend_coverage}"
+          contract_html="$(html_of coverage/coverage-contract html)"
+          [ -n "$contract_html" ] && cp -r "$contract_html" site/kover-contract
+          pit_xml="$(find pit -type f -name mutations.xml 2>/dev/null | head -n 1 || true)"
+          pit_score="unavailable"
+          if [ -n "$pit_xml" ]; then
+            pit_parsed="$(scripts/pit-summary.sh "$pit_xml" 2>/dev/null || true)"
+            if [ -n "$pit_parsed" ]; then
+              pit_score="${pit_parsed%% *}"
+              pit_score="${pit_score#score=}%"
+            fi
+          fi
+          [ -n "$pit_xml" ] && cp -r "$(dirname "$pit_xml")" site/pit
+          coverage="app ${app_coverage}; backend ${backend_coverage}; PIT ${pit_score}"
           {
             echo "### Test report"
             echo "- Tests: ${summary}"
             echo "- Coverage (app): ${app_coverage}"
             echo "- Coverage (backend): ${backend_coverage}"
+            echo "- Mutation score (PIT, threshold 80): ${pit_score}"
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$EVENT_NAME" = "pull_request" ]; then dest="pr-${PR_NUMBER}"; else dest="dev"; fi
           publish=false
@@ -245,6 +309,7 @@ jobs:
             echo "- [Allure report](${base}/allure/)"
             echo "- [Kover coverage (app)](${base}/kover/)"
             echo "- [Kover coverage (backend)](${base}/kover-backend/)"
+            echo "- [PIT mutation report](${base}/pit/)"
             echo "- Tests: ${TESTS}"
             echo "- Coverage: ${COVERAGE}"
           } > comment.md
@@ -257,7 +322,7 @@ jobs:
 
   ci-gate:
     name: ci-gate
-    needs: [unit-tests, backend-tests, secret-scan]
+    needs: [unit-tests, backend-tests, contract-tests, secret-scan]
     if: always()
     runs-on: ubuntu-24.04
     steps:
