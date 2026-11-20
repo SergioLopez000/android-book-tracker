@@ -85,3 +85,44 @@ pitest {
     avoidCallsTo = setOf("kotlin.jvm.internal")
     useClasspathFile = true
 }
+
+// Packaged-artifact guard: the jar must hold no test-only authentication and no
+// property that could relax security. Anything found here fails `check`.
+val verifyPackagedArtifact by tasks.registering {
+    group = "verification"
+    description = "Fails if the boot jar contains test-only users or a security bypass property."
+    val jar = tasks.bootJar.flatMap { it.archiveFile }
+    dependsOn(tasks.bootJar)
+    doLast {
+        val forbiddenClasses = Regex("""(?i)(testsupport|TestApiAuthentication|TestApi)""")
+        val bypass =
+            Regex(
+                """(?i)(spring\.security\.user|security\.(enabled|disabled|ignored)|permit-?all|disable-?security|management\.security)"""
+            )
+        val violations = mutableListOf<String>()
+        zipTree(jar).visit {
+            if (isDirectory) return@visit
+            val entry = relativePath.pathString
+            if (forbiddenClasses.containsMatchIn(entry)) {
+                violations +=
+                    "test-only class packaged: $entry"
+            }
+            if (Regex("""BOOT-INF/classes/application[^/]*\.(ya?ml|properties)""").matches(entry)) {
+                file.useLines { lines ->
+                    lines.filter { bypass.containsMatchIn(it) }.forEach {
+                        violations +=
+                            "bypass in $entry: ${it.trim()}"
+                    }
+                }
+            }
+        }
+        check(violations.isEmpty()) {
+            "Packaged artifact violations:\n" +
+                violations.joinToString("\n")
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(verifyPackagedArtifact)
+}
