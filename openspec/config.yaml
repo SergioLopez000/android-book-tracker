@@ -2,11 +2,17 @@ schema: spec-driven
 
 context: |
   Rincon de Lectura: native Android, local-first, single-user book tracker (rate + review).
-  Single Gradle module :app, package com.librosleidos. Kotlin 2.3.20, AGP 9.1.1 (built-in Kotlin),
-  Gradle 9.6.0, JDK 17, Jetpack Compose (Material3, BOM 2026.08.00), Room 2.8.4 + KSP, Coil 3.
+  Two independent Gradle builds, both package com.librosleidos, Gradle 9.9.1 (wrapper in each).
+  App (root, module :app): Kotlin 2.4.21, AGP 9.1.1 (built-in Kotlin), JDK 17, Jetpack Compose (Material3, BOM 2026.08.00), Room 2.8.4 + KSP, Coil 3.
   Hexagonal architecture (ports and adapters): domain/{model,port,usecase}, data/{local,remote}, ui/*, di.
   Remote metadata: Open Library with Google Books fallback (optional API key in local.properties).
   Tests: JUnit4 + Robolectric + Compose UI test + Turbine + coroutines-test under app/src/test.
+  Backend (backend/, own wrapper, run with ./gradlew -p backend or from backend/): Kotlin 2.3.21, JDK 21,
+  Spring Boot (webmvc, security, actuator, jdbc, Flyway), PostgreSQL, hexagonal (domain framework-free),
+  deny-by-default stateless security until #26. OpenAPI contract in backend/src/main/resources/openapi.yaml.
+  Backend test layers: test (unit), integrationTest (Testcontainers PostgreSQL, needs Docker), contractTest
+  (REST Assured + OpenAPI validator), pitest (mutation gate, threshold 80). Image: backend/Dockerfile
+  (distroless nonroot pinned by digest), published to GHCR by ci.yml publish-image on dev pushes.
 
 strict_tdd: true
 
@@ -17,9 +23,15 @@ testing:
       stack: "Kotlin/Android (Gradle module :app)"
       test_command: "./gradlew :app:testDebugUnitTest"
       framework: "JUnit4 + Robolectric"
+    - path: "backend"
+      stack: "Kotlin/Spring Boot (independent Gradle build)"
+      test_command: "./gradlew -p backend build contractTest"
+      framework: "JUnit5 + Testcontainers + REST Assured + PIT"
   layers:
     unit: { available: true, tool: "JUnit4 + Robolectric + coroutines-test + Turbine" }
     integration: { available: true, tool: "Robolectric + Room (room-testing) in app/src/test" }
+    contract: { available: true, tool: "REST Assured + openapi-request-validator, backend contractTest" }
+    mutation: { available: true, tool: "PIT (backend pitest, threshold 80)" }
     e2e: { available: false, tool: null }
   coverage: { available: true, command: "./gradlew koverHtmlReportDebug" }
   quality:
@@ -41,6 +53,7 @@ rules:
     - Write a failing test, make it pass, then refactor. Run ./gradlew :app:testDebugUnitTest.
   verify:
     - Run ./gradlew :app:testDebugUnitTest; also ./gradlew spotlessCheck :app:lintDebug koverHtmlReportDebug.
+    - Backend: run ./gradlew -p backend build contractTest pitest (needs Docker); bash scripts/test-image-config.sh checks the image and workflow permissions.
     - Run detekt (quality.static_analysis.command); it must report no new issues beyond config/detekt/baseline.xml.
     - Run the shell harnesses: bash scripts/test-resolve-issue-number.sh and bash scripts/test-board-sync.sh (with the existing scripts/test-*.sh).
   archive:
