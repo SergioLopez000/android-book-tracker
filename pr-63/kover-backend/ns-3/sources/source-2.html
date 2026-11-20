@@ -1,0 +1,226 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>backend Coverage Report > JdbcBookRepositoryTest</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: backend<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.backend.data.jdbc</a>
+</div>
+
+<h1>Coverage Summary for Class: JdbcBookRepositoryTest (com.librosleidos.backend.data.jdbc)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">JdbcBookRepositoryTest</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (11/11)
+  </span>
+</td>
+    <td class="coverageStat"/>
+<td class="coverageStat">
+  <span class="percent">
+    97.9%
+  </span>
+  <span class="absValue">
+    (46/47)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    99.7%
+  </span>
+  <span class="absValue">
+    (394/395)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.backend.data.jdbc
+&nbsp;
+&nbsp;import com.librosleidos.backend.domain.model.BookDraft
+&nbsp;import com.librosleidos.backend.domain.model.BookId
+&nbsp;import com.librosleidos.backend.domain.model.OwnerId
+&nbsp;import com.librosleidos.backend.domain.model.Rating
+&nbsp;import com.librosleidos.backend.domain.port.BookRepository
+&nbsp;import java.time.LocalDate
+&nbsp;import kotlin.test.Test
+&nbsp;import kotlin.test.assertEquals
+&nbsp;import kotlin.test.assertFalse
+&nbsp;import kotlin.test.assertNotNull
+&nbsp;import kotlin.test.assertNull
+&nbsp;import kotlin.test.assertTrue
+&nbsp;import org.junit.jupiter.api.assertThrows
+&nbsp;import org.springframework.beans.factory.annotation.Autowired
+&nbsp;import org.springframework.boot.test.context.SpringBootTest
+&nbsp;import org.springframework.context.annotation.Import
+&nbsp;import org.springframework.dao.DataIntegrityViolationException
+&nbsp;import org.springframework.jdbc.core.simple.JdbcClient
+&nbsp;
+<b class="fc">&nbsp;@SpringBootTest</b>
+&nbsp;@Import(PostgresContainerConfig::class)
+&nbsp;class JdbcBookRepositoryTest {
+<b class="fc">&nbsp;    @Autowired lateinit var repository: BookRepository</b>
+&nbsp;
+<b class="fc">&nbsp;    @Autowired lateinit var jdbc: JdbcClient</b>
+&nbsp;
+<b class="fc">&nbsp;    private val alice = OwnerId(&quot;alice&quot;)</b>
+<b class="fc">&nbsp;    private val bob = OwnerId(&quot;bob&quot;)</b>
+&nbsp;
+<b class="fc">&nbsp;    private fun draft(title: String = &quot;Dune&quot;, cover: String? = &quot;https://example.test/c.png&quot;) =</b>
+<b class="fc">&nbsp;        BookDraft(title, &quot;Frank Herbert&quot;, cover, Rating(4.5f), &quot;great&quot;, LocalDate.of(2026, 1, 2))</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `flyway applied V1 to an empty database`() {
+<b class="fc">&nbsp;        val applied =</b>
+<b class="fc">&nbsp;            jdbc.sql(</b>
+<b class="fc">&nbsp;                &quot;SELECT success FROM flyway_schema_history WHERE version = &#39;1&#39;&quot;</b>
+<b class="fc">&nbsp;            ).query(Boolean::class.java).single()</b>
+<b class="fc">&nbsp;        assertTrue(applied)</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `owner_id is NOT NULL so a raw insert without it is rejected`() {
+<b class="fc">&nbsp;        assertThrows&lt;DataIntegrityViolationException&gt; {</b>
+<b class="fc">&nbsp;            jdbc</b>
+<b class="fc">&nbsp;                .sql(</b>
+<b class="fc">&nbsp;                    &quot;INSERT INTO books (title, author, rating, review, date_finished) &quot; +</b>
+&nbsp;                        &quot;VALUES (&#39;t&#39;, &#39;a&#39;, 3, &#39;&#39;, DATE &#39;2026-01-01&#39;)&quot;
+&nbsp;                )
+<b class="fc">&nbsp;                .update()</b>
+<b class="nc">&nbsp;        }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `create then read, list, update and delete round-trip for the owner`() {
+<b class="fc">&nbsp;        val created = repository.create(alice, draft())</b>
+<b class="fc">&nbsp;        assertEquals(&quot;Dune&quot;, created.title)</b>
+<b class="fc">&nbsp;        assertEquals(4.5f, created.rating.value)</b>
+<b class="fc">&nbsp;        assertEquals(created, repository.findById(alice, created.id))</b>
+<b class="fc">&nbsp;        assertTrue(created in repository.findAll(alice))</b>
+&nbsp;
+<b class="fc">&nbsp;        val updated =</b>
+<b class="fc">&nbsp;            assertNotNull(repository.update(alice, created.id, draft(&quot;Messiah&quot;, cover = null)))</b>
+<b class="fc">&nbsp;        assertEquals(created.id, updated.id)</b>
+<b class="fc">&nbsp;        assertEquals(&quot;Messiah&quot;, updated.title)</b>
+<b class="fc">&nbsp;        assertNull(updated.coverUrl)</b>
+<b class="fc">&nbsp;        assertEquals(updated, repository.findById(alice, created.id))</b>
+&nbsp;
+<b class="fc">&nbsp;        assertTrue(repository.delete(alice, created.id))</b>
+<b class="fc">&nbsp;        assertNull(repository.findById(alice, created.id))</b>
+<b class="fc">&nbsp;        assertFalse(repository.delete(alice, created.id))</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `another owner cannot read update or delete and nothing changes`() {
+<b class="fc">&nbsp;        val book = repository.create(alice, draft())</b>
+&nbsp;
+<b class="fc">&nbsp;        assertNull(repository.findById(bob, book.id))</b>
+<b class="fc">&nbsp;        assertNull(repository.update(bob, book.id, draft(&quot;Hijack&quot;)))</b>
+<b class="fc">&nbsp;        assertFalse(repository.delete(bob, book.id))</b>
+&nbsp;
+<b class="fc">&nbsp;        assertEquals(book, repository.findById(alice, book.id))</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `unknown id is not found`() {
+<b class="fc">&nbsp;        assertNull(repository.findById(alice, BookId(Long.MAX_VALUE)))</b>
+<b class="fc">&nbsp;        assertNull(repository.update(alice, BookId(Long.MAX_VALUE), draft()))</b>
+<b class="fc">&nbsp;        assertFalse(repository.delete(alice, BookId(Long.MAX_VALUE)))</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `listing returns only the caller&#39;s books`() {
+<b class="fc">&nbsp;        val owner = OwnerId(&quot;list-owner&quot;)</b>
+<b class="fc">&nbsp;        val other = OwnerId(&quot;list-other&quot;)</b>
+<b class="fc">&nbsp;        val mine = repository.create(owner, draft(&quot;Mine&quot;))</b>
+<b class="fc">&nbsp;        val theirs = repository.create(other, draft(&quot;Theirs&quot;))</b>
+&nbsp;
+<b class="fc">&nbsp;        assertEquals(listOf(mine), repository.findAll(owner))</b>
+<b class="fc">&nbsp;        assertEquals(listOf(theirs), repository.findAll(other))</b>
+<b class="fc">&nbsp;        assertEquals(emptyList(), repository.findAll(OwnerId(&quot;nobody&quot;)))</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-20 10:38</div>
+</div>
+</body>
+</html>
