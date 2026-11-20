@@ -45,6 +45,20 @@ updates:
         patterns: ["org.pitest*", "info.solidsoft*"]
       contract:
         patterns: ["io.rest-assured*", "com.atlassian.oai*"]
+  # Digest bumps for the pinned distroless base image (spike SP6 proved they are proposed).
+  - package-ecosystem: docker
+    directory: /backend
+    target-branch: dev
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      base-image:
+        patterns: ["*"]
   - package-ecosystem: github-actions
     directory: /
     target-branch: dev
