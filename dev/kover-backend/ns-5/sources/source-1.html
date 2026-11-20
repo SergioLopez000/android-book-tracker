@@ -5,7 +5,7 @@
 <html id="htmlId">
 <head>
   <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
-  <title>backend Coverage Report > CreateBookUseCase</title>
+  <title>backend Coverage Report > JdbcBookRepository</title>
   <style type="text/css">
     @import "../../css/coverage.css";
     @import "../../css/idea.min.css";
@@ -19,18 +19,15 @@
 <div class="breadCrumbs">
 Current scope: backend<span class="separator">|</span>    <a href="../../index.html">all classes</a>
     <span class="separator">|</span>
-    <a href="../index.html">com.librosleidos.backend.domain.usecase</a>
+    <a href="../index.html">com.librosleidos.backend.data.jdbc</a>
 </div>
 
-<h1>Coverage Summary for Class: CreateBookUseCase (com.librosleidos.backend.domain.usecase)</h1>
+<h1>Coverage Summary for Class: JdbcBookRepository (com.librosleidos.backend.data.jdbc)</h1>
 
 <table class="coverageStats">
+
 <tr>
   <th class="name">Class</th>
-<th class="coverageStat 
-">
-  Class, %
-</th>
 <th class="coverageStat 
 ">
   Method, %
@@ -49,32 +46,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 </th>
 </tr>
 <tr>
-  <td class="name">CreateBookUseCase</td>
-<td class="coverageStat">
-  <span class="percent">
-    100%
-  </span>
-  <span class="absValue">
-    (1/1)
-  </span>
-</td>
-<td class="coverageStat">
-  <span class="percent">
-    100%
-  </span>
-  <span class="absValue">
-    (2/2)
-  </span>
-</td>
-    <td class="coverageStat"/>
-<td class="coverageStat">
-  <span class="percent">
-    100%
-  </span>
-  <span class="absValue">
-    (2/2)
-  </span>
-</td>
+  <td class="name">JdbcBookRepository</td>
 <td class="coverageStat">
   <span class="percent">
     100%
@@ -83,8 +55,94 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     (10/10)
   </span>
 </td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (26/26)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (187/187)
+  </span>
+</td>
 </tr>
-
+  <tr>
+    <td class="name">JdbcBookRepository$Companion</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+    <td class="coverageStat"/>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    0%
+  </span>
+  <span class="absValue">
+    (0/1)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    90.9%
+  </span>
+  <span class="absValue">
+    (10/11)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    96.3%
+  </span>
+  <span class="absValue">
+    (26/27)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    99.5%
+  </span>
+  <span class="absValue">
+    (187/188)
+  </span>
+</td>
+</tr>
 </table>
 
 <br/>
@@ -92,36 +150,60 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 
 
 <pre>
-<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.backend.domain.usecase
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.backend.data.jdbc
 &nbsp;
 &nbsp;import com.librosleidos.backend.domain.model.Book
 &nbsp;import com.librosleidos.backend.domain.model.BookDraft
 &nbsp;import com.librosleidos.backend.domain.model.BookId
 &nbsp;import com.librosleidos.backend.domain.model.OwnerId
+&nbsp;import com.librosleidos.backend.domain.model.Rating
 &nbsp;import com.librosleidos.backend.domain.port.BookRepository
+&nbsp;import java.sql.ResultSet
+&nbsp;import java.time.LocalDate
+&nbsp;import org.springframework.jdbc.core.RowMapper
+&nbsp;import org.springframework.jdbc.core.simple.JdbcClient
+&nbsp;import org.springframework.jdbc.core.simple.JdbcClient.StatementSpec
 &nbsp;
-<b class="fc">&nbsp;class CreateBookUseCase(private val repository: BookRepository) {</b>
-<b class="fc">&nbsp;    operator fun invoke(owner: OwnerId, draft: BookDraft): Book = repository.create(owner, draft)</b>
-&nbsp;}
+<b class="fc">&nbsp;class JdbcBookRepository(private val jdbc: JdbcClient) : BookRepository {</b>
+&nbsp;    override fun create(owner: OwnerId, draft: BookDraft): Book =
+<b class="fc">&nbsp;        jdbc.sql(BookSql.INSERT).owned(owner).drafted(draft).query(ROW).single()</b>
 &nbsp;
-&nbsp;class GetBookUseCase(private val repository: BookRepository) {
-&nbsp;    operator fun invoke(owner: OwnerId, id: BookId): GetBookOutcome =
-&nbsp;        repository.findById(owner, id)?.let { GetBookOutcome.Found(it) } ?: GetBookOutcome.NotFound
-&nbsp;}
+<b class="fc">&nbsp;    override fun findById(owner: OwnerId, id: BookId): Book? = jdbc.sql(</b>
+<b class="fc">&nbsp;        BookSql.SELECT_BY_ID</b>
+<b class="fc">&nbsp;    ).owned(owner).param(&quot;id&quot;, id.value).query(ROW).optional().orElse(null)</b>
 &nbsp;
-&nbsp;class ListBooksUseCase(private val repository: BookRepository) {
-&nbsp;    operator fun invoke(owner: OwnerId): List&lt;Book&gt; = repository.findAll(owner)
-&nbsp;}
+&nbsp;    override fun findAll(owner: OwnerId): List&lt;Book&gt; =
+<b class="fc">&nbsp;        jdbc.sql(BookSql.SELECT_ALL).owned(owner).query(ROW).list()</b>
 &nbsp;
-&nbsp;class UpdateBookUseCase(private val repository: BookRepository) {
-&nbsp;    operator fun invoke(owner: OwnerId, id: BookId, draft: BookDraft): UpdateBookOutcome =
-&nbsp;        repository.update(owner, id, draft)?.let { UpdateBookOutcome.Updated(it) }
-&nbsp;            ?: UpdateBookOutcome.NotFound
-&nbsp;}
+<b class="fc">&nbsp;    override fun update(owner: OwnerId, id: BookId, draft: BookDraft): Book? = jdbc.sql(</b>
+<b class="fc">&nbsp;        BookSql.UPDATE</b>
+<b class="fc">&nbsp;    ).owned(owner).param(&quot;id&quot;, id.value).drafted(draft).query(ROW).optional().orElse(null)</b>
 &nbsp;
-&nbsp;class DeleteBookUseCase(private val repository: BookRepository) {
-&nbsp;    operator fun invoke(owner: OwnerId, id: BookId): DeleteBookOutcome =
-&nbsp;        if (repository.delete(owner, id)) DeleteBookOutcome.Deleted else DeleteBookOutcome.NotFound
+&nbsp;    override fun delete(owner: OwnerId, id: BookId): Boolean =
+<b class="fc">&nbsp;        jdbc.sql(BookSql.DELETE).owned(owner).param(&quot;id&quot;, id.value).update() &gt; 0</b>
+&nbsp;
+<b class="fc">&nbsp;    private fun StatementSpec.owned(owner: OwnerId) = param(&quot;owner&quot;, owner.value)</b>
+&nbsp;
+<b class="fc">&nbsp;    private fun StatementSpec.drafted(draft: BookDraft) = param(&quot;title&quot;, draft.title)</b>
+<b class="fc">&nbsp;        .param(&quot;author&quot;, draft.author)</b>
+<b class="fc">&nbsp;        .param(&quot;coverUrl&quot;, draft.coverUrl)</b>
+<b class="fc">&nbsp;        .param(&quot;rating&quot;, draft.rating.value)</b>
+<b class="fc">&nbsp;        .param(&quot;review&quot;, draft.review)</b>
+<b class="fc">&nbsp;        .param(&quot;dateFinished&quot;, draft.dateFinished)</b>
+&nbsp;
+&nbsp;    private companion object {
+<b class="pc">&nbsp;        val ROW = RowMapper { rs: ResultSet, _: Int -&gt;</b>
+<b class="fc">&nbsp;            Book(</b>
+<b class="fc">&nbsp;                id = BookId(rs.getLong(&quot;id&quot;)),</b>
+<b class="fc">&nbsp;                title = rs.getString(&quot;title&quot;),</b>
+<b class="fc">&nbsp;                author = rs.getString(&quot;author&quot;),</b>
+<b class="fc">&nbsp;                coverUrl = rs.getString(&quot;cover_url&quot;),</b>
+<b class="fc">&nbsp;                rating = Rating(rs.getFloat(&quot;rating&quot;)),</b>
+<b class="fc">&nbsp;                review = rs.getString(&quot;review&quot;),</b>
+<b class="fc">&nbsp;                dateFinished = rs.getObject(&quot;date_finished&quot;, LocalDate::class.java)</b>
+&nbsp;            )
+&nbsp;        }
+&nbsp;    }
 &nbsp;}
 </code>
 </pre>
@@ -146,7 +228,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2026-11-20 10:43</div>
+    <div style="float:right;">generated on 2026-11-20 11:04</div>
 </div>
 </body>
 </html>
