@@ -28,7 +28,11 @@ dependencies {
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.security)
     implementation(libs.spring.boot.starter.actuator)
+    implementation(libs.spring.boot.starter.jdbc)
+    implementation(libs.spring.boot.starter.flyway)
     implementation(libs.kotlin.reflect)
+    runtimeOnly(libs.flyway.postgresql)
+    runtimeOnly(libs.postgresql)
 
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.boot.starter.webmvc.test)
@@ -49,6 +53,11 @@ testing {
                 implementation(platform(SpringBootPlugin.BOM_COORDINATES))
                 implementation(libs.spring.boot.starter.test)
                 implementation(libs.kotlin.test.junit5)
+                implementation(libs.spring.boot.starter.jdbc)
+                implementation(libs.spring.boot.testcontainers)
+                implementation(libs.testcontainers.junit)
+                implementation(libs.testcontainers.postgresql)
+                runtimeOnly(libs.postgresql)
             }
         }
     }

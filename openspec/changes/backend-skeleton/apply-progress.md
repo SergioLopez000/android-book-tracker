@@ -1,4 +1,4 @@
-# Apply progress: backend-skeleton, PR1a (tasks 1-4)
+# Apply progress: backend-skeleton, PR1a (tasks 1-4) and PR1b (tasks 5-6)
 
 Branch `feat/6-backend-skeleton`. Commits (local, not pushed):
 - c5a600a `build(backend): add isolated Gradle build with Kover and PIT scaffold`
@@ -25,3 +25,13 @@ Size vs a8a956f: 908 added+deleted lines raw; 539 authored (wrapper scripts and 
 - 2.1 RED: misformatted `backend/build.gradle.kts` passed root `spotlessCheck`; GREEN after adding `backend/*.gradle.kts` to kotlinGradle target (now fails on misformat).
 - 4.1: no observable RED; the parser is already report-agnostic, so the JVM fixture is a characterization test (passes).
 - App: `:app:testDebugUnitTest` 102 tests, 0 failures; root `projects` lists only `:app`.
+
+## PR1b (tasks 5-6), branch `feat/6-backend-domain-persistence`
+- d0151e8 `feat(backend): add framework-free books domain and use cases`; 4e551c5 `feat(backend): add owner-scoped PostgreSQL persistence with Flyway`. Authored 745 lines plus docs, under 800.
+- 5.1-5.6 done. RED = unresolved references (value objects, use cases) then GREEN; 5.5 guard RED proven by injecting a Spring import into `Book.kt`. Outcomes are sealed for get/update/delete; create returns `Book`, list returns `List<Book>`. Field bounds: title/author 200, cover 2048, review 5000.
+- 6.1-6.6 done. RED = unresolved `BookSql`/adapter; GREEN with V1 (owner_id NOT NULL, indexed), `JdbcClient` adapter using `RETURNING`, `UseCaseConfig`. Mutation check: a guard-passing leak (`... OR id = :id` on DELETE) fails the cross-owner integration test.
+- `NoDatabaseTestConfig` (test sources only) excludes DataSource/Flyway and mocks `JdbcClient`, so unit-suite security slices still run without a database.
+- detekt: `config/detekt/detekt.yml` excludes `integrationTest`/`contractTest` from FunctionNaming and MagicNumber (default excludes miss those suites).
+- Evidence: backend `test` 28/0, `integrationTest` 6/0 on real PostgreSQL 17 (Testcontainers, Ryuk on), `build` green incl. `verifyPackagedArtifact`; `:app:testDebugUnitTest` 102/0; spotless, actionlint, kover-summary green. Context7 tool was not available to the executor; versions were taken from research.md and confirmed by Gradle resolution (Boot BOM manages Testcontainers 2.x, Flyway, PostgreSQL).
+- Local Docker (Rancher Desktop) needs `DOCKER_HOST=unix://$HOME/.rd/docker.sock` and `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`; without the override every integration test fails. Not committed.
+- PIT run on domain (not gated until PR2 9.4) shows survivors; to be killed in PR2.
