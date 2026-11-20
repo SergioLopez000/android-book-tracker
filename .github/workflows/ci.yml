@@ -335,3 +335,43 @@ jobs:
             echo "::error::Gating job not successful: $(tr '\n' ' ' <<<"$bad")"
             exit 1
           fi
+
+  # Publishes the backend image for a green dev commit. Not a ci-gate need, so it never blocks
+  # merges; it runs only on pushes to dev (never on pull requests or forks), after ci-gate passes.
+  # The package stays private; promote.yml checks and retags this same digest.
+  publish-image:
+    name: publish-image
+    needs: ci-gate
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: true
+          build-root-directory: backend
+      - name: Build the jar
+        working-directory: backend
+        run: ./gradlew bootJar
+      - name: Log in to GHCR
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Build and push the image
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}/backend"
+          docker buildx build \
+            --platform linux/amd64 \
+            --file backend/Dockerfile \
+            --tag "${image}:sha-${GITHUB_SHA}" \
+            --tag "${image}:dev" \
+            --push \
+            backend
+          echo "### Published \`${image}:sha-${GITHUB_SHA}\` and \`:dev\`" >> "$GITHUB_STEP_SUMMARY"

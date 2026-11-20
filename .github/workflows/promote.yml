@@ -1,7 +1,10 @@
 # Promotes the commit verified in the dev ring to staging by fast-forwarding
 # `main` to it. The `staging` environment requires QA approval, so the job
 # waits until a reviewer approves the deployment. Fast-forward keeps the
-# exact SHA tested in dev, so artifacts are promoted instead of rebuilt.
+# exact SHA tested in dev, so artifacts are promoted instead of rebuilt. The
+# backend image built for that SHA must already exist in GHCR (check-image);
+# after the fast-forward it is retagged as `staging` without a rebuild
+# (retag-image), so staging runs the exact digest that was tested in dev.
 name: Promote dev to staging
 
 on:
@@ -21,11 +24,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  promote:
-    name: Fast-forward main
+  check-image:
+    name: Require the backend image
     if: github.ref == 'refs/heads/dev'
     runs-on: ubuntu-24.04
-    environment: staging
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      sha: ${{ steps.target.outputs.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -36,6 +43,40 @@ jobs:
         id: target
         env:
           INPUT_SHA: ${{ inputs.sha }}
+        run: |
+          sha="${INPUT_SHA:-$(git rev-parse origin/dev)}"
+          sha="$(git rev-parse --verify "${sha}^{commit}")"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      # Fail before main moves: a commit without a published image must not reach staging.
+      - name: Require the sha-tagged image in GHCR
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          image="ghcr.io/${GITHUB_REPOSITORY,,}/backend"
+          docker manifest inspect "${image}:sha-${SHA}" >/dev/null \
+            || { echo "::error::No image ${image}:sha-${SHA}; publish-image did not run or failed for this commit"; exit 1; }
+
+  promote:
+    name: Fast-forward main
+    needs: check-image
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-24.04
+    environment: staging
+    outputs:
+      sha: ${{ steps.target.outputs.sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Resolve commit
+        id: target
+        env:
+          INPUT_SHA: ${{ needs.check-image.outputs.sha }}
         run: |
           sha="${INPUT_SHA:-$(git rev-parse origin/dev)}"
           sha="$(git rev-parse --verify "${sha}^{commit}")"
@@ -73,3 +114,40 @@ jobs:
         run: |
           git push origin "${SHA}:refs/heads/main"
           echo "### Promoted \`${SHA}\` to main (staging)" >> "$GITHUB_STEP_SUMMARY"
+
+  # Tags the already-published sha-<commit> image as `staging` with crane, which copies the
+  # manifest bytes unchanged, then proves both tags resolve to the same digest.
+  retag-image:
+    name: Retag image as staging
+    needs: promote
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    env:
+      # go-containerregistry release asset, verified against this sha256 before use.
+      CRANE_VERSION: v0.22.1
+      CRANE_SHA256: 0ab7a1d6932a213aed964ce97666c3077fe691c8606413674a8b3e0b9ec4cda0
+    steps:
+      - name: Install crane
+        run: |
+          curl -fsSL -o crane.tar.gz \
+            "https://github.com/google/go-containerregistry/releases/download/${CRANE_VERSION}/go-containerregistry_Linux_x86_64.tar.gz"
+          echo "${CRANE_SHA256}  crane.tar.gz" | sha256sum -c -
+          tar -xzf crane.tar.gz crane
+          sudo install -m 0755 crane /usr/local/bin/crane
+
+      - name: Retag sha-<commit> as staging
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SHA: ${{ needs.promote.outputs.sha }}
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}/backend"
+          echo "$GITHUB_TOKEN" | crane auth login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          crane tag "${image}:sha-${SHA}" staging
+          source_digest="$(crane digest "${image}:sha-${SHA}")"
+          staging_digest="$(crane digest "${image}:staging")"
+          if [ "$source_digest" != "$staging_digest" ]; then
+            echo "::error::staging ($staging_digest) differs from sha-${SHA} ($source_digest)"; exit 1
+          fi
+          echo "### Retagged \`${image}:staging\` to \`${source_digest}\`" >> "$GITHUB_STEP_SUMMARY"

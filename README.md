@@ -109,6 +109,37 @@ Con el móvil conectado y la Depuración USB activa, ejecuta:
 
 ---
 
+## 🧩 Backend (Spring Boot)
+
+API REST independiente en `backend/` (Kotlin, Spring Boot, PostgreSQL). Es un build de Gradle aparte del de la app: tiene su propio wrapper y se ejecuta desde `backend/`. El contrato vive en `backend/src/main/resources/openapi.yaml`.
+
+**Requisitos**: JDK 21 y Docker en ejecución (las pruebas de integración y de contrato levantan PostgreSQL 17 con Testcontainers; no hay base de datos que instalar).
+
+```bash
+cd backend
+./gradlew build            # compila, pruebas unitarias y de integración, verifica el jar empaquetado
+./gradlew integrationTest  # PostgreSQL real vía Testcontainers
+./gradlew contractTest     # REST Assured contra openapi.yaml (request y response)
+./gradlew pitest           # mutation testing del dominio; falla por debajo de 80 %
+./gradlew koverHtmlReport  # cobertura en build/reports/kover
+```
+
+Capas de pruebas: `test` (unitarias, sin base de datos), `integrationTest` (persistencia), `contractTest` (HTTP completo contra la especificación OpenAPI). El CI las corre en `backend-tests` y `contract-tests`.
+
+**Postura de seguridad**: denegado por defecto y sin estado. Solo `/actuator/health` es público; todo lo demás (incluida `/api/books`) responde 401 hasta que el issue #26 añada autenticación real. Cada operación filtra por propietario en SQL.
+
+### Imagen del backend (GHCR)
+
+`backend/Dockerfile` es de una sola etapa sobre `gcr.io/distroless/java21-debian13:nonroot` fijada por digest, corre como `nonroot` y no lleva variables ni secretos; la configuración llega al arrancar (`SPRING_DATASOURCE_*`). El jar se compila en el runner.
+
+| Evento | Resultado en `ghcr.io/<owner>/<repo>/backend` |
+|---|---|
+| Push a `dev` con `ci-gate` en verde (`publish-image`) | Etiquetas `sha-<commit>` y `dev` |
+| Pull request o fork | No se publica nada |
+| `promote.yml` | `check-image` exige que exista `sha-<commit>` **antes** de mover `main`; `retag-image` etiqueta ese mismo digest como `staging` con `crane` y comprueba que coincide |
+
+El paquete queda privado. Prueba local: `scripts/test-image-smoke.sh` (construye el jar y la imagen, comprueba el usuario no root, arranca con un PostgreSQL desechable y espera 200 en `/actuator/health`). Las comprobaciones estáticas están en `scripts/test-image-config.sh`.
+
 ## 🛠️ Calidad de Código y Hooks Locales
 
 ### Configuración inicial (una sola vez)
@@ -156,6 +187,9 @@ Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas exis
 | actionlint / shellcheck | Sí | No |
 | Mensaje de commit (Conventional Commits) | Sí | No |
 | Pruebas unitarias + Kover | No | `unit-tests` |
+| Backend: pruebas, integración, Kover | No | `backend-tests` |
+| Backend: contrato (REST Assured) + PIT | No | `contract-tests` |
+| Imagen del backend a GHCR | No | `publish-image` (solo push a `dev`) |
 | Secretos (gitleaks) | Solo el índice | `secret-scan` (rango de commits del evento, no se puede saltar con `--no-verify`) |
 | CodeQL (Kotlin) | No | `codeql.yml`, bloquea por el ruleset |
 | Actualizaciones de dependencias | No | Dependabot |
@@ -163,20 +197,24 @@ Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas exis
 > **Riesgo aceptado**: los controles de calidad (formato, lint, detekt, shell, workflows y mensaje de commit) no se repiten en CI, así que un commit hecho con `--no-verify`, desde la web de GitHub o sin `lefthook install` se los salta. Decisión explícita del proyecto: la calidad es solo local. Los secretos sí se detectan en CI aunque el hook local se omita.
 
 ```text
-unit-tests  ─┬─> ci-gate  (check requerido)
-secret-scan ─┘
+unit-tests     ─┐
+backend-tests  ─┼─> ci-gate  (check requerido) ──> publish-image (solo push a dev)
+contract-tests ─┤
+secret-scan    ─┘
 unit-tests ──> report (informativo, no bloquea)
 codeql.yml: analyze ──> alertas de code scanning ──> regla del ruleset de dev
 ```
 
 - **`unit-tests`**: `:app:testDebugUnitTest` + Kover XML/HTML.
 - **`secret-scan`**: gitleaks 8.30.1 (fijado por sha256) sobre el rango de commits del evento, calculado por `scripts/secret-scan-range.sh`. PR: `BASE..HEAD`; push a `dev`: `BEFORE..AFTER`; rama nueva (`BEFORE` todo ceros): solo el commit final. Un SHA mal formado o un `BEFORE` que no existe en el clon hace fallar el job (nunca escanea menos de lo debido). La salida va con `--redact`.
-- **`ci-gate`**: único check requerido. Falla si `unit-tests` o `secret-scan` no terminan en éxito (un job omitido cuenta como fallo). `report` y CodeQL no lo afectan.
+- **`backend-tests`** y **`contract-tests`**: JDK 21; el segundo corre `contractTest` y el gate de mutación `pitest`. Suben `allure-results-*`, `coverage-*` y `pit-*`.
+- **`publish-image`**: compila el jar y publica la imagen en GHCR (ver arriba). Necesita `ci-gate`, pero `ci-gate` no la necesita, así que nunca bloquea un merge. Es el único job de `ci.yml` con `packages: write`.
+- **`ci-gate`**: único check requerido. Falla si `unit-tests`, `backend-tests`, `contract-tests` o `secret-scan` no terminan en éxito (un job omitido cuenta como fallo). `report` y CodeQL no lo afectan.
 - **`codeql.yml`**: análisis CodeQL de Kotlin (`build-mode: manual`) en PRs hacia `dev`, pushes a `dev` y un cron semanal. Bloquea mediante la regla "Require code scanning results" del ruleset (alertas High o superiores), no mediante `ci-gate`.
-- **Dependabot** (`.github/dependabot.yml`): actualizaciones de versión semanales de Gradle y GitHub Actions hacia `dev` (`build(deps):` / `ci(deps):`), agrupadas. En PRs de Dependabot `report` no publica ni comenta (su token es de solo lectura).
+- **Dependabot** (`.github/dependabot.yml`): actualizaciones de versión semanales de Gradle (raíz y `/backend`), de la imagen base Docker de `/backend` (bump del digest) y de GitHub Actions hacia `dev` (`build(deps):` / `ci(deps):`), agrupadas. En PRs de Dependabot `report` no publica ni comenta (su token es de solo lectura).
 - **`report`**: genera Allure 2.46.2 desde el JUnit XML y publica Allure + Kover en la rama `gh-pages` (`pr-<N>/` en PRs, `dev/` en pushes a `dev`), y deja un único comentario sticky en el PR con los enlaces y la cobertura de líneas y ramas. Solo PRs del mismo repositorio; los PRs desde forks solo suben el artefacto `report-site`.
 - **`pr-cleanup.yml`**: borra `pr-<N>/` de `gh-pages` al cerrar el PR.
-- **`promote.yml`**: exige que el último check-run `ci-gate` del SHA (emitido por GitHub Actions) sea `success` (es decir, que las pruebas y el escaneo de secretos pasaron); si falta o no es exitoso, la promoción falla.
+- **`promote.yml`**: exige que el último check-run `ci-gate` del SHA (emitido por GitHub Actions) sea `success` (es decir, que las pruebas y el escaneo de secretos pasaron); si falta o no es exitoso, la promoción falla. Antes de mover `main`, `check-image` exige que la imagen `sha-<commit>` exista en GHCR; después de moverla, `retag-image` la etiqueta como `staging` (mismo digest, sin reconstruir). Es el único otro job con `packages: write`.
 
 Reportes publicados: `https://<usuario>.github.io/android-book-tracker/pr-<N>/allure/` y `.../kover/` (o `dev/` para la rama `dev`).
 
