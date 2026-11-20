@@ -80,21 +80,21 @@ Start state: `dev` without `backend/`. End state: backend builds on JDK 21, deny
 
 ### 5. WU4 Domain, port and use cases (strict TDD, no Spring)
 
-- [ ] 5.1 RED: unit tests for `OwnerId` (non-blank, rejects blank/whitespace), `BookId`, `Rating` (0.5-5 in half steps; rejects 0.4, 5.5, 0.75), `Book` or `BookDraft` invariants (required fields, bounded lengths consistent with the contract values chosen in PR2). (BA: Hexagonal Domain and Use Cases)
-- [ ] 5.2 GREEN: `domain/model` classes (plain Kotlin). (BA: Hexagonal Domain)
-- [ ] 5.3 RED: use case tests with an in-memory fake `BookRepository`: create, get, list, update, delete each take `OwnerId` as a mandatory parameter and return sealed outcomes; another owner's book yields `NotFound` for get/update/delete; list returns only the caller's books. (BA: Use case requires owner, Cross-owner read/write denied, Listing is isolated)
-- [ ] 5.4 GREEN: `domain/port/BookRepository` (signature from design) and `domain/usecase/{Create,Get,List,Update,Delete}BookUseCase` plus outcome sealed types. (BA: Hexagonal Domain and Use Cases)
-- [ ] 5.5 RED then GREEN: architecture guard test that scans `domain/**` sources/classes and fails on imports of `org.springframework`, `java.sql`, `javax.sql`, `jakarta.servlet`, `org.springframework.jdbc`. (BA: Domain is framework-free)
-- [ ] 5.6 REFACTOR and commit: `feat(backend): add framework-free books domain and use cases`.
+- [x] 5.1 RED: unit tests for `OwnerId` (non-blank, rejects blank/whitespace), `BookId`, `Rating` (0.5-5 in half steps; rejects 0.4, 5.5, 0.75), `Book` or `BookDraft` invariants (required fields, bounded lengths consistent with the contract values chosen in PR2). (BA: Hexagonal Domain and Use Cases)
+- [x] 5.2 GREEN: `domain/model` classes (plain Kotlin). (BA: Hexagonal Domain)
+- [x] 5.3 RED: use case tests with an in-memory fake `BookRepository`: create, get, list, update, delete each take `OwnerId` as a mandatory parameter and return sealed outcomes; another owner's book yields `NotFound` for get/update/delete; list returns only the caller's books. (BA: Use case requires owner, Cross-owner read/write denied, Listing is isolated)
+- [x] 5.4 GREEN: `domain/port/BookRepository` (signature from design) and `domain/usecase/{Create,Get,List,Update,Delete}BookUseCase` plus outcome sealed types. (BA: Hexagonal Domain and Use Cases)
+- [x] 5.5 RED then GREEN: architecture guard test that scans `domain/**` sources/classes and fails on imports of `org.springframework`, `java.sql`, `javax.sql`, `jakarta.servlet`, `org.springframework.jdbc`. (BA: Domain is framework-free)
+- [x] 5.6 REFACTOR and commit: `feat(backend): add framework-free books domain and use cases`.
 
 ### 6. WU5 Owner-scoped JDBC persistence and integration tests
 
-- [ ] 6.1 RED: SQL guard unit test: every SELECT/UPDATE/DELETE constant in `BookSql` contains `owner_id = :owner`; INSERT sets `owner_id`; no query lacks the filter. (BA: Owner-Scoped Persistence)
-- [ ] 6.2 RED: `integrationTest` with Testcontainers PostgreSQL singleton and `@ServiceConnection` (no H2): Flyway applies V1 on an empty database; raw INSERT without `owner_id` is rejected; adapter CRUD round-trip; cross-owner get/update/delete return not-found/false and change nothing; listing is isolated. (BA: Integration Tests Against PostgreSQL, Owner-Scoped Persistence)
-- [ ] 6.3 GREEN: `db/migration/V1__create_books.sql` (`BIGINT GENERATED ALWAYS AS IDENTITY`, `owner_id VARCHAR(255) NOT NULL` indexed), `BookSql`, row mapper, `JdbcBookRepository` using `JdbcClient`, `UseCaseConfig` `@Bean` wiring, `flyway-database-postgresql` dependency. (BA: Owner-Scoped Persistence)
-- [ ] 6.4 REFACTOR: extract common SQL fragments only if the guard test still passes; verify `./gradlew build` green in `backend/` and `:app:testDebugUnitTest` green at root.
-- [ ] 6.5 Commit: `feat(backend): add owner-scoped PostgreSQL persistence with Flyway`.
-- [ ] 6.6 PR1 verification record: backend `./gradlew build`, root `./gradlew spotlessCheck`, `actionlint`, `scripts/test-kover-summary.sh`; rollback boundary: revert PR1 (nothing else depends on it). Review each commit's diff for secrets (security-audit: no real credentials; dummy test user only).
+- [x] 6.1 RED: SQL guard unit test: every SELECT/UPDATE/DELETE constant in `BookSql` contains `owner_id = :owner`; INSERT sets `owner_id`; no query lacks the filter. (BA: Owner-Scoped Persistence)
+- [x] 6.2 RED: `integrationTest` with Testcontainers PostgreSQL singleton and `@ServiceConnection` (no H2): Flyway applies V1 on an empty database; raw INSERT without `owner_id` is rejected; adapter CRUD round-trip; cross-owner get/update/delete return not-found/false and change nothing; listing is isolated. (BA: Integration Tests Against PostgreSQL, Owner-Scoped Persistence)
+- [x] 6.3 GREEN: `db/migration/V1__create_books.sql` (`BIGINT GENERATED ALWAYS AS IDENTITY`, `owner_id VARCHAR(255) NOT NULL` indexed), `BookSql`, row mapper, `JdbcBookRepository` using `JdbcClient`, `UseCaseConfig` `@Bean` wiring, `flyway-database-postgresql` dependency. (BA: Owner-Scoped Persistence)
+- [x] 6.4 REFACTOR: extract common SQL fragments only if the guard test still passes; verify `./gradlew build` green in `backend/` and `:app:testDebugUnitTest` green at root.
+- [x] 6.5 Commit: `feat(backend): add owner-scoped PostgreSQL persistence with Flyway`.
+- [x] 6.6 PR1 verification record: backend `./gradlew build`, root `./gradlew spotlessCheck`, `actionlint`, `scripts/test-kover-summary.sh`; rollback boundary: revert PR1 (nothing else depends on it). Review each commit's diff for secrets (security-audit: no real credentials; dummy test user only).
 
 ---
 
