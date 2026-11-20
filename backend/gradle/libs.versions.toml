@@ -7,6 +7,7 @@ pitest = "1.19.0"
 pitestEngine = "1.30.2"
 pitestJunit5 = "1.2.3"
 openapiValidator = "3.0.0"
+restAssured = "6.3.0"
 
 [libraries]
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
@@ -21,6 +22,8 @@ testcontainers-junit = { module = "org.testcontainers:testcontainers-junit-jupit
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
 openapi-validator-core = { module = "com.atlassian.oai:openapi-request-validator-core", version.ref = "openapiValidator" }
 openapi-validator-webmvc = { module = "com.atlassian.oai:openapi-request-validator-spring-webmvc", version.ref = "openapiValidator" }
+openapi-validator-restassured = { module = "com.atlassian.oai:openapi-request-validator-restassured", version.ref = "openapiValidator" }
+rest-assured = { module = "io.rest-assured:rest-assured", version.ref = "restAssured" }
 jackson-module-kotlin = { module = "tools.jackson.module:jackson-module-kotlin" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
