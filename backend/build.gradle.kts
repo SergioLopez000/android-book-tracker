@@ -30,7 +30,10 @@ dependencies {
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.jdbc)
     implementation(libs.spring.boot.starter.flyway)
+    implementation(libs.jackson.module.kotlin)
     implementation(libs.kotlin.reflect)
+    implementation(libs.openapi.validator.core)
+    implementation(libs.openapi.validator.webmvc)
     runtimeOnly(libs.flyway.postgresql)
     runtimeOnly(libs.postgresql)
 
