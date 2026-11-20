@@ -1,7 +1,8 @@
-# Runs the unit tests and the secret scan on every pull request and dev push,
-# then publishes Allure and Kover reports to gh-pages. Quality checks (lint,
-# format, detekt, shell, workflows, commit messages) run ONLY locally via
-# lefthook, never here; secrets are scanned here so --no-verify cannot skip them.
+# Runs the app unit tests, the backend tests (JDK 21, Testcontainers) and the
+# secret scan on every pull request and dev push, then publishes Allure and
+# Kover reports to gh-pages. Quality checks (lint, format, detekt, shell,
+# workflows, commit messages) run ONLY locally via lefthook, never here; secrets
+# are scanned here so --no-verify cannot skip them.
 # `ci-gate` is the single required status check; `report` never gates.
 name: CI
 
@@ -51,6 +52,44 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  backend-tests:
+    name: backend-tests
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/dev' }}
+          # The backend is an independent build; its wrapper and settings live in backend/.
+          build-root-directory: backend
+      # Testcontainers talks to the runner's own Docker daemon; no service containers.
+      - run: ./gradlew test integrationTest koverXmlReport koverHtmlReport --continue
+      - name: Upload test results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: allure-results-backend
+          path: |
+            backend/build/test-results/test/*.xml
+            backend/build/test-results/integrationTest/*.xml
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Upload coverage
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-backend
+          path: backend/build/reports/kover
+          if-no-files-found: ignore
+          retention-days: 14
+
   secret-scan:
     name: secret-scan
     runs-on: ubuntu-24.04
@@ -78,7 +117,7 @@ jobs:
 
   report:
     name: report
-    needs: [unit-tests]
+    needs: [unit-tests, backend-tests]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     permissions:
@@ -139,23 +178,31 @@ jobs:
         run: |
           mkdir -p site
           allure generate allure-results -o site/allure --clean
-          kover_html="$(find coverage -type d -name htmlDebug | head -n 1)"
-          kover_xml="$(find coverage -type f -name reportDebug.xml | head -n 1)"
-          [ -n "$kover_html" ] && cp -r "$kover_html" site/kover
           summary="$(jq -r '.statistic | "\(.passed) passed, \(.failed) failed, \(.broken) broken, \(.skipped) skipped (\(.total) total)"' site/allure/widgets/summary.json)"
-          coverage="unavailable"
-          if [ -n "$kover_xml" ]; then
-            parsed="$(scripts/kover-summary.sh "$kover_xml" 2>/dev/null || true)"
-            if [ -n "$parsed" ]; then
-              line_cov="${parsed#line=}"; line_cov="${line_cov%% *}"
-              branch_cov="${parsed##*branch=}"
-              coverage="line ${line_cov}%, branch ${branch_cov}%"
-            fi
-          fi
+          # One coverage figure per component: the Android app and the JVM backend.
+          coverage_of() {
+            local xml parsed line_cov branch_cov
+            xml="$(find "$1" -type f -name "$2" 2>/dev/null | head -n 1 || true)"
+            [ -n "$xml" ] || { echo "unavailable"; return; }
+            parsed="$(scripts/kover-summary.sh "$xml" 2>/dev/null || true)"
+            [ -n "$parsed" ] || { echo "unavailable"; return; }
+            line_cov="${parsed#line=}"; line_cov="${line_cov%% *}"
+            branch_cov="${parsed##*branch=}"
+            echo "line ${line_cov}%, branch ${branch_cov}%"
+          }
+          html_of() { find "$1" -type d -name "$2" 2>/dev/null | head -n 1 || true; }
+          app_html="$(html_of coverage/coverage-unit htmlDebug)"
+          backend_html="$(html_of coverage/coverage-backend html)"
+          [ -n "$app_html" ] && cp -r "$app_html" site/kover
+          [ -n "$backend_html" ] && cp -r "$backend_html" site/kover-backend
+          app_coverage="$(coverage_of coverage/coverage-unit reportDebug.xml)"
+          backend_coverage="$(coverage_of coverage/coverage-backend report.xml)"
+          coverage="app ${app_coverage}; backend ${backend_coverage}"
           {
             echo "### Test report"
             echo "- Tests: ${summary}"
-            echo "- Coverage: ${coverage}"
+            echo "- Coverage (app): ${app_coverage}"
+            echo "- Coverage (backend): ${backend_coverage}"
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$EVENT_NAME" = "pull_request" ]; then dest="pr-${PR_NUMBER}"; else dest="dev"; fi
           publish=false
@@ -196,7 +243,8 @@ jobs:
             echo "### CI report"
             echo
             echo "- [Allure report](${base}/allure/)"
-            echo "- [Kover coverage](${base}/kover/)"
+            echo "- [Kover coverage (app)](${base}/kover/)"
+            echo "- [Kover coverage (backend)](${base}/kover-backend/)"
             echo "- Tests: ${TESTS}"
             echo "- Coverage: ${COVERAGE}"
           } > comment.md
@@ -209,7 +257,7 @@ jobs:
 
   ci-gate:
     name: ci-gate
-    needs: [unit-tests, secret-scan]
+    needs: [unit-tests, backend-tests, secret-scan]
     if: always()
     runs-on: ubuntu-24.04
     steps:

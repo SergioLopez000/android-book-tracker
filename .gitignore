@@ -5,6 +5,8 @@
 .DS_Store
 /build/
 /app/build/
+/backend/build/
+.kotlin/
 /captures/
 .externalNativeBuild/
 .cxx/
