@@ -6,7 +6,7 @@ Local quality gates (format, Android Lint, detekt, Compose lint, coverage report
 ## ADDED Requirements
 
 ### Requirement: Formatting Gate
-The build MUST provide a `spotlessCheck` task that exits 0 when every checked Kotlin and Gradle Kotlin DSL source is formatted per the repository `.editorconfig`, and exits non-zero when any checked file is misformatted. The rules MUST allow `@Composable` functions to use PascalCase names. The tree MUST pass `spotlessCheck` after the one-time format commit, which MUST contain only formatting changes and be listed in `.git-blame-ignore-revs`.
+The build MUST provide a `spotlessCheck` task that exits 0 when every checked Kotlin and Gradle Kotlin DSL source is formatted per the repository `.editorconfig`, and exits non-zero when any checked file is misformatted. The checked sources MUST include `backend/**` Kotlin and Gradle Kotlin DSL files, through the root Spotless configuration. The rules MUST allow `@Composable` functions to use PascalCase names. The tree MUST pass `spotlessCheck` after the one-time format commit, which MUST contain only formatting changes and be listed in `.git-blame-ignore-revs`.
 
 #### Scenario: Formatted tree passes
 - GIVEN the repository tree after the format commit
@@ -15,6 +15,11 @@ The build MUST provide a `spotlessCheck` task that exits 0 when every checked Ko
 
 #### Scenario: Misformatted Kotlin file fails
 - GIVEN a Kotlin source file with a formatting violation (e.g. wrong indentation)
+- WHEN `./gradlew spotlessCheck` runs
+- THEN it exits non-zero and names the offending file
+
+#### Scenario: Misformatted backend file fails
+- GIVEN a Kotlin file under `backend/` with a formatting violation
 - WHEN `./gradlew spotlessCheck` runs
 - THEN it exits non-zero and names the offending file
 
@@ -65,7 +70,7 @@ The change MUST record the outcome of a compatibility spike of slackhq compose-l
 - THEN the incompatibility is recorded, and no build or lint configuration references compose-lints
 
 ### Requirement: Coverage Report
-The build MUST provide Kover reports `koverHtmlReportDebug` and `koverXmlReportDebug` that generate from the debug unit tests. Generated code MUST be excluded from the report. The build MUST NOT enforce any coverage threshold.
+The build MUST provide Kover reports `koverHtmlReportDebug` and `koverXmlReportDebug` that generate from the debug unit tests. The backend build MUST provide Kover HTML and XML reports generated from its tests. Generated code MUST be excluded from the report. The build MUST NOT enforce any coverage threshold. `scripts/kover-summary.sh` MUST summarize both the Android and the JVM Kover XML.
 
 #### Scenario: HTML report produced
 - GIVEN the unit tests pass
@@ -76,6 +81,16 @@ The build MUST provide Kover reports `koverHtmlReportDebug` and `koverXmlReportD
 - GIVEN the unit tests pass
 - WHEN `./gradlew koverXmlReportDebug` runs
 - THEN it exits 0 and an XML report exists under the build output
+
+#### Scenario: Backend report produced
+- GIVEN the backend tests pass
+- WHEN the backend Kover HTML and XML tasks run in `/backend`
+- THEN each exits 0 and its report exists under the backend build output
+
+#### Scenario: Summary reads JVM output
+- GIVEN a JVM Kover XML report
+- WHEN `scripts/kover-summary.sh` runs on it
+- THEN it prints line and branch coverage figures
 
 #### Scenario: Generated code excluded
 - GIVEN generated classes (e.g. Room `*_Impl`, `ComposableSingletons`, `BuildConfig`, `R`)
@@ -88,10 +103,15 @@ The build MUST provide Kover reports `koverHtmlReportDebug` and `koverXmlReportD
 - THEN no task fails because of low coverage
 
 ### Requirement: Pre-commit Hook
-The `lefthook` `pre-commit` hook MUST run, in parallel: `spotlessCheck` (Kotlin/Gradle sources), Android Lint (`./gradlew --quiet :app:lintDebug`, only when staged files match Android sources, resources or Gradle configuration globs), detekt (staged `.kt` files, see Detekt Gate With Baseline), gitleaks on staged changes, actionlint (workflow files) and shellcheck with the commit-msg script test (shell files). Each job MUST exit non-zero, with a message explaining how to fix it, when its gate fails. The `commit-msg` hook MUST validate Conventional Commits. These hooks are the only enforcement point of quality static analysis; CI does not repeat them (see `ci-pipeline`). Secrets are the exception: gitleaks also runs in CI, so bypassing the hook does not let a secret through.
+The `lefthook` `pre-commit` hook MUST run, in parallel: `spotlessCheck` (Kotlin/Gradle sources, including `backend/**`), Android Lint (`./gradlew --quiet :app:lintDebug`, only when staged files match Android sources, resources or Gradle configuration globs), detekt (staged `.kt` files, including `backend/**`, see Detekt Gate With Baseline), gitleaks on staged changes, actionlint (workflow files) and shellcheck with the commit-msg script test (shell files). Each job MUST exit non-zero, with a message explaining how to fix it, when its gate fails. The `commit-msg` hook MUST validate Conventional Commits. These hooks are the only enforcement point of quality static analysis; CI does not repeat them (see `ci-pipeline`). Secrets are the exception: gitleaks also runs in CI, so bypassing the hook does not let a secret through.
 
 #### Scenario: Misformatted staged file blocked
 - GIVEN a staged misformatted Kotlin file
+- WHEN the pre-commit hook runs
+- THEN it exits non-zero
+
+#### Scenario: Misformatted staged backend file blocked
+- GIVEN a staged misformatted Kotlin file under `backend/`
 - WHEN the pre-commit hook runs
 - THEN it exits non-zero
 
@@ -195,7 +215,7 @@ Adding the quality tooling MUST NOT change runtime behavior or break existing te
 - THEN formatter, linter, detekt and coverage are no longer marked unavailable
 
 ### Requirement: Detekt Gate With Baseline
-The repository MUST provide detekt 1.23.8 configuration in `config/detekt/detekt.yml` and a baseline in `config/detekt/baseline.xml`. detekt MUST run through the detekt CLI as a lefthook pre-commit job over staged `.kt` files only, MUST NOT enable the ktlint-wrapper rules, and MUST have style rules duplicating ktlint disabled and Compose-friendly naming allowed. Issues in the baseline MUST NOT fail the job; any new issue MUST fail it with a non-zero exit and a message that prints how to fix it.
+The repository MUST provide detekt 1.23.8 configuration in `config/detekt/detekt.yml` and a baseline in `config/detekt/baseline.xml`. detekt MUST run through the detekt CLI as a lefthook pre-commit job over staged `.kt` files only, including `.kt` files under `backend/`, MUST NOT enable the ktlint-wrapper rules, and MUST have style rules duplicating ktlint disabled and Compose-friendly naming allowed. Issues in the baseline MUST NOT fail the job; any new issue, including in backend files, MUST fail it with a non-zero exit and a message that prints how to fix it.
 
 #### Scenario: Baselined tree passes
 - GIVEN staged `.kt` files whose only detekt issues are in the baseline
@@ -206,6 +226,11 @@ The repository MUST provide detekt 1.23.8 configuration in `config/detekt/detekt
 - GIVEN a staged `.kt` file with a detekt issue absent from the baseline
 - WHEN the pre-commit hook runs
 - THEN the detekt job exits non-zero, reports the issue and prints a fix hint
+
+#### Scenario: Backend file analyzed
+- GIVEN a staged `.kt` file under `backend/` with a new detekt issue
+- WHEN the pre-commit hook runs
+- THEN the detekt job exits non-zero and reports the issue
 
 #### Scenario: Non-Kotlin change skips detekt
 - GIVEN only non-`.kt` files are staged
