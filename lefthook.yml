@@ -19,6 +19,9 @@ pre-commit:
     - name: shellcheck
       glob: "*.sh"
       run: command -v shellcheck >/dev/null || { echo "brew install shellcheck"; exit 1; }; shellcheck {staged_files} && scripts/test-check-commit-msg.sh
+    - name: e2e-typecheck
+      glob: "{e2e/*.ts,e2e/**/*.ts}"
+      run: 'cd e2e && { [ -d node_modules ] || { echo "Run: cd e2e && npm ci"; exit 1; }; } && npx --no-install tsc --noEmit || { echo "Fix the TypeScript errors (cd e2e && npm run typecheck)"; exit 1; }'
 commit-msg:
   jobs:
     - name: conventional-commit
