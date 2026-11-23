@@ -130,3 +130,17 @@ Mixed input: 3 Robolectric JUnit XML + WDIO JSON (2 passing tests + 1 forced fai
 - The AVD cache name is held in job `env.AVD_CACHE` (`avd-api34-default-x86_64-v1`) and referenced as `key: ${{ env.AVD_CACHE }}`: a literal `key: avd-api34-...` was flagged by the gitleaks `generic-api-key` rule in the lefthook pre-commit (false positive), and the env name deliberately avoids the word "key".
 - Step names fixed by the harness: "Save AVD cache", "Upload e2e results", "Detect results".
 - `disable-animations: false` on the snapshot-creation runner step (only the test run disables animations).
+
+## PR3 SP4 and verification (orchestrator, 2026-11-23)
+| Run | Head | e2e-tests | Notes |
+|---|---|---|---|
+| 45176525899 | 0a6109a | failure | Emulator API 34 booted cold. Both flows timed out on `book_edit_review_field`. RED evidence for the small-screen case. |
+| 45177627167 | 5ed924f | failure | `reveal()` scroll added. The screenshot shows the keyboard covering the lower form, so the swipe hit the keyboard window. |
+| 45178670276 | b43158f | success | `reveal()` closes the keyboard first. 2 passing in 45 s. Job 5 min, suite about 2 min. |
+
+- SP4: PASS. API 34 `default` x86_64 on `ubuntu-24.04` works with KVM; boot and the job are well under the 5 and 20 minute limits; no fallback.
+- Report: 153 tests (151 + 2 e2e).
+- Failure evidence: `allure-results-e2e` of about 57 KB (2 PNG screenshots) on the failing runs, and 1 KB (no PNG) on the passing run.
+- Local checks after each fix: `npm run typecheck` and `npm run test:unit` 20/20.
+- The CI emulator (320x640) is smaller than the local AVD and is kept on purpose as the stricter screen.
+

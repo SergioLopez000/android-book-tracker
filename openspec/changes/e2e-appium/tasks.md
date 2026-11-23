@@ -120,7 +120,7 @@ Start: PR2 merged to `dev`. End: `e2e-tests` job green on its own PR, report inc
 
 ### 10. Spike (first)
 
-- [ ] 10.1 **SP4** on the PR3 branch: draft `e2e-tests` with API 34 `default` x86_64 on `ubuntu-24.04`. Pass: boot under 5 min (warm cache under 2 min), job under 20 min. Fallback (STOP and ask): API 35 `google_apis`, then 33. Also note repo visibility (runner size/KVM, open question). (CI: E2E Test Job)
+- [x] 10.1 **SP4** on the PR3 branch: draft `e2e-tests` with API 34 `default` x86_64 on `ubuntu-24.04`. Pass: boot under 5 min (warm cache under 2 min), job under 20 min. Fallback (STOP and ask): API 35 `google_apis`, then 33. Also note repo visibility (runner size/KVM, open question). (CI: E2E Test Job) Done 2026-11-23: PASS on API 34 `default` x86_64 `ubuntu-24.04`, so no fallback was needed. Cold boot plus suite took about 2 min, and the job took 4.5-5 min (runs 45176525899, 45177627167, 45178670276). The first two runs failed only on the test side: on the 320x640 CI screen the keyboard covered the form and fields stayed off screen. Fixed in `e2e/src/pages/base.page.ts` (`reveal()` closes the keyboard, then scrolls).
 
 ### 11. CI harness (RED then GREEN)
 
@@ -134,7 +134,7 @@ Start: PR2 merged to `dev`. End: `e2e-tests` job green on its own PR, report inc
 ### 12. Docs and verification
 
 - [x] 12.1 `README.md` (Spanish): e2e section (local run, `E2E_APK_PATH`, non-gating CI job, Allure report) and Dependabot npm note. `openspec/config.yaml`: mark the `e2e` layer available. Commit: `docs(e2e): document Appium suite and CI job`.
-- [ ] 12.2 PR3 verification record: scenarios mapped to evidence; SP4 outcome; `e2e-tests` green on the PR, failing-run upload checked once (throwaway), report shows e2e. PR body `Closes #7` (only here; PR1 and PR2 use `Refs #7`). Rollback: revert PR3 (job, report needs, Dependabot); `ci-gate` untouched.
+- [x] 12.2 PR3 verification record: scenarios mapped to evidence; SP4 outcome; `e2e-tests` green on the PR, failing-run upload checked once (throwaway), report shows e2e. PR body `Closes #7` (only here; PR1 and PR2 use `Refs #7`). Rollback: revert PR3 (job, report needs, Dependabot); `ci-gate` untouched. Done 2026-11-23: run 45178670276 is green (`e2e-tests` 2 passing). The report shows 153 tests (151 + 2 e2e). The failing runs uploaded `allure-results-e2e` with screenshots (about 57 KB each) and the passing run without any (1 KB). `ci-gate` does not need `e2e-tests`. The PR body carries `Closes #7`.
 
 ---
 
