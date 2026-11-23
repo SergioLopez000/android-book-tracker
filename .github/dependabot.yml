@@ -59,6 +59,33 @@ updates:
     groups:
       base-image:
         patterns: ["*"]
+  # The e2e suite pins exact versions; majors of the Appium and WebdriverIO stack are bumped by hand.
+  - package-ecosystem: npm
+    directory: /e2e
+    target-branch: dev
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: build
+      include: scope
+    ignore:
+      - dependency-name: "appium"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "appium-uiautomator2-driver"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "webdriverio"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@wdio/*"
+        update-types: ["version-update:semver-major"]
+    groups:
+      wdio:
+        patterns: ["webdriverio", "@wdio/*", "expect-webdriverio"]
+      appium:
+        patterns: ["appium", "appium-*"]
+      typescript:
+        patterns: ["typescript", "@types/*"]
   - package-ecosystem: github-actions
     directory: /
     target-branch: dev

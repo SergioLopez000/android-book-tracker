@@ -1,10 +1,10 @@
 # Runs the app unit tests, the backend tests and REST Assured contract tests with
-# the PIT mutation gate (JDK 21, Testcontainers) and the
-# secret scan on every pull request and dev push, then publishes Allure and
+# the PIT mutation gate (JDK 21, Testcontainers), the non-gating Appium e2e suite
+# on an emulator and the secret scan on every pull request and dev push, then publishes Allure and
 # Kover reports to gh-pages. Quality checks (lint, format, detekt, shell,
 # workflows, commit messages) run ONLY locally via lefthook, never here; secrets
 # are scanned here so --no-verify cannot skip them.
-# `ci-gate` is the single required status check; `report` never gates.
+# `ci-gate` is the single required status check; `report` and `e2e-tests` never gate.
 name: CI
 
 on:
@@ -160,9 +160,96 @@ jobs:
           AFTER_SHA: ${{ github.sha }}
         run: gitleaks git --log-opts="$(scripts/secret-scan-range.sh)" --redact --no-banner --exit-code 1 .
 
+  # Non-gating: ci-gate never needs it. Runs fork code under pull_request, so it holds only
+  # contents: read and no secrets. The AVD cache is saved only on dev pushes (PRs restore only).
+  e2e-tests:
+    name: e2e-tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      # AVD cache name: API level, target, ABI and a manual version. Named without "key" so gitleaks'
+      # generic-api-key rule does not flag it.
+      AVD_CACHE: avd-api34-default-x86_64-v1
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/dev' }}
+      - run: ./gradlew :app:assembleDebug
+      # Release proof lives here, not in unit-tests (whose command is fixed to :app:testDebugUnitTest).
+      - name: Prove release builds carry no test tags
+        run: scripts/test-release-no-test-tags.sh
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: npm ci
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Restore AVD cache
+        id: avd-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: ${{ env.AVD_CACHE }}
+      - name: Create AVD snapshot
+        if: ${{ github.ref == 'refs/heads/dev' && steps.avd-cache.outputs.cache-hit != 'true' }}
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: default
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
+      - name: Save AVD cache
+        if: ${{ github.ref == 'refs/heads/dev' && steps.avd-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: ${{ env.AVD_CACHE }}
+      - name: Run e2e suite
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: default
+          arch: x86_64
+          force-avd-creation: false
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          working-directory: e2e
+          script: |
+            adb shell cmd connectivity airplane-mode enable
+            npm run e2e
+      - name: Upload e2e results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: allure-results-e2e
+          path: e2e/allure-results
+          if-no-files-found: ignore
+          retention-days: 7
+
   report:
     name: report
-    needs: [unit-tests, backend-tests, contract-tests]
+    needs: [unit-tests, backend-tests, contract-tests, e2e-tests]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
     permissions:
@@ -204,11 +291,11 @@ jobs:
       - name: Detect results
         id: detect
         run: |
-          if compgen -G "allure-results/*.xml" >/dev/null; then
+          if compgen -G "allure-results/*.xml" >/dev/null || compgen -G "allure-results/*-result.json" >/dev/null; then
             echo "has_results=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_results=false" >> "$GITHUB_OUTPUT"
-            echo "### Report skipped: no test results (unit-tests did not run)" >> "$GITHUB_STEP_SUMMARY"
+            echo "### Report skipped: no test results" >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Install Allure
         if: steps.detect.outputs.has_results == 'true'
