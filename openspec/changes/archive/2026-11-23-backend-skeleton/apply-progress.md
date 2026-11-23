@@ -67,3 +67,37 @@ Size vs a8a956f: 908 added+deleted lines raw; 539 authored (wrapper scripts and 
 - Evidence: backend `build contractTest` green (test 58/0, integrationTest 6/0, contractTest 25/0); `:app:testDebugUnitTest --rerun-tasks` 102/0; actionlint, shellcheck, test-image-config green.
 - Fix during GREEN: the first smoke script probed `/api/v1/books` (not in the spec; passed 401 only because everything is denied); corrected to `/api/books`.
 - Only provable after merge: hosted `publish-image` push to GHCR (needs `packages: write` repo setting and a push to dev), `check-image` and `retag-image` on a real promote, package linking to the repo via the source label, crane `tag`/`digest` against GHCR. The main spec "Out of Scope" job list is not updated here (belongs to spec sync at archive).
+
+## TDD Cycle Evidence (all PRs)
+
+Consolidated from the per-PR evidence above (added after verify finding W1). Only recorded evidence is tabulated; RED and GREEN usually share a commit per work unit, so commit SHAs are the PR commits listed in each section. Test paths are relative to `backend/src/<suite>/kotlin/com/librosleidos/backend/` unless they start with `scripts/`.
+
+| Task | Test file | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|------|-----------|-------|------------|-----|-------|-------------|----------|
+| 1.1 SP4 | throwaway PIT scaffold test (removed) | Mutation | N/A (new build) | ✅ weak test: `pitest` exit non-zero, score 14 < 80 | ✅ strong test, 7/7 killed | ➖ Single (spike) | ✅ scaffold removed |
+| 1.2 / 3.1 | `test/.../config/NoDefaultUserTest.kt`, `test/.../config/SecuritySliceTest.kt` | Unit (slice) | ✅ app 102/0 | ✅ default UserDetailsService present; health body had extra `groups` | ✅ 6/6 after exclude, `SecurityConfig`, probes off | ✅ `/api/books`, unknown path, `env`, `info`, health | ✅ 3.5 clean |
+| 3.2 | `test/.../config/AuthenticatedActuatorTest.kt` | Unit (slice) | ✅ app 102/0 | ✅ Written before `SecurityConfig` | ✅ Passed (404 for `env`, `beans`, `info`) | ✅ 3 endpoints | ✅ 3.5 clean |
+| 3.4 | Gradle `verifyPackagedArtifact` | Build check | N/A (new) | ✅ injected `security.enabled: false` + `testsupport.Leak` fail the check | ✅ passes after removal | ✅ 2 leak kinds | ➖ None needed |
+| 2.1 | root `spotlessCheck` on `backend/*.gradle.kts` | Build check | ✅ app 102/0 | ✅ misformatted `backend/build.gradle.kts` passed (gap shown) | ✅ fails on misformat after target added | ➖ Single | ✅ 2.4 catalog deduped |
+| 4.1 / 4.2 | `scripts/test-kover-summary.sh` (JVM fixture) | Unit (shell) | ✅ existing kover cases green | ➖ No observable RED (parser already report-agnostic; characterization test) | ✅ Passed | ➖ Single fixture | ✅ 4.6 actionlint/shellcheck |
+| 4.4 | grep check on `codeql.yml` + actionlint | Workflow check | N/A | ✅ grep `-p backend` exit 1 | ✅ exit 0, actionlint clean | ➖ Single | ✅ 4.6 |
+| 5.1 / 5.2 | `test/.../domain/model/ValueObjectsTest.kt`, `BookDraftTest.kt` | Unit | ✅ backend suite + app 102/0 | ✅ unresolved value objects | ✅ Passed | ✅ rating 0.4/0.75/5.5 rejected, blank owner, field bounds | ✅ 5.6 clean |
+| 5.3 / 5.4 | `test/.../domain/usecase/BookUseCasesTest.kt` | Unit (fake repo) | ✅ | ✅ unresolved use cases | ✅ Passed | ✅ cross-owner get/update/delete | ✅ 5.6 clean |
+| 5.5 | `test/.../domain/DomainIsFrameworkFreeTest.kt` | Architecture | ✅ | ✅ injected Spring import in `Book.kt` fails | ✅ passes after removal | ➖ Single guard | ➖ None needed |
+| 6.1 | `test/.../data/jdbc/BookSqlGuardTest.kt` | Unit | ✅ | ✅ unresolved `BookSql` | ✅ Passed | ✅ SELECT/UPDATE/DELETE/INSERT | ✅ 6.4 guard still green |
+| 6.2 / 6.3 | `integrationTest/.../data/jdbc/JdbcBookRepositoryTest.kt` | Integration (Testcontainers PG 17) | ✅ test 28/0, app 102/0 | ✅ unresolved adapter | ✅ 6/6 on real PostgreSQL | ✅ mutant `OR id = :id` on DELETE caught by cross-owner test | ✅ 6.4 |
+| 8.1 | `test/.../web/OpenApiCoverageTest.kt` | Unit | ✅ test 28/0 | ✅ "openapi.yaml must exist and parse" | ✅ Passed | ✅ route-without-op and op-without-route fixtures | ✅ 8.5 |
+| 8.2 | `test/.../web/BooksWebTest.kt`, `UnexpectedErrorTest.kt` | Unit (web slice) | ✅ | ✅ 23 of 54 failed | ✅ test 55/0 | ✅ unknown field, oversize, wrong type, malformed JSON; mutant (interceptor removed) caught by 2 cases | ✅ 8.5 |
+| 9.1 / 9.3 | `contractTest/.../contract/books/{Create,List,Get,Update,Delete}BookTest.kt`, `BookLifecycleFlowTest.kt` | Contract (REST Assured + Testcontainers) | ✅ test 55/0, integrationTest 6/0 | ✅ `contractTest` task did not exist | ✅ 25/25 | ✅ mutant (extra `BookResponse` field) failed 5 of 25 | ✅ 9.7 |
+| 9.2 | `contractTest/.../contract/ContractCoverageTest.kt` | Contract meta | ✅ | ✅ suite missing (no separate per-case failing run) | ✅ Passed | ✅ untested-op fixture + drift fixture (`rating:"five"`) | ✅ 9.7 |
+| 9.4 / 9.5 | `test/.../domain/model/AccessorsTest.kt` + PIT gate | Mutation | ✅ test 58/0 | ✅ score 62 < 80 with value-object tests removed | ✅ 52/55 (95%) | ✅ gate proven both ways (14 and 62 fail, 95 passes) | ➖ None needed |
+| 10.1 / 10.2 / 10.4-10.6 | `scripts/test-image-config.sh` | Config check (shell) | ✅ backend build, app 102/0 | ✅ 18 checks failed | ✅ 0 failures | ✅ Dockerfile, publish-image, check-image, retag-image, permissions | ✅ 10.7 |
+| 10.3 | `scripts/test-image-smoke.sh` | Smoke (Docker + PG 17) | ✅ | ✅ "open Dockerfile: no such file" | ✅ health 200, anonymous `/api/books` 401 | ➖ Single | ✅ fixed `/api/v1/books` probe to `/api/books` |
+
+### Test Summary
+- **Total tests written (backend)**: 89 JVM tests (unit 58, integration 6, contract 25) plus 3 shell check scripts and 1 smoke script.
+- **Total tests passing**: 89/89 backend, 102/102 app (`--rerun-tasks`); PIT 95% (threshold 80).
+- **Layers used**: Unit (58), Integration (6), Contract (25), Mutation (55 mutants), Shell/smoke (4 scripts).
+- **Approval tests** (refactoring): None — no refactoring of existing behavior.
+- **Pure functions created**: domain value objects and use cases are framework-free (guarded by `DomainIsFrameworkFreeTest`).
+- **Known gaps**: 4.1 has no observable RED (characterization); 9.2 RED was the missing suite, not a per-case failure; spikes 1.3, 1.4, 7.1 are evidence runs, not TDD cycles.
