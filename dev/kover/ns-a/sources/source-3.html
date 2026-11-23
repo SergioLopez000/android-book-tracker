@@ -5,7 +5,7 @@
 <html id="htmlId">
 <head>
   <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
-  <title>app Coverage Report > TypeKt</title>
+  <title>app Coverage Report > BookListTags</title>
   <style type="text/css">
     @import "../../css/coverage.css";
     @import "../../css/idea.min.css";
@@ -19,10 +19,10 @@
 <div class="breadCrumbs">
 Current scope: app<span class="separator">|</span>    <a href="../../index.html">all classes</a>
     <span class="separator">|</span>
-    <a href="../index.html">com.librosleidos.ui.theme</a>
+    <a href="../index.html">com.librosleidos.ui.list</a>
 </div>
 
-<h1>Coverage Summary for Class: TypeKt (com.librosleidos.ui.theme)</h1>
+<h1>Coverage Summary for Class: BookListTags (com.librosleidos.ui.list)</h1>
 
 <table class="coverageStats">
 <tr>
@@ -49,7 +49,7 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
 </th>
 </tr>
 <tr>
-  <td class="name">TypeKt</td>
+  <td class="name">BookListTags</td>
 <td class="coverageStat">
   <span class="percent">
     100%
@@ -63,7 +63,7 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
     100%
   </span>
   <span class="absValue">
-    (2/2)
+    (3/3)
   </span>
 </td>
     <td class="coverageStat"/>
@@ -72,7 +72,7 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
     100%
   </span>
   <span class="absValue">
-    (7/7)
+    (3/3)
   </span>
 </td>
 <td class="coverageStat">
@@ -80,7 +80,7 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
     100%
   </span>
   <span class="absValue">
-    (66/66)
+    (12/12)
   </span>
 </td>
 </tr>
@@ -92,29 +92,31 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
 
 
 <pre>
-<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.ui.theme
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.ui.list
 &nbsp;
-&nbsp;import androidx.compose.material3.Typography
-&nbsp;import androidx.compose.ui.text.TextStyle
-&nbsp;import androidx.compose.ui.text.font.FontFamily
-&nbsp;import androidx.compose.ui.text.font.FontWeight
-&nbsp;import androidx.compose.ui.unit.sp
+&nbsp;import com.librosleidos.domain.model.DateRangeFilter
 &nbsp;
-&nbsp;/*
-&nbsp; * Task 1.2 (design &quot;app-theme&quot;, D12): typography paired with [DarkColorScheme].
-&nbsp; * Scaffold — plain constant definition, no branching logic.
-&nbsp; * TDD-exempt, same rule as the rest of Phase 1.
+&nbsp;/**
+&nbsp; * Stable test tags for the book list screen and its delete dialog
+&nbsp; * (`&lt;screen&gt;_&lt;element&gt;[_&lt;id&gt;]`, snake_case). Shared by the screen, the
+&nbsp; * Robolectric tests and, through `e2e/src/pages/tags.ts`, the Appium suite.
+&nbsp; * Renaming a tag is a breaking change for the e2e suite.
 &nbsp; */
+&nbsp;object BookListTags {
+&nbsp;    const val ADD_BUTTON = &quot;book_list_add_button&quot;
+&nbsp;    const val LOADING = &quot;book_list_loading&quot;
+&nbsp;    const val EMPTY_STATE = &quot;book_list_empty_state&quot;
+&nbsp;    const val LIST = &quot;book_list&quot;
+&nbsp;    const val DELETE_DIALOG = &quot;book_list_delete_dialog&quot;
+&nbsp;    const val DELETE_CONFIRM_BUTTON = &quot;book_list_delete_confirm_button&quot;
+&nbsp;    const val DELETE_CANCEL_BUTTON = &quot;book_list_delete_cancel_button&quot;
 &nbsp;
-<b class="fc">&nbsp;val AppTypography = Typography(</b>
-<b class="fc">&nbsp;    bodyLarge = TextStyle(</b>
-<b class="fc">&nbsp;        fontFamily = FontFamily.Default,</b>
-<b class="fc">&nbsp;        fontWeight = FontWeight.Normal,</b>
-<b class="fc">&nbsp;        fontSize = 16.sp,</b>
-<b class="fc">&nbsp;        lineHeight = 24.sp,</b>
-<b class="fc">&nbsp;        letterSpacing = 0.5.sp</b>
-&nbsp;    )
-&nbsp;)
+<b class="fc">&nbsp;    fun filter(filter: DateRangeFilter): String = &quot;book_list_filter_${filter.name.lowercase()}&quot;</b>
+&nbsp;
+<b class="fc">&nbsp;    fun item(id: Long): String = &quot;book_list_item_$id&quot;</b>
+&nbsp;
+<b class="fc">&nbsp;    fun removeButton(id: Long): String = &quot;book_list_remove_button_$id&quot;</b>
+&nbsp;}
 </code>
 </pre>
 </div>
@@ -138,7 +140,7 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2026-11-17 12:01</div>
+    <div style="float:right;">generated on 2026-11-23 12:36</div>
 </div>
 </body>
 </html>

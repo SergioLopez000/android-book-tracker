@@ -120,6 +120,7 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
 &nbsp;import androidx.navigation.compose.rememberNavController
 &nbsp;import androidx.navigation.navArgument
 &nbsp;import com.librosleidos.di.AppContainer
+&nbsp;import com.librosleidos.ui.e2eRoot
 &nbsp;import com.librosleidos.ui.edit.BookEditRoute
 &nbsp;import com.librosleidos.ui.edit.BookEditViewModel
 &nbsp;import com.librosleidos.ui.list.BookListRoute
@@ -144,6 +145,7 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
 &nbsp;        setContent {
 &nbsp;            RinconDeLecturaTheme {
 &nbsp;                Scaffold(
+&nbsp;                    modifier = Modifier.e2eRoot(),
 &nbsp;                    topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) }
 &nbsp;                ) { contentPadding -&gt;
 &nbsp;                    Surface(modifier = Modifier.padding(contentPadding)) {
@@ -224,7 +226,7 @@ Current scope: app<span class="separator">|</span>    <a href="../../index.html"
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2026-11-17 12:01</div>
+    <div style="float:right;">generated on 2026-11-23 12:36</div>
 </div>
 </body>
 </html>
