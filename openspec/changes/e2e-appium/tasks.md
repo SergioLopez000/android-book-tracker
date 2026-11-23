@@ -37,7 +37,7 @@ Start: `dev` without tags. End: tags in `main`, `e2eRoot` pair, Robolectric gree
 
 ### 1. Spike (first, blocks PR1 merge)
 
-- [ ] 1.1 **SP2 resource-id dump** (local, before PR1 merges; throwaway WDIO or `adb shell uiautomator dump`, nothing committed). Needs tasks 2.x-3.x GREEN to build the debug APK, so run it right after 3.5 and before 3.6. Pass: list (1 item) and open dialog show `book_list_item_<id>`, `book_list_remove_button_<id>`, both dialog buttons as `resource-id`; item text searchable. Fail, fallback (STOP and ask): apply `e2eRoot` on dialog content, tag inner `Text`s, or use `descriptionContains`. (E2E: Debug-Only Resource-Id Exposure)
+- [x] 1.1 **SP2 resource-id dump** (local, before PR1 merges; throwaway WDIO or `adb shell uiautomator dump`, nothing committed). Needs tasks 2.x-3.x GREEN to build the debug APK, so run it right after 3.5 and before 3.6. Pass: list (1 item) and open dialog show `book_list_item_<id>`, `book_list_remove_button_<id>`, both dialog buttons as `resource-id`; item text searchable. Fail, fallback (STOP and ask): apply `e2eRoot` on dialog content, tag inner `Text`s, or use `descriptionContains`. (E2E: Debug-Only Resource-Id Exposure)
 
 ### 2. Tag constants and screen tags (RED then GREEN)
 
@@ -65,7 +65,7 @@ Start: `dev` without tags. End: tags in `main`, `e2eRoot` pair, Robolectric gree
 - [x] 4.3 TRIANGULATE: temporarily add `testTagsAsResourceId` to a `src/main` file; expected exit non-zero naming the file; revert.
 - [x] 4.4 Docs: `openspec/config.yaml` verify rule for the script; update `project-conventions.md` line 22 (root applied once on `Scaffold` plus the dialog). Run `shellcheck scripts/test-release-no-test-tags.sh`.
 - [x] 4.5 Commit: `test(app): prove release builds carry no test-tag exposure`.
-- [ ] 4.6 PR1 verification record: Robolectric green, harness green, SP2 result, `./gradlew spotlessCheck`; PR body `Refs #7`. Rollback: revert PR1.
+- [x] 4.6 PR1 verification record: Robolectric green, harness green, SP2 result, `./gradlew spotlessCheck`; PR body `Refs #7`. Rollback: revert PR1.
 
 ---
 
