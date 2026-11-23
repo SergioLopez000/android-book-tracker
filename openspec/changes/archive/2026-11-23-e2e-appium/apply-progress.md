@@ -6,7 +6,7 @@
 - [x] 1.1 SP2 resource-id dump (PASS with caveats, see below)
 - [x] 2.1-2.7 tags (commit 8c664eb)
 - [x] 3.1-3.5 debug-only e2eRoot (commit 9506f7f)
-- [ ] 3.6 SP2 fallback: NOT applied; pending orchestrator/user decision on the caveats
+- [x] 3.6 SP2 fallback: no app fallback applied; SP2 half-star bounds mismatch accepted by the user as a known limitation (Page Object uses a geometry tap). Aligned with tasks.md at archive (S1 fix).
 - [x] 4.1-4.5 release proof harness (commit 015d48a)
 - [x] 4.6 verification record (this file)
 
