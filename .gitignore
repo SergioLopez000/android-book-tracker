@@ -15,3 +15,10 @@
 .atl/
 .codegraph/
 .engram/
+
+# e2e (Appium) generated output
+/e2e/node_modules/
+/e2e/allure-results/
+/e2e/allure-report/
+/e2e/logs/
+/e2e/test-results/
