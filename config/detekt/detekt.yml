@@ -27,7 +27,7 @@ style:
 
 naming:
   FunctionNaming:
-    excludes: ['**/test/**', '**/androidTest/**', '**/integrationTest/**', '**/contractTest/**']
+    excludes: ['**/test/**', '**/testDebug/**', '**/testRelease/**', '**/androidTest/**', '**/integrationTest/**', '**/contractTest/**']
     ignoreAnnotated: ['Composable']
   TopLevelPropertyNaming:
     constantPattern: '[A-Z][A-Za-z0-9]*'

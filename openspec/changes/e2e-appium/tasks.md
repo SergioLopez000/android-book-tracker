@@ -51,11 +51,11 @@ Start: `dev` without tags. End: tags in `main`, `e2eRoot` pair, Robolectric gree
 
 ### 3. Debug-only `e2eRoot` (RED then GREEN)
 
-- [ ] 3.1 RED: `app/src/testDebug/java/com/librosleidos/ui/E2eRootDebugTest.kt` (Robolectric `@Config(sdk=[34])`): `MainActivity` and the open delete dialog have a node with `SemanticsPropertiesAndroid.TestTagsAsResourceId == true` (`useUnmergedTree`). Expected: fails (property absent / unresolved `e2eRoot`). (E2E: Debug exposes tags as resource ids)
-- [ ] 3.2 RED: `app/src/testRelease/java/com/librosleidos/ui/E2eRootReleaseTest.kt` (plain JUnit): `assertSame(Modifier, Modifier.e2eRoot())`. Expected: unresolved reference. (E2E: Release behavior unchanged)
-- [ ] 3.3 GREEN: create `app/src/debug/java/com/librosleidos/ui/E2eRoot.kt` (`semantics { testTagsAsResourceId = true }`) and `app/src/release/java/com/librosleidos/ui/E2eRoot.kt` (`= this`).
-- [ ] 3.4 GREEN: apply `Scaffold(modifier = Modifier.e2eRoot())` in `MainActivity.kt` and `AlertDialog(modifier = Modifier.e2eRoot().testTag(...))` in `BookListScreen.kt`; confirm 3.1 and 3.2 pass (`:app:testDebugUnitTest`, `:app:testReleaseUnitTest --tests 'com.librosleidos.ui.E2eRootReleaseTest'`).
-- [ ] 3.5 REFACTOR + commit: `feat(app): expose test tags as resource ids in debug builds only`. Then run SP2 (task 1.1) against `./gradlew :app:assembleDebug`.
+- [x] 3.1 RED: `app/src/testDebug/java/com/librosleidos/ui/E2eRootDebugTest.kt` (Robolectric `@Config(sdk=[34])`): `MainActivity` and the open delete dialog have a node with `SemanticsPropertiesAndroid.TestTagsAsResourceId == true` (`useUnmergedTree`). Expected: fails (property absent / unresolved `e2eRoot`). (E2E: Debug exposes tags as resource ids)
+- [x] 3.2 RED: `app/src/testRelease/java/com/librosleidos/ui/E2eRootReleaseTest.kt` (plain JUnit): `assertSame(Modifier, Modifier.e2eRoot())`. Expected: unresolved reference. (E2E: Release behavior unchanged)
+- [x] 3.3 GREEN: create `app/src/debug/java/com/librosleidos/ui/E2eRoot.kt` (`semantics { testTagsAsResourceId = true }`) and `app/src/release/java/com/librosleidos/ui/E2eRoot.kt` (`= this`).
+- [x] 3.4 GREEN: apply `Scaffold(modifier = Modifier.e2eRoot())` in `MainActivity.kt` and `AlertDialog(modifier = Modifier.e2eRoot().testTag(...))` in `BookListScreen.kt`; confirm 3.1 and 3.2 pass (`:app:testDebugUnitTest`, `:app:testReleaseUnitTest --tests 'com.librosleidos.ui.E2eRootReleaseTest'`).
+- [x] 3.5 REFACTOR + commit: `feat(app): expose test tags as resource ids in debug builds only`. Then run SP2 (task 1.1) against `./gradlew :app:assembleDebug`.
 - [ ] 3.6 If SP2 needed its fallback, apply it with a RED test first (same files as 2.1/3.1) and amend the commit; record the outcome in the PR.
 
 ### 4. Release proof harness (RED then GREEN)

@@ -25,6 +25,7 @@ import com.librosleidos.domain.model.BookSort
 import com.librosleidos.domain.model.DateRangeFilter
 import com.librosleidos.ui.components.BookCoverImage
 import com.librosleidos.ui.components.StarRating
+import com.librosleidos.ui.e2eRoot
 
 /**
  * Task 5.3 (design: container/presentational split). Stateless — the
@@ -113,7 +114,7 @@ fun BookListScreen(
         val pendingBook = state.books.find { it.id == pendingId }
         AlertDialog(
             onDismissRequest = onDeleteCancelled,
-            modifier = Modifier.testTag(BookListTags.DELETE_DIALOG),
+            modifier = Modifier.e2eRoot().testTag(BookListTags.DELETE_DIALOG),
             title = { Text("Delete book?") },
             text = {
                 Text(

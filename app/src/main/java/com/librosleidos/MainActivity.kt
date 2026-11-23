@@ -19,6 +19,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.librosleidos.di.AppContainer
+import com.librosleidos.ui.e2eRoot
 import com.librosleidos.ui.edit.BookEditRoute
 import com.librosleidos.ui.edit.BookEditViewModel
 import com.librosleidos.ui.list.BookListRoute
@@ -43,6 +44,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             RinconDeLecturaTheme {
                 Scaffold(
+                    modifier = Modifier.e2eRoot(),
                     topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) }
                 ) { contentPadding ->
                     Surface(modifier = Modifier.padding(contentPadding)) {
