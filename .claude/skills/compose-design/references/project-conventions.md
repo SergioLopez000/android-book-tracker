@@ -19,7 +19,7 @@ Each screen renders and previews all of: loading, empty, error, content. Provide
 
 ## Test tags (Appium and Compose tests)
 
-- Set `Modifier.semantics { testTagsAsResourceId = true }` once on the root of each Route so Appium (UiAutomator2) sees tags as resource ids.
+- Apply `Modifier.e2eRoot()` (debug: `semantics { testTagsAsResourceId = true }`; release: identity, in `app/src/{debug,release}`) once on the activity `Scaffold` and on each dialog window (`AlertDialog(modifier = Modifier.e2eRoot().testTag(...))`) so Appium (UiAutomator2) sees tags as resource ids. Never reference the flag from `src/main` or `src/release`.
 - Tag format: `<screen>_<element>[_<id>]` in snake_case, e.g. `book_list_item_42`, `book_edit_save_button`, `book_list_empty_state`.
 - Every interactive element and every state container gets a tag. Keep tags stable across redesigns; a redesign must not rename them.
 

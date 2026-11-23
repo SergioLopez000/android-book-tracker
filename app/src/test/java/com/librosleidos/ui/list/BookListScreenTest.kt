@@ -1,10 +1,12 @@
 package com.librosleidos.ui.list
 
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.librosleidos.domain.model.Book
+import com.librosleidos.domain.model.DateRangeFilter
 import com.librosleidos.domain.model.Rating
 import java.time.LocalDate
 import org.junit.Rule
@@ -205,5 +207,90 @@ class BookListScreenTest {
         assert(selectedRange == com.librosleidos.domain.model.DateRangeFilter.LAST_MONTH) {
             "expected onDateRangeSelected to be invoked with LAST_MONTH"
         }
+    }
+
+    private val emma = dune.copy(id = 2L, title = "Emma", author = "Jane Austen")
+
+    private fun setList(state: BookListUiState) {
+        composeTestRule.setContent {
+            BookListScreen(
+                state = state,
+                onSortSelected = {},
+                onMinRatingSelected = {},
+                onDeleteRequested = {},
+                onDeleteConfirmed = {},
+                onDeleteCancelled = {}
+            )
+        }
+    }
+
+    // --- E2E test tags (spec: Test Tag Naming, Per-item tags unique) ---
+
+    @Test
+    fun tags_actionsAndFilters_existWithStableNames() {
+        setList(BookListUiState(books = emptyList(), isLoading = false, isEmpty = true))
+
+        composeTestRule.onNodeWithTag("book_list_add_button").assertExists()
+        composeTestRule.onNodeWithTag("book_list_filter_last_month").assertExists()
+        composeTestRule.onNodeWithTag("book_list_filter_last_year").assertExists()
+        composeTestRule.onNodeWithTag("book_list_filter_all_time").assertExists()
+    }
+
+    @Test
+    fun tags_loadingState_hasLoadingTag() {
+        setList(BookListUiState(books = emptyList(), isLoading = true, isEmpty = false))
+
+        composeTestRule.onNodeWithTag("book_list_loading").assertExists()
+        composeTestRule.onNodeWithTag("book_list_empty_state").assertDoesNotExist()
+    }
+
+    @Test
+    fun tags_emptyState_hasEmptyStateTag() {
+        setList(BookListUiState(books = emptyList(), isLoading = false, isEmpty = true))
+
+        composeTestRule.onNodeWithTag("book_list_empty_state").assertExists()
+        composeTestRule.onNodeWithTag("book_list").assertDoesNotExist()
+    }
+
+    @Test
+    fun tags_twoBooks_haveDistinctItemAndRemoveTags() {
+        setList(BookListUiState(books = listOf(dune, emma), isLoading = false, isEmpty = false))
+
+        composeTestRule.onNodeWithTag("book_list").assertExists()
+        composeTestRule.onNodeWithTag("book_list_item_1").assertExists()
+        composeTestRule.onNodeWithTag("book_list_item_2").assertExists()
+        composeTestRule.onNodeWithTag("book_list_remove_button_1").assertExists()
+        composeTestRule.onNodeWithTag("book_list_remove_button_2").assertExists()
+        composeTestRule.onNodeWithTag("book_list_item_3").assertDoesNotExist()
+    }
+
+    @Test
+    fun tags_deleteDialog_hasDialogAndBothButtonTags() {
+        setList(
+            BookListUiState(
+                books = listOf(dune),
+                isLoading = false,
+                isEmpty = false,
+                pendingDeleteId = 1L
+            )
+        )
+
+        composeTestRule.onNodeWithTag("book_list_delete_dialog").assertExists()
+        composeTestRule.onNodeWithTag("book_list_delete_confirm_button").assertExists()
+        composeTestRule.onNodeWithTag("book_list_delete_cancel_button").assertExists()
+    }
+
+    @Test
+    fun tags_noPendingDelete_hasNoDialogTag() {
+        setList(BookListUiState(books = listOf(dune), isLoading = false, isEmpty = false))
+
+        composeTestRule.onNodeWithTag("book_list_delete_dialog").assertDoesNotExist()
+    }
+
+    @Test
+    fun tagBuilders_produceExpectedNames() {
+        assert(BookListTags.item(7L) == "book_list_item_7")
+        assert(BookListTags.removeButton(7L) == "book_list_remove_button_7")
+        assert(BookListTags.filter(DateRangeFilter.LAST_YEAR) == "book_list_filter_last_year")
     }
 }

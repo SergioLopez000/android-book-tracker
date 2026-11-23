@@ -37,35 +37,35 @@ Start: `dev` without tags. End: tags in `main`, `e2eRoot` pair, Robolectric gree
 
 ### 1. Spike (first, blocks PR1 merge)
 
-- [ ] 1.1 **SP2 resource-id dump** (local, before PR1 merges; throwaway WDIO or `adb shell uiautomator dump`, nothing committed). Needs tasks 2.x-3.x GREEN to build the debug APK, so run it right after 3.5 and before 3.6. Pass: list (1 item) and open dialog show `book_list_item_<id>`, `book_list_remove_button_<id>`, both dialog buttons as `resource-id`; item text searchable. Fail, fallback (STOP and ask): apply `e2eRoot` on dialog content, tag inner `Text`s, or use `descriptionContains`. (E2E: Debug-Only Resource-Id Exposure)
+- [x] 1.1 **SP2 resource-id dump** (local, before PR1 merges; throwaway WDIO or `adb shell uiautomator dump`, nothing committed). Needs tasks 2.x-3.x GREEN to build the debug APK, so run it right after 3.5 and before 3.6. Pass: list (1 item) and open dialog show `book_list_item_<id>`, `book_list_remove_button_<id>`, both dialog buttons as `resource-id`; item text searchable. Fail, fallback (STOP and ask): apply `e2eRoot` on dialog content, tag inner `Text`s, or use `descriptionContains`. (E2E: Debug-Only Resource-Id Exposure)
 
 ### 2. Tag constants and screen tags (RED then GREEN)
 
-- [ ] 2.1 RED: extend `app/src/test/java/com/librosleidos/ui/list/BookListScreenTest.kt` with `onNodeWithTag(...).assertExists()` for every list and dialog tag (`book_list_add_button`, 3 filters, `book_list_loading`, `book_list_empty_state`, `book_list`, `book_list_delete_dialog`, confirm, cancel) and two distinct `book_list_item_<id>` / `book_list_remove_button_<id>`. Expected: compile error (unresolved `BookListTags`), then assertion failures. (E2E: Test Tag Naming, Per-item tags unique)
-- [ ] 2.2 RED: extend `app/src/test/java/com/librosleidos/ui/edit/BookEditScreenTest.kt` for every edit tag (search field/button/result_<index>/status, title, author, review, errors, cancel, save, `book_edit_rating_4_5`). Expected: unresolved `BookEditTags`. (E2E: Edit screen tagged)
-- [ ] 2.3 RED: `app/src/test/java/com/librosleidos/ui/components/StarRatingTest.kt`: `ratingTagSuffix(4.5f) == "4_5"`, `5.0f -> "5_0"`, `0.5f -> "0_5"`; edit mode with `tapTargetTagPrefix` tags each target; display mode stays untagged. Expected: unresolved `ratingTagSuffix`. (E2E: Test Tag Naming)
-- [ ] 2.4 GREEN: create `app/src/main/java/com/librosleidos/ui/list/BookListTags.kt` and `app/src/main/java/com/librosleidos/ui/edit/BookEditTags.kt` (`object`, `const val`, `fun item(id: Long)`). Apply tags in `BookListScreen.kt` (incl. dialog `modifier`) and `BookEditScreen.kt`.
-- [ ] 2.5 GREEN: `StarRating.kt`: add `tapTargetTagPrefix: String? = null`, `internal fun ratingTagSuffix(v: Float)` using `Locale.ROOT`; pass `book_edit_rating` from `BookEditScreen.kt`.
-- [ ] 2.6 TRIANGULATE: add a second `ratingTagSuffix` case set (`1.0f`, `3.5f`) and a second-item case; run `./gradlew :app:testDebugUnitTest --tests '*BookListScreenTest' --tests '*BookEditScreenTest' --tests '*StarRatingTest'`.
-- [ ] 2.7 REFACTOR + commit: `feat(app): add stable test tags for list, edit and delete dialog`.
+- [x] 2.1 RED: extend `app/src/test/java/com/librosleidos/ui/list/BookListScreenTest.kt` with `onNodeWithTag(...).assertExists()` for every list and dialog tag (`book_list_add_button`, 3 filters, `book_list_loading`, `book_list_empty_state`, `book_list`, `book_list_delete_dialog`, confirm, cancel) and two distinct `book_list_item_<id>` / `book_list_remove_button_<id>`. Expected: compile error (unresolved `BookListTags`), then assertion failures. (E2E: Test Tag Naming, Per-item tags unique)
+- [x] 2.2 RED: extend `app/src/test/java/com/librosleidos/ui/edit/BookEditScreenTest.kt` for every edit tag (search field/button/result_<index>/status, title, author, review, errors, cancel, save, `book_edit_rating_4_5`). Expected: unresolved `BookEditTags`. (E2E: Edit screen tagged)
+- [x] 2.3 RED: `app/src/test/java/com/librosleidos/ui/components/StarRatingTest.kt`: `ratingTagSuffix(4.5f) == "4_5"`, `5.0f -> "5_0"`, `0.5f -> "0_5"`; edit mode with `tapTargetTagPrefix` tags each target; display mode stays untagged. Expected: unresolved `ratingTagSuffix`. (E2E: Test Tag Naming)
+- [x] 2.4 GREEN: create `app/src/main/java/com/librosleidos/ui/list/BookListTags.kt` and `app/src/main/java/com/librosleidos/ui/edit/BookEditTags.kt` (`object`, `const val`, `fun item(id: Long)`). Apply tags in `BookListScreen.kt` (incl. dialog `modifier`) and `BookEditScreen.kt`.
+- [x] 2.5 GREEN: `StarRating.kt`: add `tapTargetTagPrefix: String? = null`, `internal fun ratingTagSuffix(v: Float)` using `Locale.ROOT`; pass `book_edit_rating` from `BookEditScreen.kt`.
+- [x] 2.6 TRIANGULATE: add a second `ratingTagSuffix` case set (`1.0f`, `3.5f`) and a second-item case; run `./gradlew :app:testDebugUnitTest --tests '*BookListScreenTest' --tests '*BookEditScreenTest' --tests '*StarRatingTest'`.
+- [x] 2.7 REFACTOR + commit: `feat(app): add stable test tags for list, edit and delete dialog`.
 
 ### 3. Debug-only `e2eRoot` (RED then GREEN)
 
-- [ ] 3.1 RED: `app/src/testDebug/java/com/librosleidos/ui/E2eRootDebugTest.kt` (Robolectric `@Config(sdk=[34])`): `MainActivity` and the open delete dialog have a node with `SemanticsPropertiesAndroid.TestTagsAsResourceId == true` (`useUnmergedTree`). Expected: fails (property absent / unresolved `e2eRoot`). (E2E: Debug exposes tags as resource ids)
-- [ ] 3.2 RED: `app/src/testRelease/java/com/librosleidos/ui/E2eRootReleaseTest.kt` (plain JUnit): `assertSame(Modifier, Modifier.e2eRoot())`. Expected: unresolved reference. (E2E: Release behavior unchanged)
-- [ ] 3.3 GREEN: create `app/src/debug/java/com/librosleidos/ui/E2eRoot.kt` (`semantics { testTagsAsResourceId = true }`) and `app/src/release/java/com/librosleidos/ui/E2eRoot.kt` (`= this`).
-- [ ] 3.4 GREEN: apply `Scaffold(modifier = Modifier.e2eRoot())` in `MainActivity.kt` and `AlertDialog(modifier = Modifier.e2eRoot().testTag(...))` in `BookListScreen.kt`; confirm 3.1 and 3.2 pass (`:app:testDebugUnitTest`, `:app:testReleaseUnitTest --tests 'com.librosleidos.ui.E2eRootReleaseTest'`).
-- [ ] 3.5 REFACTOR + commit: `feat(app): expose test tags as resource ids in debug builds only`. Then run SP2 (task 1.1) against `./gradlew :app:assembleDebug`.
-- [ ] 3.6 If SP2 needed its fallback, apply it with a RED test first (same files as 2.1/3.1) and amend the commit; record the outcome in the PR.
+- [x] 3.1 RED: `app/src/testDebug/java/com/librosleidos/ui/E2eRootDebugTest.kt` (Robolectric `@Config(sdk=[34])`): `MainActivity` and the open delete dialog have a node with `SemanticsPropertiesAndroid.TestTagsAsResourceId == true` (`useUnmergedTree`). Expected: fails (property absent / unresolved `e2eRoot`). (E2E: Debug exposes tags as resource ids)
+- [x] 3.2 RED: `app/src/testRelease/java/com/librosleidos/ui/E2eRootReleaseTest.kt` (plain JUnit): `assertSame(Modifier, Modifier.e2eRoot())`. Expected: unresolved reference. (E2E: Release behavior unchanged)
+- [x] 3.3 GREEN: create `app/src/debug/java/com/librosleidos/ui/E2eRoot.kt` (`semantics { testTagsAsResourceId = true }`) and `app/src/release/java/com/librosleidos/ui/E2eRoot.kt` (`= this`).
+- [x] 3.4 GREEN: apply `Scaffold(modifier = Modifier.e2eRoot())` in `MainActivity.kt` and `AlertDialog(modifier = Modifier.e2eRoot().testTag(...))` in `BookListScreen.kt`; confirm 3.1 and 3.2 pass (`:app:testDebugUnitTest`, `:app:testReleaseUnitTest --tests 'com.librosleidos.ui.E2eRootReleaseTest'`).
+- [x] 3.5 REFACTOR + commit: `feat(app): expose test tags as resource ids in debug builds only`. Then run SP2 (task 1.1) against `./gradlew :app:assembleDebug`.
+- [x] 3.6 If SP2 needed its fallback, apply it with a RED test first (same files as 2.1/3.1) and amend the commit; record the outcome in the PR. Done 2026-11-23, no app fallback applied: SP2 caveat 1 (item text on a child node) is handled in PR2 task 7.5 with `childSelector(text)`. Caveat 2 (device-reported bounds of the 16dp half-star targets do not match where they receive touches) was accepted by the user as a known limitation: a Robolectric RED for bounds and click values passed on the current code (boundsInRoot correct: 0_5 at 0, 4_0 at 112, 4_5 at 128, 5_0 at 144, each 16dp wide), so there is no unit-level failure to fix. See apply-progress "Known limitation".
 
 ### 4. Release proof harness (RED then GREEN)
 
-- [ ] 4.1 RED: write `scripts/test-release-no-test-tags.sh` skeleton asserting: no `TestTagsAsResourceId` in `app/src/{main,release}`; release `.class` output has 0 matches; debug output has >0 (positive control). Run it on a stash of `E2eRoot.kt`/before 3.3 (or with the debug pair temporarily removed): expected non-zero exit at the positive control. (E2E: Release exposes nothing)
-- [ ] 4.2 GREEN: finish the script (`:app:compileReleaseKotlin :app:compileDebugKotlin`, class-dir grep, then `:app:testReleaseUnitTest --tests 'com.librosleidos.ui.E2eRootReleaseTest'`); exits 0.
-- [ ] 4.3 TRIANGULATE: temporarily add `testTagsAsResourceId` to a `src/main` file; expected exit non-zero naming the file; revert.
-- [ ] 4.4 Docs: `openspec/config.yaml` verify rule for the script; update `project-conventions.md` line 22 (root applied once on `Scaffold` plus the dialog). Run `shellcheck scripts/test-release-no-test-tags.sh`.
-- [ ] 4.5 Commit: `test(app): prove release builds carry no test-tag exposure`.
-- [ ] 4.6 PR1 verification record: Robolectric green, harness green, SP2 result, `./gradlew spotlessCheck`; PR body `Refs #7`. Rollback: revert PR1.
+- [x] 4.1 RED: write `scripts/test-release-no-test-tags.sh` skeleton asserting: no `TestTagsAsResourceId` in `app/src/{main,release}`; release `.class` output has 0 matches; debug output has >0 (positive control). Run it on a stash of `E2eRoot.kt`/before 3.3 (or with the debug pair temporarily removed): expected non-zero exit at the positive control. (E2E: Release exposes nothing)
+- [x] 4.2 GREEN: finish the script (`:app:compileReleaseKotlin :app:compileDebugKotlin`, class-dir grep, then `:app:testReleaseUnitTest --tests 'com.librosleidos.ui.E2eRootReleaseTest'`); exits 0.
+- [x] 4.3 TRIANGULATE: temporarily add `testTagsAsResourceId` to a `src/main` file; expected exit non-zero naming the file; revert.
+- [x] 4.4 Docs: `openspec/config.yaml` verify rule for the script; update `project-conventions.md` line 22 (root applied once on `Scaffold` plus the dialog). Run `shellcheck scripts/test-release-no-test-tags.sh`.
+- [x] 4.5 Commit: `test(app): prove release builds carry no test-tag exposure`.
+- [x] 4.6 PR1 verification record: Robolectric green, harness green, SP2 result, `./gradlew spotlessCheck`; PR body `Refs #7`. Rollback: revert PR1.
 
 ---
 
@@ -91,7 +91,7 @@ Start: PR1 merged to `dev`. End: `npm ci`, `typecheck`, `test:unit` green; happy
 - [ ] 7.2 RED: `e2e/src/pages/tags.test.ts`: `tags.ts` builders produce `book_list_item_7`, `book_list_remove_button_7`, `book_edit_rating_4_5`, and a regex that rejects non-numeric ids. Expected: module not found. (E2E: Test Tag Naming)
 - [ ] 7.3 RED: `e2e/src/structure.test.ts`: no selector strings (`UiSelector`, `resourceId(`, tag literals like `book_list_`) in any file outside `e2e/src/pages` and `e2e/src/support`; `bookList.page.ts` and `bookEdit.page.ts` exist. Expected: fails (pages absent). (E2E: Selectors encapsulated, Both screens covered)
 - [ ] 7.4 GREEN: `e2e/src/support/config.ts`, `e2e/src/pages/tags.ts` (mirror of Kotlin tags), `e2e/src/pages/base.page.ts` (`byTag`, `byTagPattern`, `tap`, `typeText`, `waitForVisible` 20 s).
-- [ ] 7.5 GREEN: `e2e/src/pages/bookList.page.ts` (incl. dialog; `itemIdByTitle` via `resourceIdMatches("^book_list_item_\\d+$")` + `textContains`, parse numeric suffix) and `e2e/src/pages/bookEdit.page.ts`; actions plus `assert*`. `npm run typecheck` goes from errors (missing modules) to 0.
+- [ ] 7.5 GREEN: `e2e/src/pages/bookList.page.ts` (incl. dialog; `itemIdByTitle` via `resourceIdMatches("^book_list_item_\\d+$")` + `childSelector(text)`, because SP2 showed the title on a child node; parse the numeric suffix. Rating is set with a coordinate tap computed from the rating control geometry and verified on the emulator, never `element.click()` on a `book_edit_rating_*` tag, because of the SP2 known limitation) and `e2e/src/pages/bookEdit.page.ts`; actions plus `assert*`. `npm run typecheck` goes from errors (missing modules) to 0.
 - [ ] 7.6 TRIANGULATE: add cases to `config.test.ts` (empty-string env falls back to default) and `tags.test.ts` (ids 0, 12345; suffixes `5_0`, `0_5`).
 - [ ] 7.7 GREEN: `e2e/src/data/books.ts` (synthetic: "The Clockwork Teapot", "A. N. Example"; no real data). (E2E: Synthetic Data Only)
 - [ ] 7.8 REFACTOR + commit: `feat(e2e): add Appium project with Page Objects and tag mirror`.
