@@ -1,0 +1,212 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>app Coverage Report > OpenLibraryMetadataSource</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: app<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.data.remote</a>
+</div>
+
+<h1>Coverage Summary for Class: OpenLibraryMetadataSource (com.librosleidos.data.remote)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">OpenLibraryMetadataSource</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (17/17)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (201/201)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">OpenLibraryMetadataSource$Companion</td>
+    <td class="coverageStat"/>
+  </tr>
+  <tr>
+    <td class="name">OpenLibraryMetadataSource$search$1</td>
+    <td class="coverageStat"/>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (17/17)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (201/201)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.data.remote
+&nbsp;
+&nbsp;import com.librosleidos.domain.model.BookMetadata
+&nbsp;import com.librosleidos.domain.port.BookMetadataSource
+&nbsp;import org.json.JSONObject
+&nbsp;
+&nbsp;/**
+&nbsp; * DTO mirroring one entry of Open Library&#39;s `search.json` `docs` array
+&nbsp; * (design: Phase 4, task 4.1). Kept internal — only [OpenLibraryMetadataSource]
+&nbsp; * maps it to the domain [BookMetadata].
+&nbsp; */
+&nbsp;internal data class OpenLibraryDoc(val title: String, val authorName: String?, val coverId: Int?)
+&nbsp;
+&nbsp;/**
+&nbsp; * Task 4.1 (design D3, spec &quot;Search Open Library First&quot;). Primary metadata
+&nbsp; * source: no API key required. Sends a courtesy `User-Agent` header per the
+&nbsp; * research findings (anon rate limit ~1 req/s, 3 req/s with a descriptive
+&nbsp; * `User-Agent`). A transport or parse failure surfaces as [Result.failure]
+&nbsp; * rather than throwing — [ChainedMetadataSource] (task 4.3) decides whether
+&nbsp; * to advance to the fallback.
+&nbsp; */
+&nbsp;class OpenLibraryMetadataSource(
+<b class="fc">&nbsp;    private val httpClient: HttpClient,</b>
+<b class="fc">&nbsp;    private val userAgent: String = &quot;LibrosLeidos/1.0 (contact: sergio.lopezm@sngular.com)&quot;</b>
+&nbsp;) : BookMetadataSource {
+&nbsp;
+<b class="fc">&nbsp;    override suspend fun search(query: String): Result&lt;List&lt;BookMetadata&gt;&gt; = runCatching {</b>
+<b class="fc">&nbsp;        val encoded = encodeQueryParam(query)</b>
+<b class="fc">&nbsp;        val url = &quot;$SEARCH_URL?q=$encoded&amp;fields=title,author_name,cover_i&amp;limit=20&quot;</b>
+<b class="fc">&nbsp;        val body = httpClient.get(url, headers = mapOf(&quot;User-Agent&quot; to userAgent))</b>
+<b class="fc">&nbsp;        parseDocs(body).map { it.toBookMetadata() }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    private fun parseDocs(body: String): List&lt;OpenLibraryDoc&gt; =
+<b class="fc">&nbsp;        JSONObject(body).optJSONArray(&quot;docs&quot;).mapObjects { doc -&gt;</b>
+<b class="fc">&nbsp;            OpenLibraryDoc(</b>
+<b class="fc">&nbsp;                title = doc.optString(&quot;title&quot;),</b>
+<b class="fc">&nbsp;                authorName = doc.optJSONArray(&quot;author_name&quot;)?.optString(0),</b>
+<b class="fc">&nbsp;                coverId = doc.optInt(&quot;cover_i&quot;, NO_COVER).takeIf { it != NO_COVER }</b>
+<b class="fc">&nbsp;            )</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;    private fun OpenLibraryDoc.toBookMetadata() = BookMetadata(</b>
+<b class="fc">&nbsp;        title = title,</b>
+<b class="fc">&nbsp;        author = authorName ?: &quot;&quot;,</b>
+<b class="fc">&nbsp;        coverUrl = coverId?.let { &quot;https://covers.openlibrary.org/b/id/$it-M.jpg&quot; }</b>
+&nbsp;    )
+&nbsp;
+&nbsp;    private companion object {
+&nbsp;        const val SEARCH_URL = &quot;https://openlibrary.org/search.json&quot;
+&nbsp;        const val NO_COVER = -1
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-23 11:57</div>
+</div>
+</body>
+</html>

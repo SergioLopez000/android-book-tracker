@@ -1,0 +1,225 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>app Coverage Report > MainActivity</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: app<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos</a>
+</div>
+
+<h1>Coverage Summary for Class: MainActivity (com.librosleidos)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">MainActivity</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+    <td class="coverageStat"/>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (104/104)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos
+&nbsp;
+&nbsp;import android.os.Bundle
+&nbsp;import androidx.activity.ComponentActivity
+&nbsp;import androidx.activity.compose.setContent
+&nbsp;import androidx.compose.foundation.layout.padding
+&nbsp;import androidx.compose.material3.ExperimentalMaterial3Api
+&nbsp;import androidx.compose.material3.Scaffold
+&nbsp;import androidx.compose.material3.Surface
+&nbsp;import androidx.compose.material3.Text
+&nbsp;import androidx.compose.material3.TopAppBar
+&nbsp;import androidx.compose.runtime.Composable
+&nbsp;import androidx.compose.ui.Modifier
+&nbsp;import androidx.compose.ui.res.stringResource
+&nbsp;import androidx.lifecycle.viewmodel.compose.viewModel
+&nbsp;import androidx.navigation.NavType
+&nbsp;import androidx.navigation.compose.NavHost
+&nbsp;import androidx.navigation.compose.composable
+&nbsp;import androidx.navigation.compose.rememberNavController
+&nbsp;import androidx.navigation.navArgument
+&nbsp;import com.librosleidos.di.AppContainer
+&nbsp;import com.librosleidos.ui.e2eRoot
+&nbsp;import com.librosleidos.ui.edit.BookEditRoute
+&nbsp;import com.librosleidos.ui.edit.BookEditViewModel
+&nbsp;import com.librosleidos.ui.list.BookListRoute
+&nbsp;import com.librosleidos.ui.list.BookListViewModel
+&nbsp;import com.librosleidos.ui.theme.RinconDeLecturaTheme
+&nbsp;
+&nbsp;/**
+&nbsp; * Task 7.2 (design: &quot;Wiring &amp; Integration&quot;). Launcher activity — sets the
+&nbsp; * Compose theme, the app title (top bar), and hosts the two-destination
+&nbsp; * NavHost (list &lt;-&gt; add &lt;-&gt; edit) backed by the [AppContainer] instance
+&nbsp; * owned by [LibrosLeidosApp]. Pure wiring glue (route strings, ViewModel
+&nbsp; * lookups, navigation callback forwarding) with no branching logic —
+&nbsp; * TDD-exempt scaffold, same rule as Phase 1; covered end to end by the
+&nbsp; * runtime-harness smoke test (task 7.3, [MainActivitySmokeTest]).
+&nbsp; */
+<b class="fc">&nbsp;class MainActivity : ComponentActivity() {</b>
+&nbsp;
+&nbsp;    @OptIn(ExperimentalMaterial3Api::class)
+&nbsp;    override fun onCreate(savedInstanceState: Bundle?) {
+<b class="fc">&nbsp;        super.onCreate(savedInstanceState)</b>
+<b class="fc">&nbsp;        val appContainer = (application as LibrosLeidosApp).container</b>
+<b class="fc">&nbsp;        setContent {</b>
+<b class="fc">&nbsp;            RinconDeLecturaTheme {</b>
+<b class="fc">&nbsp;                Scaffold(</b>
+<b class="fc">&nbsp;                    modifier = Modifier.e2eRoot(),</b>
+&nbsp;                    topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) }
+<b class="fc">&nbsp;                ) { contentPadding -&gt;</b>
+<b class="fc">&nbsp;                    Surface(modifier = Modifier.padding(contentPadding)) {</b>
+<b class="fc">&nbsp;                        LibrosLeidosNavHost(appContainer = appContainer)</b>
+&nbsp;                    }
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+&nbsp;
+&nbsp;private const val ROUTE_LIST = &quot;list&quot;
+&nbsp;private const val ROUTE_EDIT = &quot;edit&quot;
+&nbsp;private const val ARG_BOOK_ID = &quot;bookId&quot;
+&nbsp;
+&nbsp;// Sentinel for &quot;no book id&quot; (add mode) — NavType.LongType has no nullable
+&nbsp;// variant, so the optional edit argument (design: &quot;edit takes an optional
+&nbsp;// bookId arg for edit-vs-add mode&quot;) is modeled as this out-of-range default.
+&nbsp;private const val NO_BOOK_ID = -1L
+&nbsp;
+&nbsp;private fun editRoute(bookId: Long?): String = &quot;$ROUTE_EDIT?$ARG_BOOK_ID=${bookId ?: NO_BOOK_ID}&quot;
+&nbsp;
+&nbsp;@Composable
+&nbsp;private fun LibrosLeidosNavHost(appContainer: AppContainer) {
+&nbsp;    val navController = rememberNavController()
+&nbsp;    NavHost(navController = navController, startDestination = ROUTE_LIST) {
+&nbsp;        composable(ROUTE_LIST) {
+&nbsp;            val viewModel: BookListViewModel =
+&nbsp;                viewModel(factory = appContainer.bookListViewModelFactory())
+&nbsp;            BookListRoute(
+&nbsp;                viewModel = viewModel,
+&nbsp;                onAddRequested = { navController.navigate(editRoute(null)) },
+&nbsp;                onBookClicked = { id -&gt; navController.navigate(editRoute(id)) }
+&nbsp;            )
+&nbsp;        }
+&nbsp;        composable(
+&nbsp;            route = &quot;$ROUTE_EDIT?$ARG_BOOK_ID={$ARG_BOOK_ID}&quot;,
+&nbsp;            arguments = listOf(
+&nbsp;                navArgument(ARG_BOOK_ID) {
+&nbsp;                    type = NavType.LongType
+&nbsp;                    defaultValue = NO_BOOK_ID
+&nbsp;                }
+&nbsp;            )
+&nbsp;        ) { backStackEntry -&gt;
+&nbsp;            val rawId = backStackEntry.arguments?.getLong(ARG_BOOK_ID) ?: NO_BOOK_ID
+&nbsp;            val bookId = rawId.takeIf { it != NO_BOOK_ID }
+&nbsp;            val viewModel: BookEditViewModel = viewModel(
+&nbsp;                factory = appContainer.bookEditViewModelFactory(bookId)
+&nbsp;            )
+&nbsp;            BookEditRoute(
+&nbsp;                viewModel = viewModel,
+&nbsp;                onSaveCompleted = { navController.popBackStack() },
+&nbsp;                onCancelRequested = { navController.popBackStack() }
+&nbsp;            )
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-23 11:57</div>
+</div>
+</body>
+</html>
