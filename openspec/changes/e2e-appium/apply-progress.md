@@ -44,3 +44,55 @@ On the emulator (API 36, density 2.625), uiautomator reports the half-star tap-t
 - `gradle.properties`: `android.onlyEnableUnitTestForTheTestedBuildType=false` (AGP 9 creates no `testReleaseUnitTest` otherwise).
 - `config/detekt/detekt.yml`: FunctionNaming excludes `testDebug` and `testRelease`.
 - Harness greps `app/build/intermediates/built_in_kotlinc/{debug,release}/compile*Kotlin/classes` (AGP 9 output path).
+
+---
+
+# Apply Progress: e2e-appium (#7) - PR2 (tasks 5.1-9.5)
+
+**Mode**: Strict TDD | **Branch**: `feat/7-e2e-appium-project` (from `dev` a388c3d, PR1 merged) | PR3 untouched.
+
+## Completed Tasks
+- [x] 5.1 SP1, 5.2 SP3 (both PASS, see below)
+- [x] 6.1-6.4 pins, lockfile, tsconfig, `.gitignore`
+- [x] 7.1-7.8 support code, Page Objects, tags mirror, fixtures (commit 61352b4)
+- [x] 8.1-8.5 evidence, WDIO config, happy path and cancel flow (commit ed0c916)
+- [x] 9.1-9.5 lefthook `e2e-typecheck`, README (commit 8536b84)
+
+## Resolved versions (exact pins)
+appium 3.9.1, appium-uiautomator2-driver 8.7.3, webdriverio 10.2.0, `@wdio/{allure-reporter,appium-service,cli,globals,local-runner,mocha-framework,spec-reporter}` 10.2.0, typescript 7.0.2 (npm `latest`), @types/node 24.19.2 (latest 24.x; `latest` is 26.x), @types/mocha 10.0.10, expect-webdriverio 8.1.0. Node 24.22.3 (`.nvmrc`), npm 11.19.1.
+
+## TDD Cycle Evidence
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|------|-----------|-------|------------|-----|-------|-------------|----------|
+| 6.1-6.3 | `src/support/pins.test.ts` | Unit (node:test) | N/A (new) | Run before `package.json`: failed (ENOENT) | 4/4 | `^3.9.1` -> pins test fails; `appium 3.9.0` -> pins test fails and `npm ci` exit 1 (EUSAGE drift). Note: a caret range that the lockfile still satisfies does NOT fail `npm ci`, only the pins test | Clean |
+| 7.1/7.6 | `src/support/config.test.ts` | Unit | N/A (new) | ERR_MODULE_NOT_FOUND | 4/4 | default, override, empty-string fallback, APP_ID | Clean |
+| 7.2/7.6 | `src/pages/tags.test.ts` | Unit | N/A (new) | ERR_MODULE_NOT_FOUND | 6/6 | ids 7, 0, 12345; suffixes 4_5, 5_0, 0_5; regex accepts numeric, rejects `abc`, empty, other prefixes; selector regex single backslash | Real defect found by the emulator run: the UiSelector regex needs `\d`, not `\\d`; test added |
+| 7.3 | `src/structure.test.ts` | Unit | N/A (new) | Failed (pages absent) | 3/3 | pages exist, no selector markers outside pages/support, specs exist and are scanned | Clean |
+| 7.4/7.5 | `bookList.page.ts`, `bookEdit.page.ts`, `base.page.ts` | tsc + E2E | N/A (new) | `tsc`: TS2307 missing modules | `tsc` 0 errors, E2E pass | see 8.3 | Compose text-field handling (below) |
+| 8.1/8.2 | `src/support/evidence.test.ts` | Unit | N/A (new) | ERR_MODULE_NOT_FOUND | 3/3 | failed attaches one PNG; passed attaches 0 and never screenshots; throwing screenshot swallowed | Clean |
+| 8.3 | `src/tests/bookLifecycle.e2e.ts` | E2E (emulator) | N/A (new) | Real runs failed: (1) `toBeDisplayed` without wait, (2) selector `\\d` matched nothing, (3) setValue appended to a prefilled field | 2/2 passing | cancel test then lifecycle; edit 3.5 -> 4.5 verified via "Rating 4.5 out of 5" | Typing helper polls with a fresh lookup |
+| 8.4 | forced-failure throwaway (not committed) | E2E | n/a | wrong rating asserted | failed with 1 PNG; passing run has 0 PNG | offline (airplane on): 3 consecutive passes | n/a |
+| 9.1-9.3 | `lefthook run pre-commit` | Manual | n/a | Before the job: exit 0 for both staged type-error files | After: exit 1 with TS error and fix hint, for `e2e/src/pages/base.page.ts` and `e2e/wdio.conf.ts` | clean .ts exit 0; .md only skips; missing node_modules exit 1 with `npm ci` hint; actionlint clean; no `tsc` in any workflow | Quoted the YAML scalar (colon) |
+
+Unit: 20/20 (`npm run test:unit`), `npm run typecheck` 0 errors, `npm ci` exit 0 without lockfile change. App code untouched, so no app suite rerun.
+
+## Work Unit Evidence
+| Evidence | Value |
+|---|---|
+| Focused tests | `cd e2e && npm run typecheck && npm run test:unit`: 0 errors, 20/20 |
+| Runtime harness | `cd e2e && npm run e2e` on Phone_Speckit (API 36, headless): 2 passing, repeated 6 times green (3 of them offline); emulator killed after |
+| Rollback | Revert PR2 (`e2e/`, `.nvmrc`, `lefthook.yml` job, `.gitignore`); app untouched |
+
+## SP1 (PASS)
+Appium 3.9.1 + driver 8.7.3 + WDIO 10.2.0: `appium driver list --installed` shows `uiautomator2@8.7.3 [installed (npm)]` both with and without `APPIUM_HOME=<e2e>`; a session on the local debug APK found `book_list_add_button`. The npm 11.19 `install-scripts` warning (appium postinstall not covered by allowScripts) does not break `npm ci` or the driver detection.
+
+## SP3 (PASS, Allure 2.46.2 from the ci.yml tarball, sha256 verified, scratch dir)
+Mixed input: 3 Robolectric JUnit XML + WDIO JSON (2 passing tests + 1 forced failure with a PNG). `allure generate` ok: 26 total, 25 passed, 1 failed; suites `book library` and `throwaway forced failure` (framework label wdio) rendered; the failed test shows the "Screenshot on failure" attachment (image/png, in `data/attachments`). Passing run: 0 PNG. The attachment sits inside a step named "Screenshot on failure" (allure-js behaviour), not in the test-level `attachments` array.
+
+## Discoveries and deviations
+- typescript resolves to 7.0.2 (native compiler); `tsc --noEmit` and `erasableSyntaxOnly` work with it. `@types/node` pinned to 24.19.2 to match the Node 24 runtime.
+- `.nvmrc` and the Page Objects follow the design. `@wdio/globals` added as exact devDependency (design list). No `@wdio/types` dependency: `WebdriverIO.Config` global type is used.
+- Compose text fields: `setValue` on a prefilled field APPENDED text (seen on the title edit), and an element handle keeps returning stale `getText`. `typeText` now takes a locator factory, clears, types and polls a fresh lookup (3 attempts). Rating: coordinate tap = title-field left edge + (index + 0.5) x 16 dp (from `getDisplayDensity`), y from the rating target; the displayed saved value is asserted ("Rating 3.5/4.5 out of 5") and the screenshot confirmed it.
+- UiSelector regex must carry a single backslash (`^book_list_item_\d+$`); `\\d` matches nothing.
+- Item id lookup: wait on `resourceIdMatches(...).childSelector(text)`, then iterate the item elements for the one whose child shows the title and parse its `resource-id`.
+- Authored size: 762 lines excluding `package-lock.json` (under the 800 budget). Task and apply-progress doc updates are left uncommitted in the working tree because committing them would cross 800.
