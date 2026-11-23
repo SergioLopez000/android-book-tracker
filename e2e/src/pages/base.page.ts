@@ -32,6 +32,10 @@ export abstract class BasePage {
    */
   protected async reveal(locate: () => Element): Promise<void> {
     if (await locate().isDisplayed()) return;
+    // The soft keyboard covers the lower half of the container, so a swipe there would reach the keyboard
+    // window instead of the form (SP4, run 45177627167). Close it before scrolling.
+    await this.hideKeyboard();
+    if (await locate().isDisplayed()) return;
     const container = $("android=new UiSelector().scrollable(true)");
     if (!(await container.isExisting())) return;
     for (const direction of ["down", "up"] as const) {
@@ -45,6 +49,10 @@ export abstract class BasePage {
         if (!canScrollMore) break;
       }
     }
+  }
+
+  protected async hideKeyboard(): Promise<void> {
+    if (await browser.isKeyboardShown()) await browser.hideKeyboard();
   }
 
   protected async tap(element: Element, timeout = DEFAULT_TIMEOUT_MS): Promise<void> {

@@ -81,10 +81,6 @@ class BookEditPage extends BasePage {
     }
     throw new Error("No form field is on screen to anchor the rating row");
   }
-
-  private async hideKeyboard(): Promise<void> {
-    if (await driver.isKeyboardShown()) await driver.hideKeyboard();
-  }
 }
 
 export const bookEdit = new BookEditPage();
