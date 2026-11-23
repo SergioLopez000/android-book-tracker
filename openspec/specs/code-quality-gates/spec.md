@@ -103,7 +103,7 @@ The build MUST provide Kover reports `koverHtmlReportDebug` and `koverXmlReportD
 - THEN no task fails because of low coverage
 
 ### Requirement: Pre-commit Hook
-The `lefthook` `pre-commit` hook MUST run, in parallel: `spotlessCheck` (Kotlin/Gradle sources, including `backend/**`), Android Lint (`./gradlew --quiet :app:lintDebug`, only when staged files match Android sources, resources or Gradle configuration globs), detekt (staged `.kt` files, including `backend/**`, see Detekt Gate With Baseline), gitleaks on staged changes, actionlint (workflow files) and shellcheck with the commit-msg script test (shell files). Each job MUST exit non-zero, with a message explaining how to fix it, when its gate fails. The `commit-msg` hook MUST validate Conventional Commits. These hooks are the only enforcement point of quality static analysis; CI does not repeat them (see `ci-pipeline`). Secrets are the exception: gitleaks also runs in CI, so bypassing the hook does not let a secret through.
+The `lefthook` `pre-commit` hook MUST run, in parallel: `spotlessCheck` (Kotlin/Gradle sources, including `backend/**`), Android Lint (`./gradlew --quiet :app:lintDebug`, only when staged files match Android sources, resources or Gradle configuration globs), detekt (staged `.kt` files, including `backend/**`, see Detekt Gate With Baseline), gitleaks on staged changes, actionlint (workflow files), shellcheck with the commit-msg script test (shell files), and a TypeScript type check (`tsc --noEmit` in `/e2e`, only when staged files match `e2e/**/*.ts`). Each job MUST exit non-zero, with a message explaining how to fix it, when its gate fails. The `commit-msg` hook MUST validate Conventional Commits. These hooks are the only enforcement point of quality static analysis; CI does not repeat them (see `ci-pipeline`), including the e2e type check. Secrets are the exception: gitleaks also runs in CI, so bypassing the hook does not let a secret through.
 
 #### Scenario: Misformatted staged file blocked
 - GIVEN a staged misformatted Kotlin file
@@ -149,6 +149,26 @@ The `lefthook` `pre-commit` hook MUST run, in parallel: `spotlessCheck` (Kotlin/
 - GIVEN a commit made with `--no-verify`
 - WHEN it reaches the remote
 - THEN no CI job re-runs the quality gates (accepted risk), but `secret-scan` still scans it for secrets
+
+#### Scenario: Staged e2e TypeScript with a type error blocked
+- GIVEN a staged `e2e/**/*.ts` file with a type error
+- WHEN the pre-commit hook runs
+- THEN the type-check job exits non-zero, reports the error and prints a fix hint
+
+#### Scenario: Staged e2e TypeScript clean passes
+- GIVEN a staged `e2e/**/*.ts` file that type-checks
+- WHEN the pre-commit hook runs
+- THEN the type-check job exits 0
+
+#### Scenario: Non-e2e change skips type check
+- GIVEN no staged file matches `e2e/**/*.ts`
+- WHEN the pre-commit hook runs
+- THEN the type-check job is skipped
+
+#### Scenario: Type check not repeated in CI
+- GIVEN the merged workflows
+- WHEN their steps are inspected
+- THEN no CI job runs `tsc` as a static-analysis gate
 
 ### Requirement: Commit-message Hook
 The repository MUST provide a lefthook `commit-msg` hook backed by `scripts/check-commit-msg.sh` that validates the first line of the message. A valid first line is `type(scope)!: description`, where `type` is exactly one of `feat fix docs style refactor perf test build ci chore revert`, `(scope)` is optional, `!` is optional, and the description is non-empty. Messages beginning with `Merge`, `Revert`, or `fixup!`/`squash!`/`amend!` (git autosquash prefixes) MUST also be accepted. Other messages MUST be rejected with a non-zero exit and an explanatory message.
