@@ -14,10 +14,12 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.sin
 
@@ -47,7 +49,8 @@ private const val STAR_STROKE_WIDTH_DP = 2f
 fun StarRating(
     rating: Float?,
     modifier: Modifier = Modifier,
-    onRatingChange: ((Float) -> Unit)? = null
+    onRatingChange: ((Float) -> Unit)? = null,
+    tapTargetTagPrefix: String? = null
 ) {
     val clampedRating = (rating ?: 0f).coerceIn(0f, STAR_COUNT.toFloat())
     val rowModifier = if (onRatingChange == null) {
@@ -63,7 +66,11 @@ fun StarRating(
             Box(modifier = Modifier.size(STAR_SIZE)) {
                 Star(fraction = starFillFraction(clampedRating, index))
                 if (onRatingChange != null) {
-                    StarTapTargets(starIndex = index, onRatingChange = onRatingChange)
+                    StarTapTargets(
+                        starIndex = index,
+                        onRatingChange = onRatingChange,
+                        tapTargetTagPrefix = tapTargetTagPrefix
+                    )
                 }
             }
         }
@@ -76,6 +83,13 @@ fun StarRating(
  */
 internal fun starFillFraction(rating: Float, starIndex: Int): Float =
     (rating - starIndex).coerceIn(0f, 1f)
+
+/**
+ * Locale-free tag suffix for a rating value: `4.5f` becomes `"4_5"`, `5.0f`
+ * becomes `"5_0"`. Used to build `<prefix>_<suffix>` test tags for the tap targets.
+ */
+internal fun ratingTagSuffix(value: Float): String =
+    String.format(Locale.ROOT, "%.1f", value).replace('.', '_')
 
 /** Single shared draw path for one star: outline plus a [fraction]-clipped filled overlay. */
 @Composable
@@ -102,7 +116,11 @@ private fun Star(fraction: Float) {
 
 /** Two half-width tap targets for the star at [starIndex], one per 0.5 step. */
 @Composable
-private fun BoxScope.StarTapTargets(starIndex: Int, onRatingChange: (Float) -> Unit) {
+private fun BoxScope.StarTapTargets(
+    starIndex: Int,
+    onRatingChange: (Float) -> Unit,
+    tapTargetTagPrefix: String?
+) {
     val halfValue = starIndex + 0.5f
     val fullValue = (starIndex + 1).toFloat()
     Row(modifier = Modifier.fillMaxHeight()) {
@@ -110,6 +128,7 @@ private fun BoxScope.StarTapTargets(starIndex: Int, onRatingChange: (Float) -> U
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
+                .tapTargetTag(tapTargetTagPrefix, halfValue)
                 .clickable { onRatingChange(halfValue) }
                 .semantics { contentDescription = "Set rating %.1f".format(halfValue) }
         )
@@ -117,11 +136,15 @@ private fun BoxScope.StarTapTargets(starIndex: Int, onRatingChange: (Float) -> U
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
+                .tapTargetTag(tapTargetTagPrefix, fullValue)
                 .clickable { onRatingChange(fullValue) }
                 .semantics { contentDescription = "Set rating %.1f".format(fullValue) }
         )
     }
 }
+
+private fun Modifier.tapTargetTag(prefix: String?, value: Float): Modifier =
+    if (prefix == null) this else testTag("${prefix}_${ratingTagSuffix(value)}")
 
 /** Five-point star outline path, centered in a [width]x[height] box. */
 private fun starPath(width: Float, height: Float): Path {

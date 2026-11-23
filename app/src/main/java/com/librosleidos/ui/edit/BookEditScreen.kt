@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.librosleidos.domain.model.BookMetadata
 import com.librosleidos.ui.components.BookCoverImage
@@ -55,33 +56,59 @@ fun BookEditScreen(
         OutlinedTextField(
             value = state.searchQuery,
             onValueChange = onSearchQueryChanged,
+            modifier = Modifier.testTag(BookEditTags.SEARCH_FIELD),
             label = { Text("Search by title") }
         )
-        Button(onClick = onSearchRequested) { Text("Search") }
+        Button(
+            onClick = onSearchRequested,
+            modifier = Modifier.testTag(BookEditTags.SEARCH_BUTTON)
+        ) { Text("Search") }
 
         SearchResults(search = state.search, onResultSelected = onResultSelected)
 
-        OutlinedTextField(value = state.title, onValueChange = onTitleChanged, label = {
-            Text("Title")
-        })
-        state.fieldErrors[BookEditField.TITLE]?.let { ErrorText(it) }
+        OutlinedTextField(
+            value = state.title,
+            onValueChange = onTitleChanged,
+            modifier = Modifier.testTag(BookEditTags.TITLE_FIELD),
+            label = { Text("Title") }
+        )
+        state.fieldErrors[BookEditField.TITLE]?.let { ErrorText(BookEditField.TITLE, it) }
 
-        OutlinedTextField(value = state.author, onValueChange = onAuthorChanged, label = {
-            Text("Author")
-        })
+        OutlinedTextField(
+            value = state.author,
+            onValueChange = onAuthorChanged,
+            modifier = Modifier.testTag(BookEditTags.AUTHOR_FIELD),
+            label = { Text("Author") }
+        )
 
-        StarRating(rating = state.rating, onRatingChange = onRatingChanged)
-        state.fieldErrors[BookEditField.RATING]?.let { ErrorText(it) }
+        StarRating(
+            rating = state.rating,
+            onRatingChange = onRatingChanged,
+            tapTargetTagPrefix = BookEditTags.RATING_PREFIX
+        )
+        state.fieldErrors[BookEditField.RATING]?.let { ErrorText(BookEditField.RATING, it) }
 
-        OutlinedTextField(value = state.review, onValueChange = onReviewChanged, label = {
-            Text("Comment")
-        })
+        OutlinedTextField(
+            value = state.review,
+            onValueChange = onReviewChanged,
+            modifier = Modifier.testTag(BookEditTags.REVIEW_FIELD),
+            label = { Text("Comment") }
+        )
 
-        state.fieldErrors[BookEditField.DATE_FINISHED]?.let { ErrorText(it) }
+        state.fieldErrors[BookEditField.DATE_FINISHED]?.let {
+            ErrorText(BookEditField.DATE_FINISHED, it)
+        }
 
         Row {
-            TextButton(onClick = onCancelRequested) { Text("Cancel") }
-            Button(onClick = onSaveRequested, enabled = !state.isSaving) { Text("Save") }
+            TextButton(
+                onClick = onCancelRequested,
+                modifier = Modifier.testTag(BookEditTags.CANCEL_BUTTON)
+            ) { Text("Cancel") }
+            Button(
+                onClick = onSaveRequested,
+                enabled = !state.isSaving,
+                modifier = Modifier.testTag(BookEditTags.SAVE_BUTTON)
+            ) { Text("Save") }
         }
     }
 }
@@ -90,21 +117,31 @@ fun BookEditScreen(
 private fun SearchResults(search: SearchState, onResultSelected: (BookMetadata) -> Unit) {
     when (search) {
         is SearchState.Results -> if (search.results.isEmpty()) {
-            Text("No matches found. You can still enter the details manually.")
+            Text(
+                "No matches found. You can still enter the details manually.",
+                modifier = Modifier.testTag(BookEditTags.SEARCH_STATUS)
+            )
         } else {
             Column {
-                search.results.forEach { result ->
-                    TextButton(onClick = { onResultSelected(result) }) {
+                search.results.forEachIndexed { index, result ->
+                    TextButton(
+                        onClick = { onResultSelected(result) },
+                        modifier = Modifier.testTag(BookEditTags.searchResult(index))
+                    ) {
                         Text("${result.title} — ${result.author}")
                     }
                 }
             }
         }
 
-        SearchState.Loading -> Text("Searching…")
+        SearchState.Loading -> Text(
+            "Searching…",
+            modifier = Modifier.testTag(BookEditTags.SEARCH_STATUS)
+        )
 
         SearchState.Unavailable -> Text(
-            "Search unavailable. You can still enter the details manually."
+            "Search unavailable. You can still enter the details manually.",
+            modifier = Modifier.testTag(BookEditTags.SEARCH_STATUS)
         )
 
         SearchState.Idle -> Unit
@@ -112,6 +149,10 @@ private fun SearchResults(search: SearchState, onResultSelected: (BookMetadata) 
 }
 
 @Composable
-private fun ErrorText(message: String) {
-    Text(text = message, color = MaterialTheme.colorScheme.error)
+private fun ErrorText(field: BookEditField, message: String) {
+    Text(
+        text = message,
+        color = MaterialTheme.colorScheme.error,
+        modifier = Modifier.testTag(BookEditTags.error(field))
+    )
 }

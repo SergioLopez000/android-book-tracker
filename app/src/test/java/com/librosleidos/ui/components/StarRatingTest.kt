@@ -2,6 +2,7 @@ package com.librosleidos.ui.components
 
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -109,5 +110,58 @@ class StarRatingTest {
 
         assertEquals(10, captured.size)
         assertTrue(captured.all { it in Rating.MIN..Rating.MAX })
+    }
+
+    // --- E2E test tags (spec: Test Tag Naming) ---
+
+    @Test
+    fun ratingTagSuffix_usesUnderscoreAndOneDecimal() {
+        assertEquals("4_5", ratingTagSuffix(4.5f))
+        assertEquals("5_0", ratingTagSuffix(5.0f))
+        assertEquals("0_5", ratingTagSuffix(0.5f))
+    }
+
+    @Test
+    fun ratingTagSuffix_otherValues() {
+        assertEquals("1_0", ratingTagSuffix(1.0f))
+        assertEquals("3_5", ratingTagSuffix(3.5f))
+    }
+
+    @Test
+    fun input_withTapTargetTagPrefix_tagsEveryTargetAndStillCallsBack() {
+        var captured: Float? = null
+        composeTestRule.setContent {
+            StarRating(
+                rating = null,
+                onRatingChange = { captured = it },
+                tapTargetTagPrefix = "book_edit_rating"
+            )
+        }
+
+        listOf("0_5", "1_0", "2_5", "4_5", "5_0").forEach { suffix ->
+            composeTestRule.onNodeWithTag("book_edit_rating_$suffix").assertExists()
+        }
+        composeTestRule.onNodeWithTag("book_edit_rating_3_5").performClick()
+
+        assertEquals(3.5f, captured)
+    }
+
+    @Test
+    fun input_withoutTapTargetTagPrefix_hasNoRatingTags() {
+        composeTestRule.setContent {
+            StarRating(rating = null, onRatingChange = {})
+        }
+
+        composeTestRule.onNodeWithTag("book_edit_rating_4_5").assertDoesNotExist()
+    }
+
+    @Test
+    fun display_withTapTargetTagPrefix_staysUntagged() {
+        composeTestRule.setContent {
+            StarRating(rating = 4.5f, tapTargetTagPrefix = "book_edit_rating")
+        }
+
+        composeTestRule.onNodeWithTag("book_edit_rating_4_5").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Rating 4.5 out of 5").assertExists()
     }
 }

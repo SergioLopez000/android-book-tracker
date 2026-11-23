@@ -18,6 +18,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.librosleidos.domain.model.Book
 import com.librosleidos.domain.model.BookSort
@@ -50,7 +51,10 @@ fun BookListScreen(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        TextButton(onClick = onAddRequested) { Text("Add book") }
+        TextButton(
+            onClick = onAddRequested,
+            modifier = Modifier.testTag(BookListTags.ADD_BUTTON)
+        ) { Text("Add book") }
 
         Row(
             modifier = Modifier
@@ -66,7 +70,8 @@ fun BookListScreen(
                 }
                 TextButton(
                     onClick = { onDateRangeSelected(filter) },
-                    enabled = state.dateRange != filter
+                    enabled = state.dateRange != filter,
+                    modifier = Modifier.testTag(BookListTags.filter(filter))
                 ) {
                     Text(text = label)
                 }
@@ -76,15 +81,21 @@ fun BookListScreen(
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             when {
                 state.isLoading -> CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .testTag(BookListTags.LOADING)
                 )
 
                 state.isEmpty -> Text(
                     text = "No books yet. Add one to get started.",
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .testTag(BookListTags.EMPTY_STATE)
                 )
 
-                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize().testTag(BookListTags.LIST)
+                ) {
                     items(items = state.books, key = { it.id ?: 0L }) { book ->
                         BookListItem(
                             book = book,
@@ -102,6 +113,7 @@ fun BookListScreen(
         val pendingBook = state.books.find { it.id == pendingId }
         AlertDialog(
             onDismissRequest = onDeleteCancelled,
+            modifier = Modifier.testTag(BookListTags.DELETE_DIALOG),
             title = { Text("Delete book?") },
             text = {
                 Text(
@@ -109,8 +121,18 @@ fun BookListScreen(
                         "This cannot be undone."
                 )
             },
-            confirmButton = { TextButton(onClick = onDeleteConfirmed) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = onDeleteCancelled) { Text("Cancel") } }
+            confirmButton = {
+                TextButton(
+                    onClick = onDeleteConfirmed,
+                    modifier = Modifier.testTag(BookListTags.DELETE_CONFIRM_BUTTON)
+                ) { Text("Delete") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = onDeleteCancelled,
+                    modifier = Modifier.testTag(BookListTags.DELETE_CANCEL_BUTTON)
+                ) { Text("Cancel") }
+            }
         )
     }
 }
@@ -124,6 +146,7 @@ private fun BookListItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .then(book.id?.let { Modifier.testTag(BookListTags.item(it)) } ?: Modifier)
             .clickable(enabled = book.id != null) { book.id?.let(onClicked) }
             .padding(16.dp)
     ) {
@@ -139,6 +162,9 @@ private fun BookListItem(
         if (book.review.isNotBlank()) {
             Text(text = book.review)
         }
-        TextButton(onClick = { book.id?.let(onRemoveRequested) }) { Text("Remove") }
+        TextButton(
+            onClick = { book.id?.let(onRemoveRequested) },
+            modifier = book.id?.let { Modifier.testTag(BookListTags.removeButton(it)) } ?: Modifier
+        ) { Text("Remove") }
     }
 }

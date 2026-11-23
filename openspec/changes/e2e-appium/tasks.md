@@ -41,13 +41,13 @@ Start: `dev` without tags. End: tags in `main`, `e2eRoot` pair, Robolectric gree
 
 ### 2. Tag constants and screen tags (RED then GREEN)
 
-- [ ] 2.1 RED: extend `app/src/test/java/com/librosleidos/ui/list/BookListScreenTest.kt` with `onNodeWithTag(...).assertExists()` for every list and dialog tag (`book_list_add_button`, 3 filters, `book_list_loading`, `book_list_empty_state`, `book_list`, `book_list_delete_dialog`, confirm, cancel) and two distinct `book_list_item_<id>` / `book_list_remove_button_<id>`. Expected: compile error (unresolved `BookListTags`), then assertion failures. (E2E: Test Tag Naming, Per-item tags unique)
-- [ ] 2.2 RED: extend `app/src/test/java/com/librosleidos/ui/edit/BookEditScreenTest.kt` for every edit tag (search field/button/result_<index>/status, title, author, review, errors, cancel, save, `book_edit_rating_4_5`). Expected: unresolved `BookEditTags`. (E2E: Edit screen tagged)
-- [ ] 2.3 RED: `app/src/test/java/com/librosleidos/ui/components/StarRatingTest.kt`: `ratingTagSuffix(4.5f) == "4_5"`, `5.0f -> "5_0"`, `0.5f -> "0_5"`; edit mode with `tapTargetTagPrefix` tags each target; display mode stays untagged. Expected: unresolved `ratingTagSuffix`. (E2E: Test Tag Naming)
-- [ ] 2.4 GREEN: create `app/src/main/java/com/librosleidos/ui/list/BookListTags.kt` and `app/src/main/java/com/librosleidos/ui/edit/BookEditTags.kt` (`object`, `const val`, `fun item(id: Long)`). Apply tags in `BookListScreen.kt` (incl. dialog `modifier`) and `BookEditScreen.kt`.
-- [ ] 2.5 GREEN: `StarRating.kt`: add `tapTargetTagPrefix: String? = null`, `internal fun ratingTagSuffix(v: Float)` using `Locale.ROOT`; pass `book_edit_rating` from `BookEditScreen.kt`.
-- [ ] 2.6 TRIANGULATE: add a second `ratingTagSuffix` case set (`1.0f`, `3.5f`) and a second-item case; run `./gradlew :app:testDebugUnitTest --tests '*BookListScreenTest' --tests '*BookEditScreenTest' --tests '*StarRatingTest'`.
-- [ ] 2.7 REFACTOR + commit: `feat(app): add stable test tags for list, edit and delete dialog`.
+- [x] 2.1 RED: extend `app/src/test/java/com/librosleidos/ui/list/BookListScreenTest.kt` with `onNodeWithTag(...).assertExists()` for every list and dialog tag (`book_list_add_button`, 3 filters, `book_list_loading`, `book_list_empty_state`, `book_list`, `book_list_delete_dialog`, confirm, cancel) and two distinct `book_list_item_<id>` / `book_list_remove_button_<id>`. Expected: compile error (unresolved `BookListTags`), then assertion failures. (E2E: Test Tag Naming, Per-item tags unique)
+- [x] 2.2 RED: extend `app/src/test/java/com/librosleidos/ui/edit/BookEditScreenTest.kt` for every edit tag (search field/button/result_<index>/status, title, author, review, errors, cancel, save, `book_edit_rating_4_5`). Expected: unresolved `BookEditTags`. (E2E: Edit screen tagged)
+- [x] 2.3 RED: `app/src/test/java/com/librosleidos/ui/components/StarRatingTest.kt`: `ratingTagSuffix(4.5f) == "4_5"`, `5.0f -> "5_0"`, `0.5f -> "0_5"`; edit mode with `tapTargetTagPrefix` tags each target; display mode stays untagged. Expected: unresolved `ratingTagSuffix`. (E2E: Test Tag Naming)
+- [x] 2.4 GREEN: create `app/src/main/java/com/librosleidos/ui/list/BookListTags.kt` and `app/src/main/java/com/librosleidos/ui/edit/BookEditTags.kt` (`object`, `const val`, `fun item(id: Long)`). Apply tags in `BookListScreen.kt` (incl. dialog `modifier`) and `BookEditScreen.kt`.
+- [x] 2.5 GREEN: `StarRating.kt`: add `tapTargetTagPrefix: String? = null`, `internal fun ratingTagSuffix(v: Float)` using `Locale.ROOT`; pass `book_edit_rating` from `BookEditScreen.kt`.
+- [x] 2.6 TRIANGULATE: add a second `ratingTagSuffix` case set (`1.0f`, `3.5f`) and a second-item case; run `./gradlew :app:testDebugUnitTest --tests '*BookListScreenTest' --tests '*BookEditScreenTest' --tests '*StarRatingTest'`.
+- [x] 2.7 REFACTOR + commit: `feat(app): add stable test tags for list, edit and delete dialog`.
 
 ### 3. Debug-only `e2eRoot` (RED then GREEN)
 
