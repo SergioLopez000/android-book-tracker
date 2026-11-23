@@ -60,11 +60,11 @@ Start: `dev` without tags. End: tags in `main`, `e2eRoot` pair, Robolectric gree
 
 ### 4. Release proof harness (RED then GREEN)
 
-- [ ] 4.1 RED: write `scripts/test-release-no-test-tags.sh` skeleton asserting: no `TestTagsAsResourceId` in `app/src/{main,release}`; release `.class` output has 0 matches; debug output has >0 (positive control). Run it on a stash of `E2eRoot.kt`/before 3.3 (or with the debug pair temporarily removed): expected non-zero exit at the positive control. (E2E: Release exposes nothing)
-- [ ] 4.2 GREEN: finish the script (`:app:compileReleaseKotlin :app:compileDebugKotlin`, class-dir grep, then `:app:testReleaseUnitTest --tests 'com.librosleidos.ui.E2eRootReleaseTest'`); exits 0.
-- [ ] 4.3 TRIANGULATE: temporarily add `testTagsAsResourceId` to a `src/main` file; expected exit non-zero naming the file; revert.
-- [ ] 4.4 Docs: `openspec/config.yaml` verify rule for the script; update `project-conventions.md` line 22 (root applied once on `Scaffold` plus the dialog). Run `shellcheck scripts/test-release-no-test-tags.sh`.
-- [ ] 4.5 Commit: `test(app): prove release builds carry no test-tag exposure`.
+- [x] 4.1 RED: write `scripts/test-release-no-test-tags.sh` skeleton asserting: no `TestTagsAsResourceId` in `app/src/{main,release}`; release `.class` output has 0 matches; debug output has >0 (positive control). Run it on a stash of `E2eRoot.kt`/before 3.3 (or with the debug pair temporarily removed): expected non-zero exit at the positive control. (E2E: Release exposes nothing)
+- [x] 4.2 GREEN: finish the script (`:app:compileReleaseKotlin :app:compileDebugKotlin`, class-dir grep, then `:app:testReleaseUnitTest --tests 'com.librosleidos.ui.E2eRootReleaseTest'`); exits 0.
+- [x] 4.3 TRIANGULATE: temporarily add `testTagsAsResourceId` to a `src/main` file; expected exit non-zero naming the file; revert.
+- [x] 4.4 Docs: `openspec/config.yaml` verify rule for the script; update `project-conventions.md` line 22 (root applied once on `Scaffold` plus the dialog). Run `shellcheck scripts/test-release-no-test-tags.sh`.
+- [x] 4.5 Commit: `test(app): prove release builds carry no test-tag exposure`.
 - [ ] 4.6 PR1 verification record: Robolectric green, harness green, SP2 result, `./gradlew spotlessCheck`; PR body `Refs #7`. Rollback: revert PR1.
 
 ---
