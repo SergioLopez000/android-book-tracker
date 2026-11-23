@@ -6,7 +6,7 @@ GitHub Actions orchestration that runs the unit tests and the security scans (gi
 ## ADDED Requirements
 
 ### Requirement: Workflow Triggers and Runner
-`.github/workflows/ci.yml` MUST run on `pull_request` and on `push` to `dev`, with no path filters, on the `ubuntu-24.04` runner. It MUST NOT use `pull_request_target`. Default workflow permissions MUST be `contents: read`; write permissions MUST be granted only to the jobs that need them (report, cleanup; `security-events: write` only for CodeQL; `packages: write` only for the GHCR publish job and the promote retag job). `board-sync.yml` MUST keep `contents: read` and write the project only through the `PROJECT_TOKEN` secret, never through `GITHUB_TOKEN` write scopes. Third-party actions MUST be pinned to a major version.
+`.github/workflows/ci.yml` MUST run on `pull_request` and on `push` to `dev`, with no path filters, on the `ubuntu-24.04` runner. It MUST NOT use `pull_request_target`. Default workflow permissions MUST be `contents: read`; write permissions MUST be granted only to the jobs that need them (report, cleanup; `security-events: write` only for CodeQL; `packages: write` only for the GHCR publish job and the promote retag job). The `e2e-tests` job MUST NOT be granted any write permission. `board-sync.yml` MUST keep `contents: read` and write the project only through the `PROJECT_TOKEN` secret, never through `GITHUB_TOKEN` write scopes. Third-party actions MUST be pinned to a major version.
 
 #### Scenario: PR triggers the pipeline
 - GIVEN a pull request is opened or updated
@@ -21,7 +21,7 @@ GitHub Actions orchestration that runs the unit tests and the security scans (gi
 #### Scenario: Least privilege
 - GIVEN `ci.yml`, `pr-cleanup.yml`, `codeql.yml`, `board-sync.yml`, the GHCR workflow and `promote.yml`
 - WHEN their permissions are inspected
-- THEN the workflow default is `contents: read`, write scopes appear only on the report and cleanup jobs, `security-events: write` appears only in `codeql.yml`, `packages: write` appears only on the publish and retag jobs, `board-sync.yml` requests no write scope, and no workflow uses `pull_request_target`
+- THEN the workflow default is `contents: read`, write scopes appear only on the report and cleanup jobs, `security-events: write` appears only in `codeql.yml`, `packages: write` appears only on the publish and retag jobs, `board-sync.yml` requests no write scope, the `e2e-tests` job holds no write scope, and no workflow uses `pull_request_target`
 
 ### Requirement: No Static Analysis in CI
 CI MUST NOT run quality static analysis. `ci.yml` MUST NOT contain jobs or steps for `spotlessCheck`, `:app:lintDebug`, detekt, actionlint, shellcheck, script harnesses, commit-message validation, or PR-title validation. These quality gates run only locally through the lefthook hooks; skipping them with `--no-verify`, the GitHub web UI, or without `lefthook install` is an explicit, accepted risk. Security scanning is NOT static analysis in this sense and MUST run in CI: gitleaks (`secret-scan`) and CodeQL.
@@ -60,7 +60,7 @@ The `unit-tests` job MUST have no `needs`, MUST run `:app:testDebugUnitTest` and
 - THEN none invoke Gradle in `/backend`
 
 ### Requirement: Artifact Contract
-Each test suite MUST publish artifacts named `allure-results-<suite>` (JUnit XML results), `coverage-<suite>` (Kover reports) and, for suites that produce them, `pit-<suite>`. Artifact names MUST be unique per run (no overwrite). The current suites are `unit`, `backend` and `contract` (`pit-contract` is produced by `contract`). Downstream jobs MUST discover results by these name patterns so future suites (E2E) attach without changing the report job.
+Each test suite MUST publish artifacts named `allure-results-<suite>`, `coverage-<suite>` (Kover reports) and, for suites that produce them, `pit-<suite>`. `allure-results-<suite>` holds JUnit XML results, except for the `e2e` suite, which holds Allure JSON results. Artifact names MUST be unique per run (no overwrite). The current suites are `unit`, `backend`, `contract` (`pit-contract` is produced by `contract`) and `e2e` (`allure-results-e2e` only, retained for 7 days). Downstream jobs MUST discover results by these name patterns so future suites attach without changing the report job.
 
 #### Scenario: Unit suite artifacts
 - GIVEN `unit-tests` completes
@@ -72,13 +72,18 @@ Each test suite MUST publish artifacts named `allure-results-<suite>` (JUnit XML
 - WHEN artifacts are listed
 - THEN `allure-results-backend`, `coverage-backend`, `allure-results-contract`, `coverage-contract` and `pit-contract` exist
 
+#### Scenario: E2E suite artifact
+- GIVEN `e2e-tests` completes
+- WHEN artifacts are listed
+- THEN `allure-results-e2e` exists with Allure JSON results and a 7-day retention, and no `coverage-e2e` exists
+
 #### Scenario: Unknown future suite is merged
 - GIVEN an additional artifact named `allure-results-<other>` exists
 - WHEN the report job runs
 - THEN its results are merged into the same report without workflow changes
 
 ### Requirement: Report Generation and Publishing
-The `report` job MUST run with `if: !cancelled()` after `unit-tests`, `backend-tests` and `contract-tests` (it still runs when tests fail, but not on a cancelled run), merge all `allure-results-*` artifacts, generate an Allure 2.46.2 report from the JUnit XML, and publish the Allure report and the Kover HTML report to the `gh-pages` branch under `pr-<N>/` for pull requests and `dev/` for pushes to `dev`. The coverage summary MUST recognize both Android and JVM Kover report names, and MUST surface backend coverage and the PIT score. Publishing MUST preserve other folders (`keep_files`) and runs MUST be serialized with `concurrency` group `gh-pages`. Publishing MUST run only for same-repository PRs and `dev` pushes. If the Allure 2 spike shows JUnit XML is not rendered acceptably, Allure 3 MAY be substituted without altering any other requirement.
+The `report` job MUST run with `if: !cancelled()` after `unit-tests`, `backend-tests`, `contract-tests` and `e2e-tests` (it still runs when tests fail, but not on a cancelled run), merge all `allure-results-*` artifacts, generate an Allure 2.46.2 report from the JUnit XML and the e2e Allure JSON results, and publish the Allure report and the Kover HTML report to the `gh-pages` branch under `pr-<N>/` for pull requests and `dev/` for pushes to `dev`. The coverage summary MUST recognize both Android and JVM Kover report names, and MUST surface backend coverage and the PIT score. Publishing MUST preserve other folders (`keep_files`) and runs MUST be serialized with `concurrency` group `gh-pages`. Publishing MUST run only for same-repository PRs and `dev` pushes. If the Allure 2 spike shows JUnit XML or WebdriverIO JSON is not rendered acceptably, Allure 3 MAY be substituted without altering any other requirement.
 
 #### Scenario: PR report published
 - GIVEN a same-repo PR numbered 12 whose tests ran
@@ -91,14 +96,24 @@ The `report` job MUST run with `if: !cancelled()` after `unit-tests`, `backend-t
 - THEN the reports are available under `dev/` and existing `pr-<N>/` folders are untouched
 
 #### Scenario: Report on failing tests
-- GIVEN `unit-tests`, `backend-tests` or `contract-tests` failed after producing results
+- GIVEN `unit-tests`, `backend-tests`, `contract-tests` or `e2e-tests` failed after producing results
 - WHEN the report job runs
 - THEN it still generates and publishes the report
+
+#### Scenario: Report waits for e2e
+- GIVEN `e2e-tests` is still running while the other test jobs finished
+- WHEN the report job is evaluated
+- THEN it does not start until `e2e-tests` completes
 
 #### Scenario: Backend results shown
 - GIVEN `backend-tests` and `contract-tests` produced results
 - WHEN the report job completes
 - THEN backend results appear in the merged Allure report and backend coverage figures are computed from JVM Kover output
+
+#### Scenario: E2E results shown
+- GIVEN `e2e-tests` produced `allure-results-e2e`, with a screenshot on a failed test
+- WHEN the report job completes
+- THEN the e2e results and the failure screenshot appear in the merged Allure report
 
 #### Scenario: Missing results
 - GIVEN all test jobs were skipped and no result artifacts exist
@@ -239,17 +254,17 @@ Promotion MUST NOT be relied upon to close issues: the S2 spike (issue #39, 2026
 - THEN it contains the table of which gate runs locally versus in CI, the updated accepted-risk note, and the SonarQube for IDE recommendation
 
 ### Requirement: Out of Scope Boundaries
-This change MUST NOT add E2E jobs, SonarCloud or any paid tooling, quality gates (spotless, lint, detekt, commit-msg) in CI, `workflow_run` based comments for fork PRs, or a Robolectric version upgrade, and MUST NOT modify application code or gate semantics in `code-quality-gates` beyond adding detekt and extending its existing gates to `/backend`. Backend `backend-tests`, `contract-tests` (including PIT) and the GHCR publish job are permitted; no other jobs are.
+The pipeline MUST NOT include SonarCloud or any paid tooling, quality gates (spotless, lint, detekt, commit-msg, tsc) in CI, `workflow_run` based comments for fork PRs, or a Robolectric version upgrade, and this capability MUST NOT redefine gate semantics owned by `code-quality-gates`. Permitted jobs in `ci.yml` are `unit-tests`, `backend-tests`, `contract-tests`, `e2e-tests`, `secret-scan`, `report`, `ci-gate` and `publish-image`; no other jobs are. The `e2e-tests` job MUST NOT be a dependency of `ci-gate` until a later change makes it gating.
 
 #### Scenario: Only expected jobs
 - GIVEN the merged workflows
 - WHEN their jobs are listed
-- THEN `ci.yml` has only `unit-tests`, `backend-tests`, `contract-tests`, `secret-scan`, `report`, `ci-gate`, `publish-image`, and the other workflows are only CodeQL analysis, cleanup, promote, board sync
+- THEN `ci.yml` has only `unit-tests`, `backend-tests`, `contract-tests`, `e2e-tests`, `secret-scan`, `report`, `ci-gate`, `publish-image`, and the other workflows are only CodeQL analysis, cleanup, promote, board sync
 
 #### Scenario: No forbidden tooling
 - GIVEN the merged workflows
 - WHEN their steps are inspected
-- THEN none run SonarCloud, E2E suites, or quality static analysis
+- THEN none run SonarCloud or quality static analysis; the only test suite beyond unit and backend is the e2e suite
 
 ### Requirement: CodeQL Analysis Workflow
 `.github/workflows/codeql.yml` MUST analyze the `java-kotlin` language with `build-mode: manual`, building the app and the backend with Gradle using `--no-daemon --no-build-cache` (the in-process Kotlin compile flag is subject to spike S2). The backend build MUST run on JDK 21 and Kotlin files under `/backend` MUST be extracted. It MUST run on `pull_request` to `dev` with no path filters, on `push` to `dev`, and on a weekly `schedule`. Its permissions MUST be `contents: read` and `security-events: write` only. It MUST NOT use `pull_request_target`.
@@ -326,7 +341,7 @@ The `dev` ruleset (27200640) MUST include the rule "Require code scanning result
 - THEN the job fails before executing the binary
 
 ### Requirement: Dependabot Configuration
-`.github/dependabot.yml` MUST configure version updates for the `gradle` ecosystem (root and `/backend` directories), the `docker` ecosystem (`/backend`) and `github-actions`, weekly, with `target-branch: dev`, commit-message prefixes `build` (gradle, docker) and `ci` (github-actions) with `include: scope`, grouped updates, and a bounded open-PR limit. Dependabot security updates and vulnerability alerts MUST be enabled. Because security-update PRs target `main`, the README MUST document retargeting them to `dev` by hand.
+`.github/dependabot.yml` MUST configure version updates for the `gradle` ecosystem (root and `/backend` directories), the `docker` ecosystem (`/backend`), the `npm` ecosystem (`/e2e`) and `github-actions`, weekly, with `target-branch: dev`, commit-message prefixes `build` (gradle, docker, npm) and `ci` (github-actions) with `include: scope`, grouped updates, and a bounded open-PR limit. Dependabot security updates and vulnerability alerts MUST be enabled. Because security-update PRs target `main`, the README MUST document retargeting them to `dev` by hand.
 
 #### Scenario: Config valid and scoped
 - GIVEN `.github/dependabot.yml`
@@ -342,6 +357,11 @@ The `dev` ruleset (27200640) MUST include the rule "Require code scanning result
 - GIVEN `.github/dependabot.yml`
 - WHEN its `docker` entry is read
 - THEN it has directory `/backend` so the pinned base digest is updated
+
+#### Scenario: npm e2e covered
+- GIVEN `.github/dependabot.yml`
+- WHEN its `npm` entry is read
+- THEN it has directory `/e2e`, is weekly and targets `dev`
 
 #### Scenario: Security features enabled
 - GIVEN the repository settings
@@ -436,3 +456,31 @@ The `publish-image` job in `.github/workflows/ci.yml` MUST build the backend jar
 - GIVEN `promote.yml`
 - WHEN its permissions are inspected
 - THEN `packages: write` appears only on the retag job and `issues: write` is not requested
+
+### Requirement: E2E Test Job
+`ci.yml` MUST contain an `e2e-tests` job with no `needs`, running on `ubuntu-24.04` against an Android emulator, that installs `/e2e` dependencies with `npm ci` using the Node version from `.nvmrc`, builds the debug APK and runs the Appium happy-path suite. It MUST run on every pull request and every `dev` push with no path or label filters. It MUST have `permissions: contents: read` only and MUST NOT use any secret, so it is safe for fork PRs. It MUST upload `allure-results-e2e` with `retention-days: 7`, even when tests fail. It is non-gating: `ci-gate` MUST NOT depend on it, and its failure MUST NOT fail `ci-gate`.
+
+#### Scenario: Runs on every trigger
+- GIVEN a PR touching only documentation, or a `dev` push
+- WHEN the pipeline starts
+- THEN `e2e-tests` runs
+
+#### Scenario: Failure still uploads results
+- GIVEN an e2e test fails
+- WHEN `e2e-tests` finishes
+- THEN the job fails and `allure-results-e2e` is still uploaded with `retention-days: 7`
+
+#### Scenario: Read-only and secret-free
+- GIVEN the `e2e-tests` job definition
+- WHEN its permissions and environment are inspected
+- THEN only `contents: read` is granted and no `secrets.*` reference appears
+
+#### Scenario: Fork PR is safe
+- GIVEN a PR from a fork
+- WHEN `e2e-tests` runs
+- THEN it runs under `pull_request` without secrets or write scopes
+
+#### Scenario: Non-gating
+- GIVEN `unit-tests`, `backend-tests`, `contract-tests` and `secret-scan` succeeded and `e2e-tests` failed
+- WHEN `ci-gate` evaluates
+- THEN it succeeds
