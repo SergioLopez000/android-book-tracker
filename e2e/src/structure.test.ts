@@ -39,3 +39,8 @@ test("selector strings appear only under src/pages and src/support", () => {
     }
   }
 });
+
+test("e2e test files exist and are scanned", () => {
+  const specs = listTsFiles(join(srcDir, "tests"));
+  assert.ok(specs.length > 0, "no e2e spec files found under src/tests");
+});
