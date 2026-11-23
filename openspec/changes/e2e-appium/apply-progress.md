@@ -96,3 +96,37 @@ Mixed input: 3 Robolectric JUnit XML + WDIO JSON (2 passing tests + 1 forced fai
 - UiSelector regex must carry a single backslash (`^book_list_item_\d+$`); `\\d` matches nothing.
 - Item id lookup: wait on `resourceIdMatches(...).childSelector(text)`, then iterate the item elements for the one whose child shows the title and parse its `resource-id`.
 - Authored size: 762 lines excluding `package-lock.json` (under the 800 budget). Task and apply-progress doc updates are left uncommitted in the working tree because committing them would cross 800.
+
+---
+
+# Apply Progress: e2e-appium (#7) - PR3 (tasks 11.1-12.1)
+
+**Mode**: Strict TDD | **Branch**: `feat/7-e2e-appium-ci` (from `dev` a3e2064, PR1 and PR2 merged). Tasks 10.1 (SP4) and 12.2 (PR verification record) need a pushed branch and a hosted run, so the orchestrator owns them; both stay unchecked.
+
+## Completed Tasks
+- [x] 11.1 RED harness `scripts/test-e2e-ci-config.sh` (36 failures before any CI change)
+- [x] 11.2 `e2e-tests` job in `ci.yml`
+- [x] 11.3 `report` needs `e2e-tests`, Detect accepts `*-result.json`, `ci-gate` untouched
+- [x] 11.4 Dependabot `npm` `/e2e`
+- [x] 11.5 TRIANGULATE mutations and lint
+- [x] 11.6 commit `ci(e2e): add non-gating Appium job, report wiring and npm Dependabot`
+- [x] 12.1 README (Spanish), `openspec/config.yaml` (`e2e` available, verify rule)
+- [ ] 10.1 SP4 and 12.2 verification record: orchestrator, after push
+
+## TDD Cycle Evidence
+| Task | Test File | Layer | Safety Net | RED | GREEN | TRIANGULATE | REFACTOR |
+|------|-----------|-------|------------|-----|-------|-------------|----------|
+| 11.1-11.4 | `scripts/test-e2e-ci-config.sh` | Static shell harness (awk `job_body`) | `scripts/test-image-config.sh` passes before and after | Run before any CI change: exit 1, 36 FAIL lines (job missing, report, Detect, Dependabot) | exit 0, "e2e CI config checks passed"; `actionlint` and `shellcheck scripts/*.sh` clean; `test-image-config.sh` still passes | Mutations, each failing exactly one named check, then reverted: `secrets.X` in the job; `e2e-tests` in `ci-gate` needs; retention removed; `report` without e2e; Detect without JSON; upload without `always()`; Dependabot dir; API 35 | Replaced `bash -c` checks with `has`/`has_re` helpers (shellcheck clean) |
+| 12.1 | n/a (docs) | n/a | n/a | n/a | harness still green | n/a | n/a |
+
+## Work Unit Evidence
+| Evidence | Value |
+|---|---|
+| Focused test | `bash scripts/test-e2e-ci-config.sh`: exit 0 (RED was exit 1, 36 FAIL) |
+| Runtime harness | N/A locally: the emulator job needs a hosted run (SP4, task 10.1, orchestrator). `actionlint` clean |
+| Rollback | Revert PR3: `ci.yml` job and report `needs`, `dependabot.yml` npm entry, harness, README, config |
+
+## Deviations
+- The AVD cache name is held in job `env.AVD_CACHE` (`avd-api34-default-x86_64-v1`) and referenced as `key: ${{ env.AVD_CACHE }}`: a literal `key: avd-api34-...` was flagged by the gitleaks `generic-api-key` rule in the lefthook pre-commit (false positive), and the env name deliberately avoids the word "key".
+- Step names fixed by the harness: "Save AVD cache", "Upload e2e results", "Detect results".
+- `disable-animations: false` on the snapshot-creation runner step (only the test run disables animations).
