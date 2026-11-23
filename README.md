@@ -107,6 +107,16 @@ Con el móvil conectado y la Depuración USB activa, ejecuta:
 ./gradlew installDebug
 ```
 
+### 5. Pruebas end-to-end (Appium)
+La suite `e2e/` maneja el APK de depuración en un emulador con Appium 3.9.1 + WebdriverIO 10.2.0 mediante Page Objects. Los datos son sintéticos y no necesita red. Solo el APK de depuración expone los tags de prueba como `resource-id`.
+```bash
+nvm install && nvm use          # lee .nvmrc (Node 24.22.3)
+./gradlew :app:assembleDebug
+cd e2e && npm ci
+npm run e2e                     # con un emulador o dispositivo conectado
+```
+`E2E_APK_PATH=/ruta/app.apk npm run e2e` instala otro APK en lugar de `app/build/outputs/apk/debug/app-debug.apk`. Los resultados quedan en `e2e/allure-results` (JSON, con captura de pantalla solo en las pruebas fallidas). Más detalle en `e2e/README.md`.
+
 ---
 
 ## 🧩 Backend (Spring Boot)
@@ -189,6 +199,8 @@ Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas exis
 | Pruebas unitarias + Kover | No | `unit-tests` |
 | Backend: pruebas, integración, Kover | No | `backend-tests` |
 | Backend: contrato (REST Assured) + PIT | No | `contract-tests` |
+| E2E Appium en emulador (no bloquea) | No | `e2e-tests` |
+| Verificación de TypeScript de `e2e/` (`tsc --noEmit`) | Sí (si hay `.ts` en el commit) | No |
 | Imagen del backend a GHCR | No | `publish-image` (solo push a `dev`) |
 | Secretos (gitleaks) | Solo el índice | `secret-scan` (rango de commits del evento, no se puede saltar con `--no-verify`) |
 | CodeQL (Kotlin) | No | `codeql.yml`, bloquea por el ruleset |
@@ -201,18 +213,20 @@ unit-tests     ─┐
 backend-tests  ─┼─> ci-gate  (check requerido) ──> publish-image (solo push a dev)
 contract-tests ─┤
 secret-scan    ─┘
-unit-tests ──> report (informativo, no bloquea)
+e2e-tests      ──> (no bloquea: ci-gate no lo necesita)
+unit-tests, backend-tests, contract-tests, e2e-tests ──> report (informativo, no bloquea)
 codeql.yml: analyze ──> alertas de code scanning ──> regla del ruleset de dev
 ```
 
 - **`unit-tests`**: `:app:testDebugUnitTest` + Kover XML/HTML.
 - **`secret-scan`**: gitleaks 8.30.1 (fijado por sha256) sobre el rango de commits del evento, calculado por `scripts/secret-scan-range.sh`. PR: `BASE..HEAD`; push a `dev`: `BEFORE..AFTER`; rama nueva (`BEFORE` todo ceros): solo el commit final. Un SHA mal formado o un `BEFORE` que no existe en el clon hace fallar el job (nunca escanea menos de lo debido). La salida va con `--redact`.
 - **`backend-tests`** y **`contract-tests`**: JDK 21; el segundo corre `contractTest` y el gate de mutación `pitest`. Suben `allure-results-*`, `coverage-*` y `pit-*`.
+- **`e2e-tests`**: no bloquea (`ci-gate` no lo necesita y su fallo no lo hace fallar). Corre en cada PR y push a `dev`, sin secretos y con `permissions: contents: read`: compila el APK de depuración, comprueba con `scripts/test-release-no-test-tags.sh` que el release no expone tags de prueba, arranca un emulador (API 34, target `default`, x86_64, con KVM; el AVD se cachea y solo se guarda en pushes a `dev`) y ejecuta `npm run e2e` en modo avión. Sube `allure-results-e2e` (JSON, 7 días) siempre, incluso si falla. `scripts/test-e2e-ci-config.sh` revisa esta configuración de forma estática.
 - **`publish-image`**: compila el jar y publica la imagen en GHCR (ver arriba). Necesita `ci-gate`, pero `ci-gate` no la necesita, así que nunca bloquea un merge. Es el único job de `ci.yml` con `packages: write`.
 - **`ci-gate`**: único check requerido. Falla si `unit-tests`, `backend-tests`, `contract-tests` o `secret-scan` no terminan en éxito (un job omitido cuenta como fallo). `report` y CodeQL no lo afectan.
 - **`codeql.yml`**: análisis CodeQL de Kotlin (`build-mode: manual`) en PRs hacia `dev`, pushes a `dev` y un cron semanal. Bloquea mediante la regla "Require code scanning results" del ruleset (alertas High o superiores), no mediante `ci-gate`.
-- **Dependabot** (`.github/dependabot.yml`): actualizaciones de versión semanales de Gradle (raíz y `/backend`), de la imagen base Docker de `/backend` (bump del digest) y de GitHub Actions hacia `dev` (`build(deps):` / `ci(deps):`), agrupadas. En PRs de Dependabot `report` no publica ni comenta (su token es de solo lectura).
-- **`report`**: genera Allure 2.46.2 desde el JUnit XML y publica Allure + Kover en la rama `gh-pages` (`pr-<N>/` en PRs, `dev/` en pushes a `dev`), y deja un único comentario sticky en el PR con los enlaces y la cobertura de líneas y ramas. Solo PRs del mismo repositorio; los PRs desde forks solo suben el artefacto `report-site`.
+- **Dependabot** (`.github/dependabot.yml`): actualizaciones de versión semanales de Gradle (raíz y `/backend`), de la imagen base Docker de `/backend` (bump del digest) y de npm de `/e2e` (grupos `wdio`, `appium` y `typescript`; las versiones mayores de Appium, el driver, WebdriverIO y `@wdio/*` se ignoran y se suben a mano) y de GitHub Actions hacia `dev` (`build(deps):` / `ci(deps):`), agrupadas. En PRs de Dependabot `report` no publica ni comenta (su token es de solo lectura).
+- **`report`**: espera a `unit-tests`, `backend-tests`, `contract-tests` y `e2e-tests`, genera Allure 2.46.2 desde el JUnit XML y el JSON de e2e (con la captura de las pruebas fallidas) y publica Allure + Kover en la rama `gh-pages` (`pr-<N>/` en PRs, `dev/` en pushes a `dev`), y deja un único comentario sticky en el PR con los enlaces y la cobertura de líneas y ramas. Solo PRs del mismo repositorio; los PRs desde forks solo suben el artefacto `report-site`.
 - **`pr-cleanup.yml`**: borra `pr-<N>/` de `gh-pages` al cerrar el PR.
 - **`promote.yml`**: exige que el último check-run `ci-gate` del SHA (emitido por GitHub Actions) sea `success` (es decir, que las pruebas y el escaneo de secretos pasaron); si falta o no es exitoso, la promoción falla. Antes de mover `main`, `check-image` exige que la imagen `sha-<commit>` exista en GHCR; después de moverla, `retag-image` la etiqueta como `staging` (mismo digest, sin reconstruir). Es el único otro job con `packages: write`.
 
@@ -270,11 +284,11 @@ Rotación: antes de que expire, genera un PAT nuevo con las mismas condiciones, 
 
 | Artefacto | Contenido |
 |---|---|
-| `allure-results-<suite>` | JUnit XML de la suite (hoy `unit`). El job `report` fusiona todos los `allure-results-*`. |
+| `allure-results-<suite>` | JUnit XML de la suite (`unit`, `backend`, `contract`); `allure-results-e2e` contiene JSON de Allure y se conserva 7 días. El job `report` fusiona todos los `allure-results-*`. |
 | `coverage-<suite>` | Reportes Kover (`reportDebug.xml` + `htmlDebug/`). |
 | `pit-<suite>` | Reservado para mutation testing (#6). |
 
-Las suites futuras (contract, PIT, E2E) se adjuntan con estos nombres sin cambiar el job `report`.
+Las suites futuras se adjuntan con estos nombres sin cambiar el job `report`.
 
 ### Pasos de administración (en orden, una sola vez)
 

@@ -32,7 +32,7 @@ testing:
     integration: { available: true, tool: "Robolectric + Room (room-testing) in app/src/test" }
     contract: { available: true, tool: "REST Assured + openapi-request-validator, backend contractTest" }
     mutation: { available: true, tool: "PIT (backend pitest, threshold 80)" }
-    e2e: { available: false, tool: null }
+    e2e: { available: true, tool: "Appium 3.9.1 + WebdriverIO 10.2.0 (e2e/)" }
   coverage: { available: true, command: "./gradlew koverHtmlReportDebug" }
   quality:
     linter: { available: true, command: "./gradlew :app:lintDebug" }
@@ -56,6 +56,7 @@ rules:
     - Backend: run ./gradlew -p backend build contractTest pitest (needs Docker); bash scripts/test-image-config.sh checks the image and workflow permissions.
     - Run detekt (quality.static_analysis.command); it must report no new issues beyond config/detekt/baseline.xml.
     - Run bash scripts/test-release-no-test-tags.sh; it proves the release build carries no TestTagsAsResourceId (source and bytecode, with a debug positive control) and runs :app:testReleaseUnitTest for E2eRootReleaseTest.
+    - Run bash scripts/test-e2e-ci-config.sh; it statically checks the non-gating e2e-tests job, the report wiring and the npm Dependabot entry.
     - Run the shell harnesses: bash scripts/test-resolve-issue-number.sh and bash scripts/test-board-sync.sh (with the existing scripts/test-*.sh).
   archive:
     - Do not modify archived changes.
