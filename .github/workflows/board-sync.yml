@@ -17,6 +17,8 @@ concurrency:
 jobs:
   sync:
     name: sync
+    permissions:
+      contents: read
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&
       github.actor != 'dependabot[bot]' &&
