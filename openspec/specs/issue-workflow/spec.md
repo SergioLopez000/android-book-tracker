@@ -36,6 +36,14 @@ Structured issue intake through GitHub issue forms, and automation of only the I
 - WHEN its fields are listed
 - THEN it has steps, expected vs actual, environment and severity fields
 
+### Requirement: Chore Issue Form
+`.github/ISSUE_TEMPLATE/chore.yml` MUST define a form for work that is not user-facing (infrastructure, CI, tooling, security, maintenance), labelled `type:chore`, with: a required goal, required acceptance criteria in Given/When/Then, optional notes, a Definition of Done checklist (change linked, tests or checks written first and green, local hooks plus CodeQL and secret-scan green, verified in dev and recorded in a comment, `qa:approved` added and promoted to staging), and an informative area dropdown.
+
+#### Scenario: Chore form fields
+- GIVEN `chore.yml`
+- WHEN its fields are listed
+- THEN it has goal, Given/When/Then, optional notes, Definition of Done and area fields, and its label is `type:chore`
+
 ### Requirement: Issue Template Configuration
 `.github/ISSUE_TEMPLATE/config.yml` MUST set `blank_issues_enabled: false`. The forms MUST use only labels that already exist in the repository and MUST NOT contain a `projects:` key (board membership comes from auto-add).
 
@@ -45,7 +53,7 @@ Structured issue intake through GitHub issue forms, and automation of only the I
 - THEN `blank_issues_enabled` is `false`
 
 #### Scenario: Labels and projects
-- GIVEN `feature.yml` and `bug.yml`
+- GIVEN `feature.yml`, `bug.yml` and `chore.yml`
 - WHEN their `labels` and keys are inspected
 - THEN every label exists in the repository and no `projects:` key is present
 
