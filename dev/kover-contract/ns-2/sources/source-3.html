@@ -5,7 +5,7 @@
 <html id="htmlId">
 <head>
   <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
-  <title>backend Coverage Report > UseCaseConfig</title>
+  <title>backend Coverage Report > MissingDatabaseConfigurationException</title>
   <style type="text/css">
     @import "../../css/coverage.css";
     @import "../../css/idea.min.css";
@@ -22,7 +22,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     <a href="../index.html">com.librosleidos.backend.config</a>
 </div>
 
-<h1>Coverage Summary for Class: UseCaseConfig (com.librosleidos.backend.config)</h1>
+<h1>Coverage Summary for Class: MissingDatabaseConfigurationException (com.librosleidos.backend.config)</h1>
 
 <table class="coverageStats">
 <tr>
@@ -49,7 +49,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 </th>
 </tr>
 <tr>
-  <td class="name">UseCaseConfig</td>
+  <td class="name">MissingDatabaseConfigurationException</td>
 <td class="coverageStat">
   <span class="percent">
     100%
@@ -63,7 +63,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (7/7)
+    (1/1)
   </span>
 </td>
     <td class="coverageStat"/>
@@ -72,7 +72,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (7/7)
+    (2/2)
   </span>
 </td>
 <td class="coverageStat">
@@ -80,7 +80,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (27/27)
+    (20/20)
   </span>
 </td>
 </tr>
@@ -94,31 +94,56 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 <pre>
 <code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.backend.config
 &nbsp;
-&nbsp;import com.librosleidos.backend.data.jdbc.JdbcBookRepository
-&nbsp;import com.librosleidos.backend.domain.port.BookRepository
-&nbsp;import com.librosleidos.backend.domain.usecase.CreateBookUseCase
-&nbsp;import com.librosleidos.backend.domain.usecase.DeleteBookUseCase
-&nbsp;import com.librosleidos.backend.domain.usecase.GetBookUseCase
-&nbsp;import com.librosleidos.backend.domain.usecase.ListBooksUseCase
-&nbsp;import com.librosleidos.backend.domain.usecase.UpdateBookUseCase
-&nbsp;import org.springframework.context.annotation.Bean
-&nbsp;import org.springframework.context.annotation.Configuration
-&nbsp;import org.springframework.jdbc.core.simple.JdbcClient
+&nbsp;import org.springframework.beans.factory.config.BeanPostProcessor
+&nbsp;import org.springframework.boot.jdbc.autoconfigure.JdbcConnectionDetails
+&nbsp;import org.springframework.stereotype.Component
 &nbsp;
-&nbsp;/** Wires the framework-free domain to its adapters. The domain itself carries no Spring annotations. */
-<b class="fc">&nbsp;@Configuration(proxyBeanMethods = false)</b>
-&nbsp;class UseCaseConfig {
-<b class="fc">&nbsp;    @Bean fun bookRepository(jdbc: JdbcClient): BookRepository = JdbcBookRepository(jdbc)</b>
+&nbsp;private object Variables {
+&nbsp;    const val URL = &quot;SPRING_DATASOURCE_URL&quot;
+&nbsp;    const val USERNAME = &quot;SPRING_DATASOURCE_USERNAME&quot;
+&nbsp;    const val PASSWORD = &quot;SPRING_DATASOURCE_PASSWORD&quot;
+&nbsp;}
 &nbsp;
-<b class="fc">&nbsp;    @Bean fun createBookUseCase(repository: BookRepository) = CreateBookUseCase(repository)</b>
+<b class="fc">&nbsp;class MissingDatabaseConfigurationException(val missing: List&lt;String&gt;) :</b>
+&nbsp;    IllegalStateException(
+<b class="fc">&nbsp;        &quot;Missing required database configuration: ${missing.joinToString(&quot;, &quot;)}. &quot; +</b>
+&nbsp;            &quot;Set ${Variables.URL}, ${Variables.USERNAME} and ${Variables.PASSWORD} &quot; +
+&nbsp;            &quot;in the environment &quot; +
+&nbsp;            &quot;(see docs/secrets.md).&quot;
+&nbsp;    )
 &nbsp;
-<b class="fc">&nbsp;    @Bean fun getBookUseCase(repository: BookRepository) = GetBookUseCase(repository)</b>
+&nbsp;/**
+&nbsp; * Names (never values) of the database settings that are absent or blank, in the order
+&nbsp; * URL, USERNAME, PASSWORD. A getter that throws counts as missing.
+&nbsp; */
+&nbsp;internal fun missingVariables(details: JdbcConnectionDetails): List&lt;String&gt; = buildList {
+&nbsp;    if (details.valueOrNull { jdbcUrl }.isNullOrBlank()) add(Variables.URL)
+&nbsp;    if (details.valueOrNull { username }.isNullOrBlank()) add(Variables.USERNAME)
+&nbsp;    if (details.valueOrNull { password }.isNullOrBlank()) add(Variables.PASSWORD)
+&nbsp;}
 &nbsp;
-<b class="fc">&nbsp;    @Bean fun listBooksUseCase(repository: BookRepository) = ListBooksUseCase(repository)</b>
+&nbsp;private inline fun JdbcConnectionDetails.valueOrNull(
+&nbsp;    read: JdbcConnectionDetails.() -&gt; String?
+&nbsp;): String? = try {
+&nbsp;    read()
+&nbsp;} catch (_: RuntimeException) {
+&nbsp;    null
+&nbsp;}
 &nbsp;
-<b class="fc">&nbsp;    @Bean fun updateBookUseCase(repository: BookRepository) = UpdateBookUseCase(repository)</b>
-&nbsp;
-<b class="fc">&nbsp;    @Bean fun deleteBookUseCase(repository: BookRepository) = DeleteBookUseCase(repository)</b>
+&nbsp;/**
+&nbsp; * Fails startup before the DataSource is built when the effective connection details lack
+&nbsp; * a URL, username or password. It validates what Spring will actually use, so test
+&nbsp; * contexts (no details bean, or container-provided details) need no bypass.
+&nbsp; */
+&nbsp;@Component
+&nbsp;class DataSourceCredentialsValidator : BeanPostProcessor {
+&nbsp;    override fun postProcessAfterInitialization(bean: Any, beanName: String): Any {
+&nbsp;        if (bean is JdbcConnectionDetails) {
+&nbsp;            val missing = missingVariables(bean)
+&nbsp;            if (missing.isNotEmpty()) throw MissingDatabaseConfigurationException(missing)
+&nbsp;        }
+&nbsp;        return bean
+&nbsp;    }
 &nbsp;}
 </code>
 </pre>
@@ -143,7 +168,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2026-11-20 11:04</div>
+    <div style="float:right;">generated on 2026-11-25 10:22</div>
 </div>
 </body>
 </html>
