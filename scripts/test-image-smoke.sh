@@ -29,11 +29,15 @@ case "$user" in
 esac
 echo "ok: image user is '$user'"
 
-# Fail-closed cases: the image must refuse to start without usable credentials,
-# name the missing variable, and never echo a secret value.
+# Dummy, non-secret Web client ID: the auth validator runs first, so every case that
+# is not about authentication supplies it and only the intended validator can fail.
+audience="smoke-web-client-id.apps.googleusercontent.com"
+
+# Fail-closed cases: the image must refuse to start without usable configuration,
+# print the expected message naming the missing variable, and never echo a secret value.
 expect_startup_failure() {
-  local label="$1" variable="$2"
-  shift 2
+  local label="$1" message="$2" variable="$3"
+  shift 3
   local name="smoke-fail-$suffix-$label" state="" code logs
   docker run -d --name "$name" "$@" "$image" >/dev/null
   for _ in $(seq 1 60); do
@@ -47,20 +51,29 @@ expect_startup_failure() {
   if [[ "$state" != "exited" || "$code" == "0" ]]; then
     echo "FAIL ($label): container state '$state', exit code '$code'"; exit 1
   fi
-  if ! grep -q "Missing required database configuration" <<<"$logs" || ! grep -q "$variable" <<<"$logs"; then
-    echo "FAIL ($label): logs lack the missing-configuration message naming $variable"; exit 1
+  if ! grep -q "$message" <<<"$logs" || ! grep -q "$variable" <<<"$logs"; then
+    echo "FAIL ($label): logs lack '$message' naming $variable"; exit 1
   fi
   if grep -q "smoke-dummy" <<<"$logs"; then
     echo "FAIL ($label): logs contain a secret value"; exit 1
   fi
-  echo "ok: image fails without credentials ($label)"
+  echo "ok: image fails without configuration ($label)"
 }
 
-expect_startup_failure no-datasource SPRING_DATASOURCE_URL
-expect_startup_failure blank-password SPRING_DATASOURCE_PASSWORD \
+db_message="Missing required database configuration"
+expect_startup_failure no-datasource "$db_message" SPRING_DATASOURCE_URL \
+  -e GOOGLE_OAUTH_WEB_CLIENT_ID="$audience"
+expect_startup_failure blank-password "$db_message" SPRING_DATASOURCE_PASSWORD \
+  -e GOOGLE_OAUTH_WEB_CLIENT_ID="$audience" \
   -e SPRING_DATASOURCE_URL=jdbc:postgresql://unreachable.invalid:5432/smoke \
   -e SPRING_DATASOURCE_USERNAME=smoke \
   -e SPRING_DATASOURCE_PASSWORD=
+# Valid-looking database settings and no Web client ID: only the auth validator may fail.
+expect_startup_failure no-auth-audience "Missing required authentication configuration" \
+  GOOGLE_OAUTH_WEB_CLIENT_ID \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://unreachable.invalid:5432/smoke \
+  -e SPRING_DATASOURCE_USERNAME=smoke \
+  -e SPRING_DATASOURCE_PASSWORD=smoke-dummy-password
 
 docker network create "$net" >/dev/null
 docker run -d --name "$db" --network "$net" \
@@ -75,6 +88,7 @@ docker run -d --name "$app" --network "$net" -p 127.0.0.1::8080 \
   -e SPRING_DATASOURCE_URL="jdbc:postgresql://$db:5432/smoke" \
   -e SPRING_DATASOURCE_USERNAME=smoke \
   -e SPRING_DATASOURCE_PASSWORD=smoke-dummy \
+  -e GOOGLE_OAUTH_WEB_CLIENT_ID="$audience" \
   "$image" >/dev/null
 port="$(docker port "$app" 8080/tcp | head -n1 | sed 's/.*://')"
 
