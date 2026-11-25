@@ -1,0 +1,267 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>app Coverage Report > DataStoreAccountMetadataStore</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: app<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.data.auth</a>
+</div>
+
+<h1>Coverage Summary for Class: DataStoreAccountMetadataStore (com.librosleidos.data.auth)</h1>
+
+<table class="coverageStats">
+
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">DataStoreAccountMetadataStore</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    75%
+  </span>
+  <span class="absValue">
+    (3/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (12/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (78/78)
+  </span>
+</td>
+</tr>
+  <tr>
+    <td class="name">DataStoreAccountMetadataStore$clear$1</td>
+    <td class="coverageStat"/>
+  </tr>
+  <tr>
+    <td class="name">DataStoreAccountMetadataStore$clear$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+    <td class="coverageStat"/>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (8/8)
+  </span>
+</td>
+  </tr>
+  <tr>
+    <td class="name">DataStoreAccountMetadataStore$Companion</td>
+    <td class="coverageStat"/>
+  </tr>
+  <tr>
+    <td class="name">DataStoreAccountMetadataStore$read$1</td>
+    <td class="coverageStat"/>
+  </tr>
+  <tr>
+    <td class="name">DataStoreAccountMetadataStore$save$1</td>
+    <td class="coverageStat"/>
+  </tr>
+  <tr>
+    <td class="name">DataStoreAccountMetadataStore$save$2</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+    <td class="coverageStat"/>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (2/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (12/12)
+  </span>
+</td>
+  </tr>
+<tr>
+  <td class="name"><strong>Total</strong></td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (7/7)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    75%
+  </span>
+  <span class="absValue">
+    (3/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (15/15)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (98/98)
+  </span>
+</td>
+</tr>
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.data.auth
+&nbsp;
+&nbsp;import androidx.datastore.core.DataStore
+&nbsp;import androidx.datastore.preferences.core.Preferences
+&nbsp;import androidx.datastore.preferences.core.edit
+&nbsp;import androidx.datastore.preferences.core.stringPreferencesKey
+&nbsp;import com.librosleidos.domain.model.Account
+&nbsp;import kotlinx.coroutines.flow.first
+&nbsp;
+&nbsp;/** Display name and email only; see [AccountMetadataStore]. */
+<b class="fc">&nbsp;class DataStoreAccountMetadataStore(private val dataStore: DataStore&lt;Preferences&gt;) :</b>
+&nbsp;    AccountMetadataStore {
+&nbsp;
+&nbsp;    override suspend fun read(): Account? {
+<b class="fc">&nbsp;        val prefs = dataStore.data.first()</b>
+<b class="fc">&nbsp;        val name = prefs[DISPLAY_NAME]</b>
+<b class="fc">&nbsp;        val email = prefs[EMAIL]</b>
+<b class="fc">&nbsp;        return if (name != null &amp;&amp;</b>
+<b class="pc">&nbsp;            email != null</b>
+&nbsp;        ) {
+<b class="fc">&nbsp;            Account(displayName = name, email = email)</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            null</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    override suspend fun save(account: Account) {
+<b class="fc">&nbsp;        dataStore.edit {</b>
+<b class="fc">&nbsp;            it[DISPLAY_NAME] = account.displayName</b>
+<b class="fc">&nbsp;            it[EMAIL] = account.email</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    override suspend fun clear() {
+<b class="fc">&nbsp;        dataStore.edit { it.clear() }</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    companion object {
+&nbsp;        /** Stored under `files/datastore/`; the backup rules exclude this exact path. */
+&nbsp;        const val FILE_NAME = &quot;account_metadata.preferences_pb&quot;
+<b class="fc">&nbsp;        private val DISPLAY_NAME = stringPreferencesKey(&quot;display_name&quot;)</b>
+<b class="fc">&nbsp;        private val EMAIL = stringPreferencesKey(&quot;email&quot;)</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-25 15:26</div>
+</div>
+</body>
+</html>

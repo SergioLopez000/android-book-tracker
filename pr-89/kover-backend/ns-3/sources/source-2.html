@@ -1,0 +1,215 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>backend Coverage Report > ContractCoverageTest</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: backend<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.backend.contract</a>
+</div>
+
+<h1>Coverage Summary for Class: ContractCoverageTest (com.librosleidos.backend.contract)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">ContractCoverageTest</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (5/5)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (1/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    97.8%
+  </span>
+  <span class="absValue">
+    (44/45)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    98.9%
+  </span>
+  <span class="absValue">
+    (276/279)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.backend.contract
+&nbsp;
+&nbsp;import com.atlassian.oai.validator.restassured.OpenApiValidationFilter
+&nbsp;import com.sun.net.httpserver.HttpServer
+&nbsp;import io.restassured.RestAssured
+&nbsp;import io.swagger.parser.OpenAPIParser
+&nbsp;import io.swagger.v3.parser.core.models.ParseOptions
+&nbsp;import java.net.InetSocketAddress
+&nbsp;import kotlin.test.assertEquals
+&nbsp;import kotlin.test.assertNotNull
+&nbsp;import kotlin.test.assertTrue
+&nbsp;import org.junit.jupiter.api.Test
+&nbsp;import org.junit.jupiter.api.assertThrows
+&nbsp;
+<b class="fc">&nbsp;class ContractCoverageTest {</b>
+&nbsp;    private val spec =
+<b class="fc">&nbsp;        OpenAPIParser().readLocation(</b>
+<b class="fc">&nbsp;            &quot;openapi.yaml&quot;,</b>
+<b class="fc">&nbsp;            null,</b>
+<b class="fc">&nbsp;            ParseOptions().apply {</b>
+<b class="fc">&nbsp;                isResolve = true</b>
+<b class="fc">&nbsp;            }</b>
+<b class="fc">&nbsp;        ).openAPI</b>
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `every spec operation has a contract test class`() {
+<b class="fc">&nbsp;        assertNotNull(spec, &quot;openapi.yaml must exist and parse&quot;)</b>
+<b class="fc">&nbsp;        val operations = ContractCoverage.operationIds(spec)</b>
+<b class="fc">&nbsp;        val existing =</b>
+<b class="fc">&nbsp;            operations.map(ContractCoverage::expectedClass)</b>
+<b class="fc">&nbsp;                .filter { runCatching { Class.forName(it) }.isSuccess }</b>
+<b class="fc">&nbsp;                .toSet()</b>
+&nbsp;
+<b class="fc">&nbsp;        val problems = ContractCoverage.untested(operations, existing)</b>
+&nbsp;
+<b class="fc">&nbsp;        assertTrue(problems.isEmpty(), problems.joinToString(&quot;\n&quot;))</b>
+<b class="fc">&nbsp;        assertEquals(</b>
+<b class="fc">&nbsp;            setOf(&quot;createBook&quot;, &quot;listBooks&quot;, &quot;getBook&quot;, &quot;updateBook&quot;, &quot;deleteBook&quot;),</b>
+<b class="fc">&nbsp;            operations</b>
+&nbsp;        )
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `an untested operation is reported by name`() {
+<b class="fc">&nbsp;        val problems = ContractCoverage.untested(</b>
+<b class="fc">&nbsp;            setOf(&quot;createBook&quot;, &quot;archiveBook&quot;),</b>
+<b class="fc">&nbsp;            setOf(&quot;com.librosleidos.backend.contract.books.CreateBookTest&quot;)</b>
+&nbsp;        )
+<b class="fc">&nbsp;        assertEquals(</b>
+<b class="fc">&nbsp;            listOf(</b>
+<b class="fc">&nbsp;                &quot;operation without contract test: archiveBook &quot; +</b>
+&nbsp;                    &quot;(expected com.librosleidos.backend.contract.books.ArchiveBookTest)&quot;
+&nbsp;            ),
+<b class="fc">&nbsp;            problems</b>
+&nbsp;        )
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `a response body that drifts from the schema fails the filter`() {
+<b class="fc">&nbsp;        val server = HttpServer.create(InetSocketAddress(&quot;localhost&quot;, 0), 0)</b>
+<b class="fc">&nbsp;        server.createContext(&quot;/api/books/1&quot;) { exchange -&gt;</b>
+<b class="fc">&nbsp;            val body =</b>
+&nbsp;                (
+<b class="fc">&nbsp;                    &quot;&quot;&quot;{&quot;id&quot;:1,&quot;title&quot;:&quot;Dune&quot;,&quot;author&quot;:&quot;A&quot;,&quot;coverUrl&quot;:null,&quot;rating&quot;:&quot;five&quot;,&quot;&quot;&quot; +</b>
+&nbsp;                        &quot;&quot;&quot;&quot;review&quot;:&quot;&quot;,&quot;dateFinished&quot;:&quot;2026-01-02&quot;}&quot;&quot;&quot;
+<b class="fc">&nbsp;                    ).toByteArray()</b>
+<b class="fc">&nbsp;            exchange.responseHeaders.add(&quot;Content-Type&quot;, &quot;application/json&quot;)</b>
+<b class="fc">&nbsp;            exchange.sendResponseHeaders(200, body.size.toLong())</b>
+<b class="fc">&nbsp;            exchange.responseBody.use { it.write(body) }</b>
+&nbsp;        }
+<b class="fc">&nbsp;        server.start()</b>
+&nbsp;        try {
+<b class="fc">&nbsp;            val error =</b>
+<b class="fc">&nbsp;                assertThrows&lt;Throwable&gt; {</b>
+<b class="fc">&nbsp;                    RestAssured.given().baseUri(&quot;http://localhost&quot;).port(server.address.port)</b>
+<b class="fc">&nbsp;                        .filter(OpenApiValidationFilter(&quot;openapi.yaml&quot;))</b>
+<b class="fc">&nbsp;                        .get(&quot;/api/books/{id}&quot;, 1)</b>
+<b class="nc">&nbsp;                }</b>
+<b class="fc">&nbsp;            assertTrue(</b>
+<b class="pc">&nbsp;                error.message.orEmpty().contains(&quot;rating&quot;),</b>
+<b class="fc">&nbsp;                &quot;the violation must name the field: ${error.message}&quot;</b>
+&nbsp;            )
+&nbsp;        } finally {
+<b class="fc">&nbsp;            server.stop(0)</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-25 15:16</div>
+</div>
+</body>
+</html>

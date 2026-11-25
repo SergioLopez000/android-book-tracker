@@ -1,0 +1,171 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>app Coverage Report > BookCoverImageKt</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: app<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.ui.components</a>
+</div>
+
+<h1>Coverage Summary for Class: BookCoverImageKt (com.librosleidos.ui.components)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">BookCoverImageKt</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (3/3)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    68.8%
+  </span>
+  <span class="absValue">
+    (11/16)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (14/14)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    97.6%
+  </span>
+  <span class="absValue">
+    (287/294)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.ui.components
+&nbsp;
+&nbsp;import androidx.compose.foundation.layout.Box
+&nbsp;import androidx.compose.runtime.Composable
+&nbsp;import androidx.compose.ui.Modifier
+&nbsp;import androidx.compose.ui.semantics.contentDescription
+&nbsp;import androidx.compose.ui.semantics.semantics
+&nbsp;import coil3.compose.AsyncImage
+&nbsp;
+&nbsp;/**
+&nbsp; * Task 3.5 (design D11). Renders a book&#39;s cover via Coil&#39;s [AsyncImage].
+&nbsp; * `coverUrl` is validated locally (blank or non-https) *before* it ever
+&nbsp; * reaches [AsyncImage] — Coil is not consulted at all for an invalid URL,
+&nbsp; * carrying forward the MVP&#39;s https-only threat-matrix rule
+&nbsp; * ([com.librosleidos.data.remote.GoogleBooksMetadataSource]&#39;s
+&nbsp; * `toSecureCoverUrl`) as a second line of defense at render time. `null`
+&nbsp; * or an invalid `coverUrl` shows [CoverPlaceholder] instead.
+&nbsp; *
+&nbsp; * Spec: &quot;Missing or failed cover image&quot; (list), &quot;Cover shown while
+&nbsp; * editing&quot;, &quot;Missing cover in edit form&quot; (edit form).
+&nbsp; */
+&nbsp;@Composable
+<b class="pc">&nbsp;fun BookCoverImage(coverUrl: String?, contentDescription: String?, modifier: Modifier = Modifier) {</b>
+<b class="fc">&nbsp;    val secureCoverUrl = coverUrl.asSecureHttpsUrl()</b>
+<b class="fc">&nbsp;    if (secureCoverUrl == null) {</b>
+<b class="fc">&nbsp;        CoverPlaceholder(modifier = modifier)</b>
+<b class="fc">&nbsp;    } else {</b>
+<b class="fc">&nbsp;        AsyncImage(</b>
+<b class="fc">&nbsp;            model = secureCoverUrl,</b>
+<b class="fc">&nbsp;            contentDescription = contentDescription,</b>
+<b class="fc">&nbsp;            modifier = modifier</b>
+&nbsp;        )
+&nbsp;    }
+<b class="fc">&nbsp;}</b>
+&nbsp;
+&nbsp;/** Pure logic: `null`, blank, or non-https becomes `null` (short-circuit before Coil). */
+&nbsp;private fun String?.asSecureHttpsUrl(): String? =
+<b class="pc">&nbsp;    this?.takeIf { it.isNotBlank() &amp;&amp; it.startsWith(&quot;https://&quot;) }</b>
+&nbsp;
+&nbsp;@Composable
+<b class="pc">&nbsp;private fun CoverPlaceholder(modifier: Modifier = Modifier) {</b>
+<b class="fc">&nbsp;    Box(modifier = modifier.semantics { contentDescription = &quot;No cover available&quot; })</b>
+<b class="fc">&nbsp;}</b>
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-25 15:26</div>
+</div>
+</body>
+</html>

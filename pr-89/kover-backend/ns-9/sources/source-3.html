@@ -1,0 +1,142 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>backend Coverage Report > TestJwtSupport</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: backend<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.testsupport</a>
+</div>
+
+<h1>Coverage Summary for Class: TestJwtSupport (com.librosleidos.testsupport)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">TestJwtSupport</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+    <td class="coverageStat"/>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (4/4)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (14/14)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.testsupport
+&nbsp;
+&nbsp;import org.springframework.boot.test.context.TestConfiguration
+&nbsp;import org.springframework.context.annotation.Bean
+&nbsp;import org.springframework.test.context.DynamicPropertyRegistrar
+&nbsp;
+&nbsp;/**
+&nbsp; * Points the production decoder at the local [TestJwks]. Only `jwk-set-uri` is overridden; the
+&nbsp; * issuers and the test audience come from the test-only `config/application.yaml`.
+&nbsp; * Outside the `com.librosleidos.backend` scan root, so only tests that import it get it.
+&nbsp; */
+<b class="fc">&nbsp;@TestConfiguration(proxyBeanMethods = false)</b>
+&nbsp;class TestJwtSupport {
+&nbsp;    @Bean(destroyMethod = &quot;close&quot;)
+<b class="fc">&nbsp;    fun testJwks(): TestJwks = TestJwks()</b>
+&nbsp;
+&nbsp;    @Bean
+<b class="fc">&nbsp;    fun testJwksProperty(jwks: TestJwks): DynamicPropertyRegistrar = DynamicPropertyRegistrar {</b>
+<b class="fc">&nbsp;        it.add(&quot;librosleidos.auth.google.jwk-set-uri&quot;) { jwks.jwksUrl }</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-25 15:16</div>
+</div>
+</body>
+</html>
