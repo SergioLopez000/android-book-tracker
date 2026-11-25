@@ -26,9 +26,3 @@ management:
       show-components: never
       probes:
         enabled: false
-
-librosleidos:
-  auth:
-    google:
-      # Web client ID (public identifier). No default: startup fails when it is unset.
-      audience: ${GOOGLE_OAUTH_WEB_CLIENT_ID:}

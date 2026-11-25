@@ -1,9 +1,0 @@
-# Test-only, non-secret values: both Google issuer forms and a dummy Web client ID.
-# The JWKS URI comes from the local TestJwks where a test imports TestJwtSupport.
-librosleidos:
-  auth:
-    google:
-      issuers:
-        - accounts.google.com
-        - https://accounts.google.com
-      audience: test-web-client-id.apps.googleusercontent.com

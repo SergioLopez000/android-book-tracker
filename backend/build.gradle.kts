@@ -27,7 +27,6 @@ dependencies {
     implementation(platform(SpringBootPlugin.BOM_COORDINATES))
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.security)
-    implementation(libs.spring.boot.starter.oauth2.resource.server)
     implementation(libs.spring.boot.starter.actuator)
     implementation(libs.spring.boot.starter.jdbc)
     implementation(libs.spring.boot.starter.flyway)
@@ -71,7 +70,6 @@ testing {
                 implementation(platform(SpringBootPlugin.BOM_COORDINATES))
                 implementation(libs.spring.boot.starter.test)
                 implementation(libs.spring.boot.starter.security)
-                implementation(libs.spring.boot.starter.oauth2.resource.server)
                 implementation(libs.kotlin.test.junit5)
                 implementation(libs.spring.boot.starter.jdbc)
                 implementation(libs.spring.boot.testcontainers)
@@ -84,12 +82,6 @@ testing {
             }
         }
     }
-}
-
-// Test-only token support (local JWKS and minting) shared by `test` and `contractTest`.
-// It never reaches `main`, so it can never be packaged.
-sourceSets.matching { it.name == "test" || it.name == "contractTest" }.configureEach {
-    kotlin.srcDir("src/testSupport/kotlin")
 }
 
 tasks.bootJar {
@@ -134,14 +126,10 @@ val verifyPackagedArtifact by tasks.registering {
     val jar = tasks.bootJar.flatMap { it.archiveFile }
     dependsOn(tasks.bootJar)
     doLast {
-        val forbiddenClasses =
-            Regex(
-                """(?i)(testsupport|TestApiAuthentication|TestApi|TestJwks|TestJwt|jwks?\.json)"""
-            )
-        val privateKey = Regex("""-----BEGIN [A-Z ]*PRIVATE KEY-----""")
+        val forbiddenClasses = Regex("""(?i)(testsupport|TestApiAuthentication|TestApi)""")
         val bypass =
             Regex(
-                """(?i)(spring\.security\.user|security\.(enabled|disabled|ignored)|permit-?all|disable-?security|management\.security|oauth2\.resourceserver)"""
+                """(?i)(spring\.security\.user|security\.(enabled|disabled|ignored)|permit-?all|disable-?security|management\.security)"""
             )
         // Text entries only, and only the application's own classes: BOOT-INF/lib is third-party.
         val scannedEntry = Regex("""BOOT-INF/classes/.+\.(ya?ml|properties|json|xml|sql)""")
@@ -171,9 +159,6 @@ val verifyPackagedArtifact by tasks.registering {
                 var datasourceIndent = -1
                 file.readLines().forEachIndexed { index, line ->
                     val at = "$entry:${index + 1}"
-                    if (privateKey.containsMatchIn(line)) {
-                        violations += "private key material in $at"
-                    }
                     if (credentialKey.containsMatchIn(line)) {
                         violations += "credential-like key with a literal value in $at"
                     }

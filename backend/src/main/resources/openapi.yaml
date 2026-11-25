@@ -4,17 +4,12 @@ info:
   version: 0.0.1
   description: |
     Books CRUD, scoped to the authenticated owner. The owner is never part of any
-    request or response body. Every operation requires a Google ID token as a bearer
-    credential; the owner is the token `sub`. Any authentication failure is a 401 with
-    an empty body.
-security:
-  - bearerAuth: []
+    request or response body. The authentication mechanism is decided in #26;
+    until then every request except the health endpoint is rejected with 401.
 paths:
   /api/books:
     get:
       operationId: listBooks
-      security:
-        - bearerAuth: []
       tags: [books]
       summary: List the books of the authenticated owner
       responses:
@@ -30,8 +25,6 @@ paths:
           $ref: "#/components/responses/Unauthorized"
     post:
       operationId: createBook
-      security:
-        - bearerAuth: []
       tags: [books]
       summary: Create a book for the authenticated owner
       requestBody:
@@ -56,8 +49,6 @@ paths:
       - $ref: "#/components/parameters/BookId"
     get:
       operationId: getBook
-      security:
-        - bearerAuth: []
       tags: [books]
       summary: Get one book of the authenticated owner
       responses:
@@ -75,8 +66,6 @@ paths:
           $ref: "#/components/responses/NotFound"
     put:
       operationId: updateBook
-      security:
-        - bearerAuth: []
       tags: [books]
       summary: Replace one book of the authenticated owner
       requestBody:
@@ -100,8 +89,6 @@ paths:
           $ref: "#/components/responses/NotFound"
     delete:
       operationId: deleteBook
-      security:
-        - bearerAuth: []
       tags: [books]
       summary: Delete one book of the authenticated owner
       responses:
@@ -114,11 +101,6 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   parameters:
     BookId:
       name: id

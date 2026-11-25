@@ -41,14 +41,4 @@ class CreateBookTest : ContractTestBase() {
             .post("/api/books").then()
             .statusCode(400)
     }
-
-    @Test
-    fun `the stored owner_id is the token sub`() {
-        api(
-            sub = "google-sub-owner-check"
-        ).body(bookJson()).post("/api/books").then().statusCode(201)
-        val owners =
-            jdbc.sql("SELECT owner_id FROM books").query(String::class.java).list()
-        org.junit.jupiter.api.Assertions.assertEquals(listOf("google-sub-owner-check"), owners)
-    }
 }

@@ -48,17 +48,4 @@ class UpdateBookTest : ContractTestBase() {
             repository.findById(OwnerId(ContractTestBase.FOREIGN_OWNER), foreign.id)?.title
         )
     }
-
-    @Test
-    fun `another user token cannot update a book and it stays unchanged`() {
-        val book = ownBook()
-        api(
-            sub = OTHER_SUB
-        ).body(bookJson(title = "Hijacked")).put("/api/books/{id}", book.id.value)
-            .then().statusCode(404)
-        org.junit.jupiter.api.Assertions.assertEquals(
-            "Dune",
-            repository.findById(OwnerId(com.librosleidos.testsupport.TestJwks.SUB), book.id)?.title
-        )
-    }
 }
