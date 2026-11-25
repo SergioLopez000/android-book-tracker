@@ -180,6 +180,7 @@ Versiones: el CI fija gitleaks 8.30.1 y la configuración se probó con detekt 1
 | Pruebas del rango del escaneo de secretos | `scripts/test-secret-scan-range.sh` |
 | Contrato estático de secretos y permisos (solo local, hook de lefthook) | `scripts/test-secrets-contract.sh` (ejecuta `scripts/check-secrets-contract.sh`) |
 | Analizador de la caducidad de `PROJECT_TOKEN` (solo local) | `scripts/test-token-expiry.sh` (ejecuta `scripts/token-expiry.sh`) |
+| Aviso de caducidad de `PROJECT_TOKEN` con `gh` y `curl` simulados (solo local) | `scripts/test-token-expiry-notify.sh` (ejecuta `scripts/token-expiry-notify.sh` y `scripts/token-expiry-read.sh`) |
 
 Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas existentes viven en el baseline. detekt usa `config/detekt/detekt.yml` (solo sobrescrituras sobre la configuración por defecto; el estilo y el formato los cubre Spotless) y falla ante cualquier problema nuevo; los existentes viven en `config/detekt/baseline.xml`. `--input` de detekt separa las rutas con comas. Kover es solo informativo: no hay umbral de cobertura.
 

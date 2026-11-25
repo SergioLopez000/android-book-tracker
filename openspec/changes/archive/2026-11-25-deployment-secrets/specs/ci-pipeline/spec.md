@@ -100,7 +100,8 @@ The workflow-permissions, secrets allow-list and Dockerfile checks MUST live in 
 #### Scenario: Google Books key gated
 - GIVEN the Google Books key row or runbook entry
 - WHEN it is read
-- THEN it states that rotation waits for #29 and that only a manual key restriction applies now
+- THEN it states that no client key exists (not provisioned) and that the row is superseded by `GOOGLE_BOOKS_SERVER_API_KEY` (#29)
+- AND the runbook warns that an Android-app restriction would reject the direct REST calls
 
 ### Requirement: Inventory Drift Guard
 
