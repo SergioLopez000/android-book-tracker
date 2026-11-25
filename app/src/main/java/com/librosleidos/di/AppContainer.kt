@@ -1,11 +1,15 @@
 package com.librosleidos.di
 
 import android.content.Context
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import androidx.room.Room
 import com.librosleidos.BuildConfig
+import com.librosleidos.data.auth.DataStoreAccountMetadataStore
+import com.librosleidos.data.auth.InMemorySessionStore
 import com.librosleidos.data.local.BookRepositoryImpl
 import com.librosleidos.data.local.BooksDatabase
 import com.librosleidos.data.remote.ChainedMetadataSource
@@ -15,10 +19,14 @@ import com.librosleidos.data.remote.OpenLibraryMetadataSource
 import com.librosleidos.domain.usecase.DeleteBookUseCase
 import com.librosleidos.domain.usecase.GetBookByIdUseCase
 import com.librosleidos.domain.usecase.GetBooksUseCase
+import com.librosleidos.domain.usecase.ObserveSessionUseCase
 import com.librosleidos.domain.usecase.SaveBookUseCase
 import com.librosleidos.domain.usecase.SearchBookMetadataUseCase
 import com.librosleidos.ui.edit.BookEditViewModel
 import com.librosleidos.ui.list.BookListViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 /**
  * Task 7.1 (design D1: manual `AppContainer` on `Application` +
@@ -62,6 +70,21 @@ class AppContainer(context: Context) {
         primary = openLibrarySource,
         fallback = googleBooksSource
     )
+
+    // Account session (S2a): metadata is persisted, the ID token only lives in
+    // `InMemorySessionStore` (write-through never receives the token).
+    private val accountMetadataStore = DataStoreAccountMetadataStore(
+        PreferenceDataStoreFactory.create(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+            produceFile = {
+                context.applicationContext.preferencesDataStoreFile(
+                    DataStoreAccountMetadataStore.FILE_NAME.removeSuffix(".preferences_pb")
+                )
+            }
+        )
+    )
+    val sessionStore = InMemorySessionStore(accountMetadataStore)
+    val observeSessionUseCase = ObserveSessionUseCase(sessionStore)
 
     private val getBooksUseCase = GetBooksUseCase(bookRepository)
     private val getBookByIdUseCase = GetBookByIdUseCase(bookRepository)

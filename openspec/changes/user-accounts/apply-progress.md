@@ -39,5 +39,37 @@ drop audience -> "wrong audience"; drop issuer -> "wrong issuer"; drop sub check
 - `bash scripts/test-secrets-contract.sh`, `bash scripts/check-secrets-contract.sh`, `actionlint`, `shellcheck` on both scripts, root `spotlessCheck`, `detekt` on changed Kotlin, `gitleaks dir`: clean.
 - Changed lines vs dev excluding openspec: 896 insertions, 163 deletions (about 1059), above the 800 review budget and the ~650 forecast.
 
+### Remaining (S1)
+6.5 (commit and PR 1) was owned by the orchestrator (merged, #88).
+
+---
+
+## Unit S2a (app session core): tasks 7.1-8.5 done, 8.6 (commit and PR 2) left to the orchestrator
+
+### RED evidence (each run before the implementation)
+- 7.1 SignIn/SignOut/ObserveSession use case tests (+ `FakeAuth.kt`): `compileDebugUnitTestKotlin` failed, `Unresolved reference 'Account' / 'IdToken' / 'Session' / 'SignInResult' / 'AuthGateway' / 'SessionStore'`. GREEN 7.2: all pass.
+- 7.3 `DomainIsAndroidFreeTest` and `IdTokenTest` were new tests against existing code, so RED was proven by mutation: planted `import androidx.core...` in `Account.kt` -> `DomainIsAndroidFreeTest` FAILED; `toString` returning the value -> `IdTokenTest` FAILED. Both reverted; green. (A planted-import case inside the test itself uses a temp dir.)
+- 8.1/8.2/8.4 `InMemorySessionStoreTest`, `DataStoreAccountMetadataStoreTest`, `BackupRulesTest`: compile failed, `Unresolved reference 'datastore'`, `'PreferenceDataStoreFactory'`, `'DataStoreAccountMetadataStore'`. GREEN 8.3/8.4 after catalog dependency, store classes, XML and manifest attributes.
+- Robolectric first run failed with `Android SDK 36 requires Java 21`; fixed with `@Config(sdk = [34])` like the other Robolectric tests.
+
+### Triangulation / refactor
+- Mutations: `DataStoreAccountMetadataStore.clear` no-op -> "clear leaves the store empty" fails; dropping the `device-transfer` exclude -> `BackupRulesTest` fails. Reverted.
+- 8.5 refactor: detekt flagged `ReturnCount` in `read()` (restructured) and `SwallowedException` in `SignInUseCase` (intentional, suppressed: no exception detail may reach the UI).
+
+### API names confirmed by compiling (Context7 not used)
+`androidx.datastore:datastore-preferences:1.2.0`; `PreferenceDataStoreFactory.create(scope, produceFile)`, `Context.preferencesDataStoreFile(name)` (file `files/datastore/<name>.preferences_pb`), `stringPreferencesKey`, `edit { it.clear() }`.
+
+### Design notes / deviations
+- `AccountMetadataStore` exposes `read()/save(account)/clear()`; it has no token parameter, so the token cannot reach DataStore by type. `read()` is not consumed by `InMemorySessionStore` (metadata alone is never a session); it exists for the metadata test and later use.
+- `SignInUseCase` also converts an unexpected gateway exception into `SignInResult.Failure` (spec "Gateway failure is safe"); `SignOutUseCase` swallows gateway errors after clearing (design: best effort).
+- `AppContainer` exposes `sessionStore` and `observeSessionUseCase` only; `SignIn`/`SignOut` wiring needs a gateway and lands in S2b. `AuthGateway` has no implementation yet.
+- `SessionStore.clear()` clears memory first and metadata after, so a metadata IO failure cannot leave a token alive.
+- Backup rules exclude `datastore/account_metadata.preferences_pb` (domain `file`) in `backup_rules.xml` and in both `cloud-backup` and `device-transfer` of `data_extraction_rules.xml`; manifest sets `fullBackupContent` and `dataExtractionRules`. `allowBackup` stays true (book data backup unchanged).
+
+### Verification
+- `./gradlew :app:testDebugUnitTest spotlessCheck :app:lintDebug`: BUILD SUCCESSFUL.
+- `detekt --input <changed files> ... --baseline config/detekt/baseline.xml`: clean.
+- Changed lines vs dev excluding openspec: 28 insertions in 4 modified files, plus 22 new files totalling 665 lines (443 of them tests), about 693 total. Above the ~430 forecast, under the 800 budget.
+
 ### Remaining
-6.5 (commit and PR 1) is owned by the orchestrator. S2a and S2b not started.
+8.6 (commit and PR 2) is owned by the orchestrator. S2b not started.
