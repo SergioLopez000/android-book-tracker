@@ -52,7 +52,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (14/14)
+    (17/17)
   </span>
 </td>
 <td class="coverageStat">
@@ -60,7 +60,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (2/2)
+    (6/6)
   </span>
 </td>
 <td class="coverageStat">
@@ -68,7 +68,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (29/29)
+    (27/27)
   </span>
 </td>
 <td class="coverageStat">
@@ -76,7 +76,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (179/179)
+    (216/216)
   </span>
 </td>
 </tr>
@@ -91,7 +91,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (14/14)
+    (17/17)
   </span>
 </td>
 <td class="coverageStat">
@@ -99,7 +99,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (2/2)
+    (6/6)
   </span>
 </td>
 <td class="coverageStat">
@@ -107,7 +107,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (29/29)
+    (27/27)
   </span>
 </td>
 <td class="coverageStat">
@@ -115,7 +115,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (179/179)
+    (216/216)
   </span>
 </td>
 </tr>
@@ -138,7 +138,8 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 &nbsp;import com.librosleidos.backend.domain.model.Rating
 &nbsp;import com.librosleidos.backend.domain.port.BookRepository
 &nbsp;import com.librosleidos.testsupport.ContractPostgresConfig
-&nbsp;import com.librosleidos.testsupport.ContractTestAuthentication
+&nbsp;import com.librosleidos.testsupport.TestJwks
+&nbsp;import com.librosleidos.testsupport.TestJwtSupport
 &nbsp;import io.restassured.RestAssured
 &nbsp;import io.restassured.http.ContentType
 &nbsp;import io.restassured.specification.RequestSpecification
@@ -155,45 +156,57 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 &nbsp; * response is checked against `openapi.yaml`; assertions use JSON paths only.
 &nbsp; */
 <b class="fc">&nbsp;@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)</b>
-&nbsp;@Import(ContractTestAuthentication::class, ContractPostgresConfig::class)
+&nbsp;@Import(TestJwtSupport::class, ContractPostgresConfig::class)
 &nbsp;abstract class ContractTestBase {
 &nbsp;    @LocalServerPort private var port: Int = 0
 &nbsp;
-&nbsp;    @Autowired private lateinit var jdbc: JdbcClient
+<b class="fc">&nbsp;    @Autowired protected lateinit var jdbc: JdbcClient</b>
 &nbsp;
 <b class="fc">&nbsp;    @Autowired protected lateinit var repository: BookRepository</b>
+&nbsp;
+<b class="fc">&nbsp;    @Autowired protected lateinit var jwks: TestJwks</b>
 &nbsp;
 &nbsp;    @BeforeEach
 &nbsp;    fun cleanDatabase() {
 <b class="fc">&nbsp;        jdbc.sql(&quot;DELETE FROM books&quot;).update()</b>
 &nbsp;    }
 &nbsp;
-&nbsp;    /** Validates request and response. Unauthenticated requests carry no credentials. */
-<b class="fc">&nbsp;    protected fun api(authenticated: Boolean = true): RequestSpecification = base(authenticated)</b>
-<b class="fc">&nbsp;        .filter(OpenApiValidationFilter(SPEC))</b>
+&nbsp;    /**
+&nbsp;     * Validates request and response. Unauthenticated requests carry no credentials, so the
+&nbsp;     * validator&#39;s &quot;security missing&quot; finding is the only request finding ignored for them;
+&nbsp;     * their responses are still validated. [sub] picks the identity of the bearer token.
+&nbsp;     */
+&nbsp;    protected fun api(
+<b class="fc">&nbsp;        authenticated: Boolean = true,</b>
+<b class="fc">&nbsp;        sub: String = TestJwks.SUB</b>
+<b class="fc">&nbsp;    ): RequestSpecification = base(if (authenticated) jwks.token(sub = sub) else null).filter(</b>
+<b class="fc">&nbsp;        if (authenticated) {</b>
+<b class="fc">&nbsp;            OpenApiValidationFilter(SPEC)</b>
+&nbsp;        } else {
+<b class="fc">&nbsp;            filterIgnoring(SECURITY_MISSING)</b>
+&nbsp;        }
+&nbsp;    )
 &nbsp;
 &nbsp;    /**
 &nbsp;     * For requests that deliberately break the contract (400 cases): the request
 &nbsp;     * is not validated, the response still is.
 &nbsp;     */
-<b class="fc">&nbsp;    protected fun invalidApi(): RequestSpecification = base(true).filter(</b>
-<b class="fc">&nbsp;        OpenApiValidationFilter(</b>
-<b class="fc">&nbsp;            OpenApiInteractionValidator.createFor(SPEC)</b>
-<b class="fc">&nbsp;                .withLevelResolver(</b>
-<b class="fc">&nbsp;                    LevelResolver.create().withLevel(</b>
-<b class="fc">&nbsp;                        &quot;validation.request&quot;,</b>
-<b class="fc">&nbsp;                        ValidationReport.Level.IGNORE</b>
-<b class="fc">&nbsp;                    ).build()</b>
-&nbsp;                )
-<b class="fc">&nbsp;                .build()</b>
-&nbsp;        )
+&nbsp;    protected fun invalidApi(): RequestSpecification =
+<b class="fc">&nbsp;        base(jwks.token()).filter(filterIgnoring(&quot;validation.request&quot;))</b>
+&nbsp;
+<b class="fc">&nbsp;    private fun filterIgnoring(key: String) = OpenApiValidationFilter(</b>
+<b class="fc">&nbsp;        OpenApiInteractionValidator.createFor(SPEC)</b>
+<b class="fc">&nbsp;            .withLevelResolver(</b>
+<b class="fc">&nbsp;                LevelResolver.create().withLevel(key, ValidationReport.Level.IGNORE).build()</b>
+&nbsp;            )
+<b class="fc">&nbsp;            .build()</b>
 &nbsp;    )
 &nbsp;
 <b class="fc">&nbsp;    protected fun bookJson(title: String = &quot;Dune&quot;, extra: String = &quot;&quot;): String =</b>
 <b class="fc">&nbsp;        &quot;&quot;&quot;{&quot;title&quot;:&quot;$title&quot;,&quot;author&quot;:&quot;Frank Herbert&quot;,&quot;rating&quot;:4.5,&quot;review&quot;:&quot;Great&quot;,&quot;dateFinished&quot;:&quot;2026-01-02&quot;$extra}&quot;&quot;&quot;</b>
 &nbsp;
 <b class="fc">&nbsp;    protected fun ownBook(title: String = &quot;Dune&quot;): Book =</b>
-<b class="fc">&nbsp;        repository.create(owner(ContractTestAuthentication.OWNER), draft(title))</b>
+<b class="fc">&nbsp;        repository.create(owner(TestJwks.SUB), draft(title))</b>
 &nbsp;
 <b class="fc">&nbsp;    protected fun foreignBook(): Book = repository.create(owner(FOREIGN_OWNER), draft(&quot;Foreign&quot;))</b>
 &nbsp;
@@ -202,22 +215,17 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 &nbsp;    private fun draft(title: String) =
 <b class="fc">&nbsp;        BookDraft(title, &quot;Frank Herbert&quot;, null, Rating(4.5f), &quot;Great&quot;, LocalDate.of(2026, 1, 2))</b>
 &nbsp;
-&nbsp;    private fun base(authenticated: Boolean): RequestSpecification {
+&nbsp;    private fun base(token: String?): RequestSpecification {
 <b class="fc">&nbsp;        val spec =</b>
 <b class="fc">&nbsp;            RestAssured.given().baseUri(&quot;http://localhost&quot;).port(port).contentType(ContentType.JSON)</b>
-<b class="fc">&nbsp;        return if (authenticated) {</b>
-<b class="fc">&nbsp;            spec.auth().preemptive().basic(</b>
-<b class="fc">&nbsp;                ContractTestAuthentication.OWNER,</b>
-<b class="fc">&nbsp;                ContractTestAuthentication.PASSWORD</b>
-&nbsp;            )
-<b class="fc">&nbsp;        } else {</b>
-<b class="fc">&nbsp;            spec</b>
-&nbsp;        }
+<b class="fc">&nbsp;        return if (token != null) spec.header(&quot;Authorization&quot;, &quot;Bearer $token&quot;) else spec</b>
 &nbsp;    }
 &nbsp;
 &nbsp;    companion object {
 &nbsp;        const val FOREIGN_OWNER = &quot;another-owner&quot;
+&nbsp;        const val OTHER_SUB = &quot;google-sub-other-user&quot;
 &nbsp;        const val SPEC = &quot;openapi.yaml&quot;
+&nbsp;        private const val SECURITY_MISSING = &quot;validation.request.security.missing&quot;
 &nbsp;    }
 &nbsp;}
 </code>
@@ -243,7 +251,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2026-11-25 10:22</div>
+    <div style="float:right;">generated on 2026-11-25 15:15</div>
 </div>
 </body>
 </html>

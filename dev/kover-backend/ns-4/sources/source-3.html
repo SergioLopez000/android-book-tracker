@@ -63,7 +63,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (5/5)
+    (6/6)
   </span>
 </td>
     <td class="coverageStat"/>
@@ -72,7 +72,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (12/12)
+    (19/19)
   </span>
 </td>
 <td class="coverageStat">
@@ -80,7 +80,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (119/119)
+    (165/165)
   </span>
 </td>
 </tr>
@@ -125,6 +125,20 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 <b class="fc">&nbsp;        api().delete(&quot;/api/books/{id}&quot;, foreignBook().id.value).then().statusCode(404)</b>
 <b class="fc">&nbsp;            .body(&quot;status&quot;, equalTo(404))</b>
 &nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `another user token cannot delete a book and it stays`() {
+<b class="fc">&nbsp;        val book = ownBook()</b>
+<b class="fc">&nbsp;        api(sub = OTHER_SUB).delete(&quot;/api/books/{id}&quot;, book.id.value).then().statusCode(404)</b>
+<b class="fc">&nbsp;        org.junit.jupiter.api.Assertions.assertNotNull(</b>
+<b class="fc">&nbsp;            repository.findById(</b>
+<b class="fc">&nbsp;                com.librosleidos.backend.domain.model.OwnerId(</b>
+<b class="fc">&nbsp;                    com.librosleidos.testsupport.TestJwks.SUB</b>
+&nbsp;                ),
+<b class="fc">&nbsp;                book.id</b>
+&nbsp;            )
+&nbsp;        )
+&nbsp;    }
 &nbsp;}
 </code>
 </pre>
@@ -149,7 +163,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2026-11-25 10:22</div>
+    <div style="float:right;">generated on 2026-11-25 15:16</div>
 </div>
 </body>
 </html>

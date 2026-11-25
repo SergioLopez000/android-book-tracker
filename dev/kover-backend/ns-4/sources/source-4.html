@@ -63,7 +63,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (6/6)
+    (7/7)
   </span>
 </td>
     <td class="coverageStat"/>
@@ -72,7 +72,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (12/12)
+    (17/17)
   </span>
 </td>
 <td class="coverageStat">
@@ -80,7 +80,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (174/174)
+    (236/236)
   </span>
 </td>
 </tr>
@@ -129,6 +129,15 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 <b class="fc">&nbsp;        api().get(&quot;/api/books/{id}&quot;, foreignBook().id.value).then().statusCode(404)</b>
 <b class="fc">&nbsp;            .body(&quot;status&quot;, equalTo(404))</b>
 &nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `another user token reads 404 and none of the data`() {
+<b class="fc">&nbsp;        val book = ownBook()</b>
+<b class="fc">&nbsp;        val body =</b>
+<b class="fc">&nbsp;            api(sub = OTHER_SUB).get(&quot;/api/books/{id}&quot;, book.id.value).then().statusCode(404)</b>
+<b class="fc">&nbsp;                .body(&quot;status&quot;, equalTo(404)).extract().asString()</b>
+<b class="fc">&nbsp;        org.junit.jupiter.api.Assertions.assertFalse(body.contains(&quot;Dune&quot;), body)</b>
+&nbsp;    }
 &nbsp;}
 </code>
 </pre>
@@ -153,7 +162,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2026-11-25 10:22</div>
+    <div style="float:right;">generated on 2026-11-25 15:16</div>
 </div>
 </body>
 </html>

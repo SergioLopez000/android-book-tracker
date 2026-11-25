@@ -63,7 +63,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (5/5)
+    (6/6)
   </span>
 </td>
     <td class="coverageStat"/>
@@ -72,7 +72,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (19/19)
+    (25/25)
   </span>
 </td>
 <td class="coverageStat">
@@ -80,7 +80,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (170/170)
+    (216/216)
   </span>
 </td>
 </tr>
@@ -135,6 +135,16 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 <b class="fc">&nbsp;            .post(&quot;/api/books&quot;).then()</b>
 <b class="fc">&nbsp;            .statusCode(400)</b>
 &nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `the stored owner_id is the token sub`() {
+<b class="fc">&nbsp;        api(</b>
+<b class="fc">&nbsp;            sub = &quot;google-sub-owner-check&quot;</b>
+<b class="fc">&nbsp;        ).body(bookJson()).post(&quot;/api/books&quot;).then().statusCode(201)</b>
+<b class="fc">&nbsp;        val owners =</b>
+<b class="fc">&nbsp;            jdbc.sql(&quot;SELECT owner_id FROM books&quot;).query(String::class.java).list()</b>
+<b class="fc">&nbsp;        org.junit.jupiter.api.Assertions.assertEquals(listOf(&quot;google-sub-owner-check&quot;), owners)</b>
+&nbsp;    }
 &nbsp;}
 </code>
 </pre>
@@ -159,7 +169,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2026-11-25 10:22</div>
+    <div style="float:right;">generated on 2026-11-25 15:15</div>
 </div>
 </body>
 </html>
