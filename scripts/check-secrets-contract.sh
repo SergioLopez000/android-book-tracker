@@ -6,7 +6,9 @@
 #   2. every workflow and job declares `permissions:`; no write-all / read-all
 #   3. backend/Dockerfile has no secret-like ENV/ARG and a single digest-pinned FROM
 #   4. drift guard: docs/secrets.md lists every secrets.* name used by workflows and
-#      every ALLOWED_SECRETS entry, has the required headings and owner SergioLopez000
+#      every ALLOWED_SECRETS entry, has the required headings and owner SergioLopez000;
+#      the GOOGLE_BOOKS_API_KEY row says not provisioned / superseded by
+#      GOOGLE_BOOKS_SERVER_API_KEY (#29) and the runbook keeps the Android-app warning
 #   5. a job that uses PROJECT_TOKEN holds no write permission; token-expiry.yml has no
 #      pull_request / pull_request_target trigger
 # Prints one `FAIL: ...` line per violation and exits non-zero. Never prints a secret value.
@@ -164,6 +166,20 @@ else
     name="$(awk -F'|' '{ n = $2; gsub(/[ `]/, "", n); print n }' <<<"$row")"
     grep -Fq "$owner_token" <<<"$owner" || fail "inventory: row $name lacks the owner \`SergioLopez000\`"
   done <<<"$rows"
+  # Google Books key gated: no client key exists, superseded by the server key (#29).
+  # shellcheck disable=SC2016
+  gb_key='`GOOGLE_BOOKS_API_KEY`'
+  # shellcheck disable=SC2016
+  gb_superseded='superseded by `GOOGLE_BOOKS_SERVER_API_KEY` (#29)'
+  gb_row="$(grep -F "$gb_key" <<<"$rows" || true)"
+  if [ -z "$gb_row" ]; then
+    fail "inventory: GOOGLE_BOOKS_API_KEY row is missing from docs/secrets.md"
+  elif ! grep -Fq 'not provisioned' <<<"$gb_row" ||
+    ! grep -Fq "$gb_superseded" <<<"$gb_row"; then
+    fail "inventory: row GOOGLE_BOOKS_API_KEY must state not provisioned and superseded by GOOGLE_BOOKS_SERVER_API_KEY (#29)"
+  fi
+  grep -Fq 'Android-app restriction would reject' "$inventory_doc" ||
+    fail "inventory: docs/secrets.md runbook lost the Android-app restriction warning for the Google Books key"
 fi
 
 if [ "$failures" -ne 0 ]; then

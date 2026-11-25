@@ -155,6 +155,10 @@ Scope approved by the owner after the final verify found 8 PARTIAL scenarios (th
 - [x] R.4 Spec text: delta scenario "Google Books key gated" now states no client key exists, superseded by `GOOGLE_BOOKS_SERVER_API_KEY` (#29), and the Android-app restriction warning; inventory row `PROJECT_TOKEN` consumers list `board-sync.yml` and `token-expiry.yml`.
 - [x] R.5 Docs and hooks: README script table (Spanish), `openspec/config.yaml` verify rule, new lefthook job `token-expiry-notify`.
 - [x] R.6 Commit with a conventional message; lefthook hooks run (never `--no-verify`).
+- [x] R.7 Assert the reminder body for "Expiry is near" and "Already expired": expiry date, runbook link `<server>/<repo>/blob/<ref>/docs/secrets.md#runbook` (expiring, expired, invalid and the edited body) in `scripts/test-token-expiry-notify.sh`. Proven load-bearing by two body mutations.
+- [x] R.8 Assert "Missing secret" end to end in the reader harness: exact `::notice::PROJECT_TOKEN is not set; skipping the expiry check.` line, exit 0, single `state=skipped`, curl and gh never called (no issue opened). Proven by notice change/removal, wrong state and exit 1 mutations.
+- [x] R.9 "Google Books key gated": `scripts/check-secrets-contract.sh` requires the `GOOGLE_BOOKS_API_KEY` row to state not provisioned and superseded by `GOOGLE_BOOKS_SERVER_API_KEY` (#29), and the runbook to keep the Android-app restriction warning; three fixtures in `scripts/test-secrets-contract.sh` (old wording, missing row, missing warning) RED against the old checker.
+- [x] R.10 Commit `test(secrets): assert reminder runbook link, missing-secret notice and Google Books row`; lefthook hooks run (never `--no-verify`).
 
 ---
 

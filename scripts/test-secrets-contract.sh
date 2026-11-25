@@ -26,12 +26,13 @@ DEFAULT_INV='# Secrets
 | `PROJECT_TOKEN` | PAT | `SergioLopez000` | project | repository secret | board-sync | 90 days | active |
 | `GITHUB_TOKEN` | automatic | `SergioLopez000` | job | runner | ci | automatic | active |
 | `SPRING_DATASOURCE_URL` | db | `SergioLopez000` | dev | host | backend | 180 days | planned: created by #8 |
+| `GOOGLE_BOOKS_API_KEY` | key | `SergioLopez000` | app | none | app | none | not provisioned; superseded by `GOOGLE_BOOKS_SERVER_API_KEY` (#29) |
 ## Environments
 text
 ## Rotation cadence
 text
 ## Runbook
-text'
+An Android-app restriction would reject every request.'
 
 # Creates a fixture root and prints its path. Overridable pieces (portable, no sed -i):
 #   TOP      top-level permissions block   UNIT_PERMS  permissions block of unit-tests
@@ -222,6 +223,15 @@ done
 
 d="$(INVENTORY="${DEFAULT_INV//\`SergioLopez000\` | project/other | project}" new_root)"
 expect_fail "active row without owner SergioLopez000 fails" "$d" 'inventory.*PROJECT_TOKEN.*owner'
+
+d="$(INVENTORY="${DEFAULT_INV//not provisioned; superseded by \`GOOGLE_BOOKS_SERVER_API_KEY\` (#29)/active / manual restriction}" new_root)"
+expect_fail "Google Books row with the old wording fails naming the check" "$d" 'inventory.*GOOGLE_BOOKS_API_KEY.*not provisioned'
+
+d="$(INVENTORY="$(grep -v 'GOOGLE_BOOKS_API_KEY' <<<"$DEFAULT_INV")" new_root)"
+expect_fail "missing Google Books row fails" "$d" 'inventory.*GOOGLE_BOOKS_API_KEY row is missing'
+
+d="$(INVENTORY="${DEFAULT_INV//Android-app restriction would reject/restriction note}" new_root)"
+expect_fail "runbook without the Android-app warning fails" "$d" 'inventory.*Android-app restriction'
 
 d="$(INVENTORY="$DEFAULT_INV
 | \`EXTRA_NAME\` | x | \`SergioLopez000\` | x | x | x | x | planned: created by #8 |" new_root)"

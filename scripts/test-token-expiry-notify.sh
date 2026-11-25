@@ -40,6 +40,7 @@ chmod +x "$tmp/bin/gh" "$tmp/bin/curl"
 REMINDER='PROJECT_TOKEN rotation needed'
 WARNING='PROJECT_TOKEN expiry header missing'
 HOSTILE='$(touch marker) `x`'
+RUNBOOK='https://h/o/r/blob/main/docs/secrets.md#runbook'
 
 # notify <state> <list-json> [expires]: runs the notify script in an empty cwd.
 notify() {
@@ -77,10 +78,15 @@ expect_edit() {
 
 expect_create "expiring opens the reminder" expiring "$REMINDER"
 grep -q '5 days left' "$tmp/body" || fail "expiring body lacks the days left"
+grep -qF -- 'expires on 2000-01-06' "$tmp/body" || fail "expiring body lacks the expiry date"
+grep -qF -- "$RUNBOOK" "$tmp/body" || fail "expiring body lacks the runbook link"
 expect_create "expired opens the reminder" expired "$REMINDER"
 grep -q 'has expired' "$tmp/body" || fail "expired body lacks the expiry wording"
+grep -qF -- '2000-01-06' "$tmp/body" || fail "expired body lacks the expiry date"
+grep -qF -- "$RUNBOOK" "$tmp/body" || fail "expired body lacks the runbook link"
 expect_create "invalid opens the reminder" invalid "$REMINDER"
 grep -q 'rejected PROJECT_TOKEN' "$tmp/body" || fail "invalid body lacks the rejection wording"
+grep -qF -- "$RUNBOOK" "$tmp/body" || fail "invalid body lacks the runbook link"
 expect_create "missing-header opens the warning" missing-header "$WARNING"
 expect_create "unparseable opens the warning" unparseable "$WARNING"
 [ "$REMINDER" != "$WARNING" ] || fail "reminder and warning titles must differ"
@@ -88,6 +94,8 @@ expect_create "unparseable opens the warning" unparseable "$WARNING"
 expect_edit "expiring edits the open reminder" expiring "$REMINDER" 42
 expect_edit "expired edits the open reminder" expired "$REMINDER" 42
 expect_edit "invalid edits the open reminder" invalid "$REMINDER" 42
+notify expiring '[{"number":42,"title":"PROJECT_TOKEN rotation needed"}]'
+grep -qF -- "$RUNBOOK" "$tmp/body" || fail "edited reminder body lacks the runbook link"
 expect_edit "missing-header edits the open warning" missing-header "$WARNING" 43
 expect_edit "unparseable edits the open warning" unparseable "$WARNING" 43
 
@@ -141,7 +149,9 @@ read_expiry() {
 read_expiry "" ""
 [ "$status" -eq 0 ] || fail "empty token: exit $status ($stdout)"
 grep -qx 'state=skipped' "$tmp/gh_out" || fail "empty token: want state=skipped"
-[ ! -s "$tmp/log" ] || fail "empty token: curl must not be called"
+[ ! -s "$tmp/log" ] || fail "empty token: curl and gh must not be called, no issue opened"
+[ "$stdout" = '::notice::PROJECT_TOKEN is not set; skipping the expiry check.' ] || fail "empty token: want the ::notice:: line, got '$stdout'"
+[ "$(grep -c '^state=' "$tmp/gh_out")" = 1 ] || fail "empty token: want exactly one state line"
 read_expiry "tok-SECRET-123" "2000-01-06 00:00:00 UTC"
 [ "$status" -eq 0 ] || fail "set token: exit $status ($stdout)"
 grep -qx 'state=expiring' "$tmp/gh_out" || fail "set token: want state=expiring"
