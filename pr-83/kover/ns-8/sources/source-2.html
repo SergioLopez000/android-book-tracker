@@ -1,0 +1,296 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>app Coverage Report > StarRatingKt</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: app<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.ui.components</a>
+</div>
+
+<h1>Coverage Summary for Class: StarRatingKt (com.librosleidos.ui.components)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">StarRatingKt</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    66.7%
+  </span>
+  <span class="absValue">
+    (8/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    55.6%
+  </span>
+  <span class="absValue">
+    (20/36)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    73.8%
+  </span>
+  <span class="absValue">
+    (59/80)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    84.6%
+  </span>
+  <span class="absValue">
+    (867/1025)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.ui.components
+&nbsp;
+&nbsp;import androidx.compose.foundation.Canvas
+&nbsp;import androidx.compose.foundation.clickable
+&nbsp;import androidx.compose.foundation.layout.Box
+&nbsp;import androidx.compose.foundation.layout.BoxScope
+&nbsp;import androidx.compose.foundation.layout.Row
+&nbsp;import androidx.compose.foundation.layout.fillMaxHeight
+&nbsp;import androidx.compose.foundation.layout.size
+&nbsp;import androidx.compose.material3.MaterialTheme
+&nbsp;import androidx.compose.runtime.Composable
+&nbsp;import androidx.compose.ui.Modifier
+&nbsp;import androidx.compose.ui.draw.drawWithContent
+&nbsp;import androidx.compose.ui.graphics.Path
+&nbsp;import androidx.compose.ui.graphics.drawscope.Stroke
+&nbsp;import androidx.compose.ui.graphics.drawscope.clipRect
+&nbsp;import androidx.compose.ui.platform.testTag
+&nbsp;import androidx.compose.ui.semantics.clearAndSetSemantics
+&nbsp;import androidx.compose.ui.semantics.contentDescription
+&nbsp;import androidx.compose.ui.semantics.semantics
+&nbsp;import androidx.compose.ui.unit.dp
+&nbsp;import java.util.Locale
+&nbsp;import kotlin.math.cos
+&nbsp;import kotlin.math.sin
+&nbsp;
+&nbsp;private const val STAR_COUNT = 5
+<b class="fc">&nbsp;private val STAR_SIZE = 32.dp</b>
+&nbsp;private const val INNER_RADIUS_RATIO = 0.4f
+&nbsp;private const val STAR_STROKE_WIDTH_DP = 2f
+&nbsp;
+&nbsp;/**
+&nbsp; * Task 2.2/2.4/2.5 (design D10). Renders [rating] (0f..5f, half-star
+&nbsp; * precision) as a row of [STAR_COUNT] stars. Each star draws an outline
+&nbsp; * plus a filled overlay clipped to [starFillFraction] of its width — one
+&nbsp; * fraction per star covers every 0.5 step without `StarHalf` assets or RTL
+&nbsp; * quirks, and this same [Star] draw path is shared by both modes below
+&nbsp; * (task 2.5 dedupe).
+&nbsp; *
+&nbsp; * Display mode ([onRatingChange] null) merges the row into a single
+&nbsp; * content-description node carrying the formatted value; no numeric text
+&nbsp; * is rendered (spec: &quot;Whole-star rating&quot;, &quot;Half-star rating&quot;). Input mode
+&nbsp; * splits each star into two half-width tap targets, one per 0.5 step, each
+&nbsp; * carrying its own `&quot;Set rating N&quot;` content description (spec: &quot;User taps
+&nbsp; * to set half-star value&quot;, &quot;Input stays within valid bounds&quot;) — every
+&nbsp; * resulting value is one of [STAR_COUNT] * 2 fixed 0.5-multiples between
+&nbsp; * `Rating.MIN` and `Rating.MAX` by construction.
+&nbsp; */
+&nbsp;@Composable
+&nbsp;fun StarRating(
+&nbsp;    rating: Float?,
+<b class="fc">&nbsp;    modifier: Modifier = Modifier,</b>
+<b class="fc">&nbsp;    onRatingChange: ((Float) -&gt; Unit)? = null,</b>
+<b class="fc">&nbsp;    tapTargetTagPrefix: String? = null</b>
+<b class="pc">&nbsp;) {</b>
+<b class="fc">&nbsp;    val clampedRating = (rating ?: 0f).coerceIn(0f, STAR_COUNT.toFloat())</b>
+<b class="fc">&nbsp;    val rowModifier = if (onRatingChange == null) {</b>
+<b class="fc">&nbsp;        modifier.clearAndSetSemantics {</b>
+<b class="fc">&nbsp;            contentDescription = &quot;Rating %.1f out of %d&quot;.format(clampedRating, STAR_COUNT)</b>
+&nbsp;        }
+<b class="fc">&nbsp;    } else {</b>
+<b class="fc">&nbsp;        modifier</b>
+<b class="fc">&nbsp;    }</b>
+&nbsp;
+<b class="fc">&nbsp;    Row(modifier = rowModifier) {</b>
+<b class="fc">&nbsp;        for (index in 0 until STAR_COUNT) {</b>
+<b class="fc">&nbsp;            Box(modifier = Modifier.size(STAR_SIZE)) {</b>
+<b class="fc">&nbsp;                Star(fraction = starFillFraction(clampedRating, index))</b>
+<b class="fc">&nbsp;                if (onRatingChange != null) {</b>
+<b class="fc">&nbsp;                    StarTapTargets(</b>
+<b class="fc">&nbsp;                        starIndex = index,</b>
+<b class="fc">&nbsp;                        onRatingChange = onRatingChange,</b>
+<b class="fc">&nbsp;                        tapTargetTagPrefix = tapTargetTagPrefix</b>
+&nbsp;                    )
+<b class="fc">&nbsp;                }</b>
+<b class="fc">&nbsp;            }</b>
+<b class="fc">&nbsp;        }</b>
+<b class="fc">&nbsp;    }</b>
+<b class="fc">&nbsp;}</b>
+&nbsp;
+&nbsp;/**
+&nbsp; * Pure logic (design D10): how much of the star at [starIndex] (0-based)
+&nbsp; * is filled for a given [rating], clamped to 0f..1f.
+&nbsp; */
+&nbsp;internal fun starFillFraction(rating: Float, starIndex: Int): Float =
+<b class="fc">&nbsp;    (rating - starIndex).coerceIn(0f, 1f)</b>
+&nbsp;
+&nbsp;/**
+&nbsp; * Locale-free tag suffix for a rating value: `4.5f` becomes `&quot;4_5&quot;`, `5.0f`
+&nbsp; * becomes `&quot;5_0&quot;`. Used to build `&lt;prefix&gt;_&lt;suffix&gt;` test tags for the tap targets.
+&nbsp; */
+&nbsp;internal fun ratingTagSuffix(value: Float): String =
+<b class="fc">&nbsp;    String.format(Locale.ROOT, &quot;%.1f&quot;, value).replace(&#39;.&#39;, &#39;_&#39;)</b>
+&nbsp;
+&nbsp;/** Single shared draw path for one star: outline plus a [fraction]-clipped filled overlay. */
+&nbsp;@Composable
+<b class="pc">&nbsp;private fun Star(fraction: Float) {</b>
+<b class="fc">&nbsp;    val outlineColor = MaterialTheme.colorScheme.onSurfaceVariant</b>
+<b class="fc">&nbsp;    val filledColor = MaterialTheme.colorScheme.primary</b>
+<b class="fc">&nbsp;    Canvas(modifier = Modifier.size(STAR_SIZE)) {</b>
+<b class="nc">&nbsp;        drawPath(</b>
+<b class="nc">&nbsp;            starPath(size.width, size.height),</b>
+<b class="nc">&nbsp;            color = outlineColor,</b>
+<b class="nc">&nbsp;            style = Stroke(width = STAR_STROKE_WIDTH_DP.dp.toPx())</b>
+&nbsp;        )
+&nbsp;    }
+<b class="fc">&nbsp;    Canvas(</b>
+<b class="fc">&nbsp;        modifier = Modifier</b>
+<b class="fc">&nbsp;            .size(STAR_SIZE)</b>
+<b class="fc">&nbsp;            .drawWithContent {</b>
+<b class="nc">&nbsp;                clipRect(right = size.width * fraction) { this@drawWithContent.drawContent() }</b>
+&nbsp;            }
+<b class="fc">&nbsp;    ) {</b>
+<b class="nc">&nbsp;        drawPath(starPath(size.width, size.height), color = filledColor)</b>
+&nbsp;    }
+<b class="fc">&nbsp;}</b>
+&nbsp;
+&nbsp;/** Two half-width tap targets for the star at [starIndex], one per 0.5 step. */
+&nbsp;@Composable
+&nbsp;private fun BoxScope.StarTapTargets(
+&nbsp;    starIndex: Int,
+&nbsp;    onRatingChange: (Float) -&gt; Unit,
+&nbsp;    tapTargetTagPrefix: String?
+<b class="pc">&nbsp;) {</b>
+<b class="fc">&nbsp;    val halfValue = starIndex + 0.5f</b>
+<b class="fc">&nbsp;    val fullValue = (starIndex + 1).toFloat()</b>
+<b class="fc">&nbsp;    Row(modifier = Modifier.fillMaxHeight()) {</b>
+<b class="fc">&nbsp;        Box(</b>
+<b class="fc">&nbsp;            modifier = Modifier</b>
+<b class="fc">&nbsp;                .weight(1f)</b>
+<b class="fc">&nbsp;                .fillMaxHeight()</b>
+<b class="fc">&nbsp;                .tapTargetTag(tapTargetTagPrefix, halfValue)</b>
+<b class="fc">&nbsp;                .clickable { onRatingChange(halfValue) }</b>
+<b class="fc">&nbsp;                .semantics { contentDescription = &quot;Set rating %.1f&quot;.format(halfValue) }</b>
+&nbsp;        )
+<b class="fc">&nbsp;        Box(</b>
+<b class="fc">&nbsp;            modifier = Modifier</b>
+<b class="fc">&nbsp;                .weight(1f)</b>
+<b class="fc">&nbsp;                .fillMaxHeight()</b>
+<b class="fc">&nbsp;                .tapTargetTag(tapTargetTagPrefix, fullValue)</b>
+<b class="fc">&nbsp;                .clickable { onRatingChange(fullValue) }</b>
+<b class="fc">&nbsp;                .semantics { contentDescription = &quot;Set rating %.1f&quot;.format(fullValue) }</b>
+&nbsp;        )
+<b class="fc">&nbsp;    }</b>
+<b class="fc">&nbsp;}</b>
+&nbsp;
+&nbsp;private fun Modifier.tapTargetTag(prefix: String?, value: Float): Modifier =
+<b class="fc">&nbsp;    if (prefix == null) this else testTag(&quot;${prefix}_${ratingTagSuffix(value)}&quot;)</b>
+&nbsp;
+&nbsp;/** Five-point star outline path, centered in a [width]x[height] box. */
+&nbsp;private fun starPath(width: Float, height: Float): Path {
+<b class="nc">&nbsp;    val centerX = width / 2f</b>
+<b class="nc">&nbsp;    val centerY = height / 2f</b>
+<b class="nc">&nbsp;    val outerRadius = minOf(centerX, centerY)</b>
+<b class="nc">&nbsp;    val innerRadius = outerRadius * INNER_RADIUS_RATIO</b>
+<b class="nc">&nbsp;    val path = Path()</b>
+<b class="nc">&nbsp;    val pointCount = 5</b>
+<b class="nc">&nbsp;    var angle = -Math.PI.toFloat() / 2f</b>
+<b class="nc">&nbsp;    val angleStep = Math.PI.toFloat() / pointCount</b>
+<b class="nc">&nbsp;    for (i in 0 until pointCount * 2) {</b>
+<b class="nc">&nbsp;        val radius = if (i % 2 == 0) outerRadius else innerRadius</b>
+<b class="nc">&nbsp;        val x = centerX + radius * cos(angle)</b>
+<b class="nc">&nbsp;        val y = centerY + radius * sin(angle)</b>
+<b class="nc">&nbsp;        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)</b>
+<b class="nc">&nbsp;        angle += angleStep</b>
+&nbsp;    }
+&nbsp;    path.close()
+<b class="nc">&nbsp;    return path</b>
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-23 12:36</div>
+</div>
+</body>
+</html>
