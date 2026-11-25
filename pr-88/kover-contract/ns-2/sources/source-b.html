@@ -1,0 +1,174 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>backend Coverage Report > SecurityConfig</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: backend<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.backend.config</a>
+</div>
+
+<h1>Coverage Summary for Class: SecurityConfig (com.librosleidos.backend.config)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">SecurityConfig</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (10/10)
+  </span>
+</td>
+    <td class="coverageStat"/>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (17/17)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (88/88)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.backend.config
+&nbsp;
+&nbsp;import org.springframework.boot.context.properties.EnableConfigurationProperties
+&nbsp;import org.springframework.context.annotation.Bean
+&nbsp;import org.springframework.context.annotation.Configuration
+&nbsp;import org.springframework.http.HttpStatus
+&nbsp;import org.springframework.security.config.annotation.web.builders.HttpSecurity
+&nbsp;import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+&nbsp;import org.springframework.security.config.annotation.web.invoke
+&nbsp;import org.springframework.security.config.http.SessionCreationPolicy
+&nbsp;import org.springframework.security.oauth2.jwt.JwtDecoder
+&nbsp;import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
+&nbsp;import org.springframework.security.web.SecurityFilterChain
+&nbsp;import org.springframework.security.web.authentication.HttpStatusEntryPoint
+&nbsp;
+&nbsp;/**
+&nbsp; * Deny by default: every request except `/actuator/health` needs a valid Google ID token
+&nbsp; * (see [GoogleIdTokenDecoder]). Every failure is a bodiless 401. No profile or flag relaxes this,
+&nbsp; * and the authenticated principal name is the token `sub`.
+&nbsp; */
+<b class="fc">&nbsp;@Configuration</b>
+&nbsp;@EnableWebSecurity
+&nbsp;@EnableConfigurationProperties(GoogleAuthProperties::class)
+&nbsp;class SecurityConfig {
+&nbsp;    @Bean
+&nbsp;    fun jwtDecoder(properties: GoogleAuthProperties): JwtDecoder =
+<b class="fc">&nbsp;        GoogleIdTokenDecoder.create(properties)</b>
+&nbsp;
+&nbsp;    @Bean
+&nbsp;    fun securityFilterChain(http: HttpSecurity, decoder: JwtDecoder): SecurityFilterChain {
+<b class="fc">&nbsp;        val converter = JwtAuthenticationConverter().apply { setPrincipalClaimName(&quot;sub&quot;) }</b>
+<b class="fc">&nbsp;        http {</b>
+<b class="fc">&nbsp;            authorizeHttpRequests {</b>
+<b class="fc">&nbsp;                authorize(&quot;/actuator/health&quot;, permitAll)</b>
+<b class="fc">&nbsp;                authorize(anyRequest, authenticated)</b>
+&nbsp;            }
+<b class="fc">&nbsp;            sessionManagement { sessionCreationPolicy = SessionCreationPolicy.STATELESS }</b>
+&nbsp;            // Stateless API with no cookies or browser sessions: CSRF protects nothing here.
+<b class="fc">&nbsp;            csrf { disable() }</b>
+<b class="fc">&nbsp;            exceptionHandling {</b>
+<b class="fc">&nbsp;                authenticationEntryPoint = HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)</b>
+&nbsp;            }
+<b class="fc">&nbsp;            oauth2ResourceServer {</b>
+<b class="fc">&nbsp;                authenticationEntryPoint = HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)</b>
+<b class="fc">&nbsp;                jwt {</b>
+<b class="fc">&nbsp;                    jwtDecoder = decoder</b>
+<b class="fc">&nbsp;                    jwtAuthenticationConverter = converter</b>
+&nbsp;                }
+&nbsp;            }
+&nbsp;        }
+<b class="fc">&nbsp;        return http.build()</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-25 15:10</div>
+</div>
+</body>
+</html>
