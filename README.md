@@ -179,6 +179,7 @@ Versiones: el CI fija gitleaks 8.30.1 y la configuración se probó con detekt 1
 | Pruebas del resumen de cobertura | `scripts/test-kover-summary.sh` |
 | Pruebas del rango del escaneo de secretos | `scripts/test-secret-scan-range.sh` |
 | Contrato estático de secretos y permisos (solo local, hook de lefthook) | `scripts/test-secrets-contract.sh` (ejecuta `scripts/check-secrets-contract.sh`) |
+| Analizador de la caducidad de `PROJECT_TOKEN` (solo local) | `scripts/test-token-expiry.sh` (ejecuta `scripts/token-expiry.sh`) |
 
 Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas existentes viven en el baseline. detekt usa `config/detekt/detekt.yml` (solo sobrescrituras sobre la configuración por defecto; el estilo y el formato los cubre Spotless) y falla ante cualquier problema nuevo; los existentes viven en `config/detekt/baseline.xml`. `--input` de detekt separa las rutas con comas. Kover es solo informativo: no hay umbral de cobertura.
 
@@ -286,7 +287,7 @@ Rotación: antes de que expire, genera un PAT nuevo con las mismas condiciones, 
 Los secretos viven solo en sus almacenes: secretos del repositorio para la automatización de CI (hoy únicamente `PROJECT_TOKEN`), almacenes por entorno (`dev`, `staging`) del proveedor de alojamiento para el backend y `local.properties` para el desarrollo local. Nunca en el repositorio, en el `Dockerfile` ni en los logs.
 
 - Inventario, propietario, ubicación y procedimiento de rotación: [`docs/secrets.md`](docs/secrets.md) (punto de entrada para rotar cualquier secreto, sección `Runbook`).
-- Aviso de caducidad de `PROJECT_TOKEN`: un workflow programado abre un issue recordatorio antes de que expire (se añade en la unidad 4 de este cambio).
+- Aviso de caducidad de `PROJECT_TOKEN`: el workflow [`token-expiry.yml`](.github/workflows/token-expiry.yml) se ejecuta cada lunes (y a mano con `workflow_dispatch`), lee la fecha de caducidad del token y abre o actualiza un único issue con la etiqueta `secret-rotation` cuando quedan menos de 14 días, el token ya caducó o GitHub lo rechaza. Si no puede determinar la fecha, abre un issue de aviso distinto. Tras fusionarlo a la rama por defecto, lánzalo una vez a mano para confirmar el formato de la cabecera. Al rotar el token, actualiza la fecha en el inventario y cierra el issue a mano.
 - Cadencia: PAT clásico como máximo 90 días; contraseñas de base de datos 180 días o ante una fuga; claves de API de proveedores 365 días o ante una fuga; secretos de firma 180 días; el keystore de release no se rota; `GITHUB_TOKEN` es automático.
 - `bash scripts/test-secrets-contract.sh` falla si un `secrets.*` de los workflows no está en el inventario (solo local, hook de lefthook).
 

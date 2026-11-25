@@ -111,6 +111,10 @@ expect_fail "secrets: inherit fails" "$d" 'ci\.yml.*secrets: inherit'
 d="$(UNIT_RUN='- run: echo "${{ secrets.GITHUB_TOKEN }}"' new_root)"
 expect_fail "secrets.GITHUB_TOKEN fails" "$d" 'ci\.yml.*github\.token'
 
+# A path such as docs/secrets.md is not a secret reference.
+d="$(UNIT_RUN='- run: echo "see docs/secrets.md"' new_root)"
+expect_pass "docs/secrets.md path is not a secret reference" "$d"
+
 # e2e-tests stays secret-free (even for an allowed secret).
 d="$(E2E_RUN='- run: echo "${{ secrets.PROJECT_TOKEN }}"' new_root)"
 expect_fail "e2e-tests with a secret fails" "$d" 'e2e-tests.*PROJECT_TOKEN'
@@ -152,6 +156,51 @@ expect_fail "two FROM lines fail" "$d" 'Dockerfile.*FROM'
 d="$(new_root)"
 rm "$d/backend/Dockerfile"
 expect_fail "missing Dockerfile fails" "$d" 'Dockerfile.*FROM'
+
+# --- Expiry reminder workflow (token-expiry.yml) ---
+# add_expiry_wf <root> <triggers> <read-expiry permissions line> <notify permissions line>
+add_expiry_wf() {
+  {
+    echo "name: Token expiry"
+    echo "on:"
+    echo "$2"
+    echo "permissions:"
+    echo "  contents: read"
+    echo "jobs:"
+    echo "  read-expiry:"
+    echo "    runs-on: ubuntu-24.04"
+    [ -n "$3" ] && printf '    permissions:\n      %s\n' "$3"
+    echo "    steps:"
+    echo '      - run: echo "${{ secrets.PROJECT_TOKEN }}"'
+    echo "  notify:"
+    echo "    runs-on: ubuntu-24.04"
+    [ -n "$4" ] && printf '    permissions:\n      %s\n' "$4"
+    echo "    steps:"
+    echo "      - run: echo ok"
+  } >"$1/.github/workflows/token-expiry.yml"
+}
+
+d="$(new_root)"
+add_expiry_wf "$d" "  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:" "contents: read" "issues: write"
+expect_pass "expiry workflow with scoped permissions passes" "$d"
+
+d="$(new_root)"
+add_expiry_wf "$d" "  workflow_dispatch:" "" "issues: write"
+expect_fail "expiry job without permissions fails naming workflow and job" "$d" 'token-expiry\.yml.*read-expiry.*permissions'
+
+d="$(new_root)"
+add_expiry_wf "$d" "  workflow_dispatch:" "issues: write" "issues: write"
+expect_fail "PROJECT_TOKEN job with a write permission fails" "$d" 'token-expiry\.yml.*read-expiry.*PROJECT_TOKEN.*write'
+
+d="$(new_root)"
+add_expiry_wf "$d" "  pull_request:" "contents: read" "issues: write"
+expect_fail "expiry workflow with a pull_request trigger fails" "$d" 'token-expiry\.yml.*pull_request'
+
+d="$(new_root)"
+add_expiry_wf "$d" "  pull_request_target:" "contents: read" "issues: write"
+expect_fail "expiry workflow with pull_request_target fails" "$d" 'token-expiry\.yml.*pull_request'
 
 # --- Inventory drift guard ---
 d="$(new_root)"

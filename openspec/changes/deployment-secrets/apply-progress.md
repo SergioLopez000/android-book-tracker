@@ -48,3 +48,15 @@ Files: `scripts/check-secrets-contract.sh` (check 4 drift guard), `scripts/test-
 - GREEN (7.2/8.x): only the real-repo case failed until `docs/secrets.md` existed; then `All secrets-contract checks passed`. PROJECT_TOKEN is the only `secrets.*` name.
 - TRIANGULATE (8.5): removing the PROJECT_TOKEN row gave `FAIL: inventory: secret PROJECT_TOKEN is missing...`; removing `## Runbook` gave `lacks the heading ## Runbook`; both reverted.
 - Learned: shellcheck (lefthook) rejects `$heading[` (SC1087) and backticks in single quotes (SC2016); the pre-commit glob matches `docs/secrets.md`.
+
+## Unit 4 (done, commit sha in report)
+Done: 10.1 to 10.4, 11.1 to 11.6. V.x tasks and 9.4 are untouched (user / post-merge).
+Files: `scripts/token-expiry.sh`, `scripts/test-token-expiry.sh`, `.github/workflows/token-expiry.yml`, `scripts/check-secrets-contract.sh` (check 5), `scripts/test-secrets-contract.sh`, `README.md`, `openspec/config.yaml`.
+- Design deviation (portability): the parser converts the date with plain arithmetic in awk instead of `date -u -d`. The value is first validated against a strict shape (date, optional time, optional UTC/GMT/Z/offset) and real-calendar ranges, so it never reaches a shell or `date`. The same code runs on macOS (BSD awk) and on the runner (verified with mawk in `ubuntu:24.04`: all 30+ cases pass). No `gdate` needed.
+- Extra contract check 5 in `check-secrets-contract.sh`: a job that references `secrets.PROJECT_TOKEN` must not hold any `write` permission; `token-expiry.yml` must not use `pull_request` / `pull_request_target`. Also fixed the secrets regex so a path like `docs/secrets.md` is not read as `secrets.md`.
+- Empty `PROJECT_TOKEN` emits `state=skipped`; `notify` runs only for expiring, expired, invalid, missing-header and unparseable (whitelist instead of `!= 'ok'`).
+- RED (10.1/10.2): `bash scripts/test-token-expiry.sh` failed every case with exit 127 (`token-expiry.sh: No such file or directory`).
+- GREEN (10.3): `All token-expiry checks passed`. TRIANGULATE (10.4): 13 vs 14 days, 13d 23:59:59, expiring-exactly-now, empty/blank value, duplicate header (first wins), Feb 29 leap and non-leap, month 13, hour 24, offsets; `shellcheck` clean.
+- RED (11.1): new fixtures failed before the checker change: `PROJECT_TOKEN job with a write permission fails`, `pull_request trigger fails`, `pull_request_target fails` (3 failures). Then GREEN: `All secrets-contract checks passed`.
+- Real-file mutations of `token-expiry.yml` (11.4): removed job permissions, `issues: write` on the token job, `pull_request` trigger, unlisted secret: each failed naming the check; reverted. `actionlint` clean; `ci-gate` does not depend on the workflow.
+- Learned: the first real run must be a `workflow_dispatch` (V.1) to confirm the header format; `curl` network failure fails the job (pipefail) instead of opening a warning issue.

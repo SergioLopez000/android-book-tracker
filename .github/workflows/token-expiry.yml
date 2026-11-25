@@ -1,0 +1,94 @@
+# Weekly check of the PROJECT_TOKEN expiry. Opens or edits one issue (never closes or
+# comments) when fewer than 14 days remain or the expiry cannot be determined.
+# PROJECT_TOKEN only lives in read-expiry; the issues:write token only lives in notify.
+# The first run should be a manual dispatch to confirm the expiry header format.
+name: Token expiry
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: token-expiry
+  cancel-in-progress: false
+
+jobs:
+  read-expiry:
+    name: read-expiry
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      state: ${{ steps.expiry.outputs.state }}
+      days: ${{ steps.expiry.outputs.days }}
+      expires: ${{ steps.expiry.outputs.expires }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts
+          persist-credentials: false
+      - name: Read the token expiry header
+        id: expiry
+        env:
+          PROJECT_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+        run: |
+          if [ -z "$PROJECT_TOKEN" ]; then
+            echo "::notice::PROJECT_TOKEN is not set; skipping the expiry check."
+            echo "state=skipped" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # The token travels on curl's stdin config, never in argv; the body is discarded.
+          printf 'header = "Authorization: Bearer %s"\n' "$PROJECT_TOKEN" |
+            curl -sS -D - -o /dev/null --max-time 20 -K - https://api.github.com/rate_limit |
+            bash scripts/token-expiry.sh |
+            tee -a "$GITHUB_OUTPUT"
+
+  notify:
+    name: notify
+    needs: read-expiry
+    if: contains(fromJSON('["expiring","expired","invalid","missing-header","unparseable"]'), needs.read-expiry.outputs.state)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the reminder issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          STATE: ${{ needs.read-expiry.outputs.state }}
+          DAYS: ${{ needs.read-expiry.outputs.days }}
+          EXPIRES: ${{ needs.read-expiry.outputs.expires }}
+        run: |
+          runbook="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/blob/${GITHUB_REF_NAME}/docs/secrets.md#runbook"
+          body_file="$(mktemp)"
+          case "$STATE" in
+            expiring)
+              title="PROJECT_TOKEN rotation needed"
+              printf 'PROJECT_TOKEN expires on %s (%s days left).\n\nRotate it following the runbook: %s\n' "$EXPIRES" "$DAYS" "$runbook" >"$body_file"
+              ;;
+            expired)
+              title="PROJECT_TOKEN rotation needed"
+              printf 'PROJECT_TOKEN has expired (expiry date %s). Board automation is failing.\n\nRotate it following the runbook: %s\n' "$EXPIRES" "$runbook" >"$body_file"
+              ;;
+            invalid)
+              title="PROJECT_TOKEN rotation needed"
+              printf 'GitHub rejected PROJECT_TOKEN (HTTP 401): it is expired, revoked or wrong. Board automation is failing.\n\nRotate it following the runbook: %s\n' "$runbook" >"$body_file"
+              ;;
+            *)
+              title="PROJECT_TOKEN expiry header missing"
+              printf 'The expiry of PROJECT_TOKEN could not be determined (state: %s). Header value seen:\n\n    %s\n\nCheck the token expiry manually (GitHub settings, Developer settings, Personal access tokens), then run the "Token expiry" workflow manually (workflow_dispatch) to confirm the header format. Runbook: %s\n' "$STATE" "$EXPIRES" "$runbook" >"$body_file"
+              ;;
+          esac
+          gh label create secret-rotation --repo "$GITHUB_REPOSITORY" --color D93F0B --description "Secret rotation reminders" --force
+          number="$(gh issue list --repo "$GITHUB_REPOSITORY" --label secret-rotation --state open --json number,title --limit 100 |
+            jq -r --arg title "$title" '[.[] | select(.title == $title)] | first | .number // empty')"
+          if [ -n "$number" ]; then
+            gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body-file "$body_file"
+          else
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label secret-rotation --body-file "$body_file"
+          fi

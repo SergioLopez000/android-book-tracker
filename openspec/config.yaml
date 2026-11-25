@@ -55,6 +55,7 @@ rules:
     - Run ./gradlew :app:testDebugUnitTest; also ./gradlew spotlessCheck :app:lintDebug koverHtmlReportDebug.
     - Backend: run ./gradlew -p backend build contractTest pitest (needs Docker); bash scripts/test-image-config.sh checks the image and workflow permissions.
     - Run bash scripts/test-secrets-contract.sh (local-only, via lefthook; never in CI); it checks the secrets allow-list, job permissions and secret-like Dockerfile ENV/ARG and the inventory drift guard (every secrets.* name and allow-list entry must be in docs/secrets.md, with its required headings and owner) through scripts/check-secrets-contract.sh.
+    - Run bash scripts/test-token-expiry.sh (local-only, never in CI); it checks the PROJECT_TOKEN expiry parser scripts/token-expiry.sh (states, header casing, CRLF, hostile values) used by .github/workflows/token-expiry.yml.
     - Run detekt (quality.static_analysis.command); it must report no new issues beyond config/detekt/baseline.xml.
     - Run bash scripts/test-release-no-test-tags.sh; it proves the release build carries no TestTagsAsResourceId (source and bytecode, with a debug positive control) and runs :app:testReleaseUnitTest for E2eRootReleaseTest.
     - Run bash scripts/test-e2e-ci-config.sh; it statically checks the non-gating e2e-tests job, the report wiring and the npm Dependabot entry.

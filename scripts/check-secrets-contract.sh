@@ -7,6 +7,8 @@
 #   3. backend/Dockerfile has no secret-like ENV/ARG and a single digest-pinned FROM
 #   4. drift guard: docs/secrets.md lists every secrets.* name used by workflows and
 #      every ALLOWED_SECRETS entry, has the required headings and owner SergioLopez000
+#   5. a job that uses PROJECT_TOKEN holds no write permission; token-expiry.yml has no
+#      pull_request / pull_request_target trigger
 # Prints one `FAIL: ...` line per violation and exits non-zero. Never prints a secret value.
 set -euo pipefail
 
@@ -45,6 +47,15 @@ job_body() {
   '
 }
 
+# Prints the `name: write` entries of a job's own permissions block.
+job_write_permissions() {
+  job_body "$1" "$2" | awk '
+    /^    permissions:/ { in_perm = 1; if ($0 ~ /:[[:space:]]*write[[:space:]]*$/) print; next }
+    /^    [^ ]/ { in_perm = 0 }
+    in_perm && /^      [A-Za-z-]+:[[:space:]]*write[[:space:]]*$/ { print }
+  '
+}
+
 # Lists the job names of a workflow.
 job_names() {
   strip_comments "$1" | awk '
@@ -73,12 +84,12 @@ for file in "${files[@]}"; do
     [ -z "$name" ] || [ "$name" = "GITHUB_TOKEN" ] && continue
     is_allowed "$name" || fail "allow-list: $wf references unlisted secret $name"
     used_secrets+=("$name")
-  done < <(grep -Eo 'secrets\.[A-Za-z0-9_]+' <<<"$content" | sed 's/^secrets\.//' | sort -u)
+  done < <(grep -Eo '(^|[^A-Za-z0-9_/.-])secrets\.[A-Za-z0-9_]+' <<<"$content" | sed 's/.*secrets\.//' | sort -u)
 
   if [ "$wf" = "ci.yml" ]; then
     while IFS= read -r name; do
       [ -n "$name" ] && fail "allow-list: $wf job e2e-tests references secrets.$name (must stay secret-free)"
-    done < <(job_body "$file" e2e-tests | grep -Eo 'secrets\.[A-Za-z0-9_]+' | sed 's/^secrets\.//' | sort -u || true)
+    done < <(job_body "$file" e2e-tests | grep -Eo '(^|[^A-Za-z0-9_/.-])secrets\.[A-Za-z0-9_]+' | sed 's/.*secrets\.//' | sort -u || true)
   fi
 
   # 2. Permissions
@@ -93,7 +104,16 @@ for file in "${files[@]}"; do
     if ! job_body "$file" "$job" | grep -Eq '^    permissions:'; then
       fail "permissions: $wf job $job has no permissions block"
     fi
+    # 5. PROJECT_TOKEN and a write-capable token never share a job.
+    if job_body "$file" "$job" | grep -Eq 'secrets\.PROJECT_TOKEN([^A-Za-z0-9_]|$)' &&
+      [ -n "$(job_write_permissions "$file" "$job")" ]; then
+      fail "permissions: $wf job $job uses PROJECT_TOKEN and also has a write permission"
+    fi
   done < <(job_names "$file")
+
+  if [ "$wf" = "token-expiry.yml" ] && grep -Eq 'pull_request(_target)?([^A-Za-z0-9_]|$)' <<<"$content"; then
+    fail "triggers: $wf must not use pull_request or pull_request_target"
+  fi
 done
 
 # 3. Dockerfile
