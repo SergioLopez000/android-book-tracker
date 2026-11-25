@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- API 26-30 auto backup. The account metadata store never leaves the device. -->
-<full-backup-content>
-    <exclude domain="file" path="datastore/account_metadata.preferences_pb" />
-</full-backup-content>
