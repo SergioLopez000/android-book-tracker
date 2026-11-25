@@ -1,0 +1,92 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>backend Coverage Report > BookRepository</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: backend<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.backend.domain.port</a>
+</div>
+
+<h1>Coverage Summary for Class: BookRepository (com.librosleidos.backend.domain.port)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+</tr>
+<tr>
+  <td class="name">BookRepository</td>
+    <td class="coverageStat"/>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.backend.domain.port
+&nbsp;
+&nbsp;import com.librosleidos.backend.domain.model.Book
+&nbsp;import com.librosleidos.backend.domain.model.BookDraft
+&nbsp;import com.librosleidos.backend.domain.model.BookId
+&nbsp;import com.librosleidos.backend.domain.model.OwnerId
+&nbsp;
+&nbsp;/** Every operation requires the owner, so no caller can reach a book it does not own. */
+&nbsp;interface BookRepository {
+&nbsp;    fun create(owner: OwnerId, draft: BookDraft): Book
+&nbsp;
+&nbsp;    fun findById(owner: OwnerId, id: BookId): Book?
+&nbsp;
+&nbsp;    fun findAll(owner: OwnerId): List&lt;Book&gt;
+&nbsp;
+&nbsp;    fun update(owner: OwnerId, id: BookId, draft: BookDraft): Book?
+&nbsp;
+&nbsp;    fun delete(owner: OwnerId, id: BookId): Boolean
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-25 09:34</div>
+</div>
+</body>
+</html>

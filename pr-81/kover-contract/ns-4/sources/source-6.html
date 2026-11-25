@@ -1,0 +1,179 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>backend Coverage Report > UpdateBookTest</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: backend<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.backend.contract.books</a>
+</div>
+
+<h1>Coverage Summary for Class: UpdateBookTest (com.librosleidos.backend.contract.books)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">UpdateBookTest</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (6/6)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    50%
+  </span>
+  <span class="absValue">
+    (1/2)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (23/23)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    99.1%
+  </span>
+  <span class="absValue">
+    (220/222)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.backend.contract.books
+&nbsp;
+&nbsp;import com.librosleidos.backend.contract.ContractTestBase
+&nbsp;import com.librosleidos.backend.domain.model.OwnerId
+&nbsp;import org.hamcrest.Matchers.equalTo
+&nbsp;import org.junit.jupiter.api.Test
+&nbsp;
+<b class="fc">&nbsp;class UpdateBookTest : ContractTestBase() {</b>
+&nbsp;    @Test
+&nbsp;    fun `update returns 200 with the replaced book`() {
+<b class="fc">&nbsp;        val book = ownBook()</b>
+<b class="fc">&nbsp;        api().body(bookJson(title = &quot;Dune Messiah&quot;)).put(&quot;/api/books/{id}&quot;, book.id.value).then()</b>
+<b class="fc">&nbsp;            .statusCode(200)</b>
+<b class="fc">&nbsp;            .body(&quot;id&quot;, equalTo(book.id.value.toInt()))</b>
+<b class="fc">&nbsp;            .body(&quot;title&quot;, equalTo(&quot;Dune Messiah&quot;))</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `update without credentials returns 401`() {
+<b class="fc">&nbsp;        api(</b>
+<b class="fc">&nbsp;            authenticated = false</b>
+<b class="fc">&nbsp;        ).body(bookJson()).put(&quot;/api/books/{id}&quot;, ownBook().id.value).then()</b>
+<b class="fc">&nbsp;            .statusCode(401)</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `update with an unknown field returns 400`() {
+<b class="fc">&nbsp;        invalidApi().body(</b>
+<b class="fc">&nbsp;            bookJson(extra = &quot;&quot;&quot;,&quot;owner&quot;:&quot;someone-else&quot;&quot;&quot;&quot;)</b>
+<b class="fc">&nbsp;        ).put(&quot;/api/books/{id}&quot;, ownBook().id.value)</b>
+<b class="fc">&nbsp;            .then().statusCode(400).body(&quot;status&quot;, equalTo(400))</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `update of a missing book returns 404`() {
+<b class="fc">&nbsp;        api().body(bookJson()).put(&quot;/api/books/{id}&quot;, 987654).then().statusCode(404)</b>
+<b class="fc">&nbsp;            .body(&quot;status&quot;, equalTo(404))</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    @Test
+&nbsp;    fun `update of another owner book returns 404 and leaves it untouched`() {
+<b class="fc">&nbsp;        val foreign = foreignBook()</b>
+<b class="fc">&nbsp;        api().body(</b>
+<b class="fc">&nbsp;            bookJson(title = &quot;Hijacked&quot;)</b>
+<b class="fc">&nbsp;        ).put(&quot;/api/books/{id}&quot;, foreign.id.value).then().statusCode(404)</b>
+<b class="fc">&nbsp;        org.junit.jupiter.api.Assertions.assertEquals(</b>
+<b class="fc">&nbsp;            &quot;Foreign&quot;,</b>
+<b class="pc">&nbsp;            repository.findById(OwnerId(ContractTestBase.FOREIGN_OWNER), foreign.id)?.title</b>
+&nbsp;        )
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-25 09:35</div>
+</div>
+</body>
+</html>
