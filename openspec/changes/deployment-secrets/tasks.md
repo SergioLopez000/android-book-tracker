@@ -108,7 +108,7 @@ Start: unit 1 merged (checker exists). End: inventory document, drift guard with
 - [x] 9.1 GREEN: add the Spanish README section "Secretos y rotación": where secrets live, a link to `docs/secrets.md`, the rotation entry point, a pointer to the expiry reminder (unit 4), and the rotation cadence summary. Files: `README.md`. Spec: CI Secrets Section in README (Section and link).
 - [x] 9.2 GREEN: update the `openspec/config.yaml` verify rule to mention the drift guard and `docs/secrets.md` (local-only). Files: `openspec/config.yaml`. Spec: CI Static Contract Checks (Self-Tested and Run Locally).
 - [x] 9.3 Run `lefthook run pre-commit` with the unit staged: `secrets-contract` job runs and passes (glob matches `docs/secrets.md`).
-- [ ] 9.4 **[USER]** Google Books key restriction: the user performs the manual restriction in Google Cloud Console (API restriction to Books API only, then Android application restriction with package name and SHA-1 fingerprints) following the runbook in `docs/secrets.md`. Apply only provides the steps. Spec: CI Secret Inventory Document (Google Books key gated).
+- [x] 9.4 **[USER]** N/A (2026-11-25): no Google Books key exists, so there is nothing to restrict; inventory row set to "not provisioned" and runbook corrected (Android-app restriction would block the direct REST calls). Original task: Google Books key restriction: the user performs the manual restriction in Google Cloud Console (API restriction to Books API only, then Android application restriction with package name and SHA-1 fingerprints) following the runbook in `docs/secrets.md`. Apply only provides the steps. Spec: CI Secret Inventory Document (Google Books key gated).
 - [x] 9.5 Commit unit 3, for example `docs(secrets): add inventory, runbook and drift guard`. Commit with a conventional commit message. The lefthook pre-commit and commit-msg hooks MUST run (never `--no-verify`). Report the lefthook summary to the user as evidence.
 
 ---
@@ -139,7 +139,7 @@ Start: no reminder. End: parser script and harness green, workflow validated by 
 
 - [ ] V.1 **[USER]** First manual `workflow_dispatch` of `token-expiry.yml` (after it reaches the default branch) to confirm the real `github-authentication-token-expiration` header format; the run output must show whether the header was found. If the format differs, adjust the parser through a new RED fixture first. Confirm the repository default branch for the `schedule` trigger. Spec: IW (Manual first run); design Open Questions 2 and 3.
 - [ ] V.2 **[USER]** Run a real promote (`promote.yml`) after the narrowed permissions merge, to confirm the workflow works with `contents: read` at workflow level and `contents: write`/`checks: read` on the job. If it fails, report the missing scope before changing anything. Spec: CI Workflow Triggers and Runner (Least privilege).
-- [ ] V.3 **[USER]** Google Books key restriction in Google Cloud Console (see task 9.4). Rotation remains gated on #29.
+- [x] V.3 **[USER]** N/A (2026-11-25), see 9.4. Original: Google Books key restriction in Google Cloud Console (see task 9.4). Rotation remains gated on #29.
 - [ ] V.4 Jar-scan regex proof recorded (task 5.4): failing planted-credential run attached to the apply evidence.
 - [ ] V.5 Run a second manual dispatch with the reminder issue already open (if one exists) to confirm that the same issue is edited and no duplicate is created. Spec: IW (No duplicate issues).
 
