@@ -75,7 +75,7 @@ jobs:
           # The backend is an independent build; its wrapper and settings live in backend/.
           build-root-directory: backend
       # Testcontainers talks to the runner's own Docker daemon; no service containers.
-      - run: ./gradlew test integrationTest koverXmlReport koverHtmlReport --continue
+      - run: ./gradlew test integrationTest verifyPackagedArtifact koverXmlReport koverHtmlReport --continue
       - name: Upload test results
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
