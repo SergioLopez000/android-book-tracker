@@ -1,0 +1,48 @@
+name: Chore
+description: Propose infrastructure, CI, tooling, security or maintenance work that is not user-facing
+title: "chore: "
+labels: ["type:chore"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What needs to change and why. Link the issue, run or finding it comes from.
+      placeholder: Follow-up of #... The ... currently ..., so ...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria (Given/When/Then)
+      description: One scenario per block.
+      placeholder: |
+        Given ...
+        When ...
+        Then ...
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Optional. Scope limits, risks, evidence or links.
+  - type: checkboxes
+    id: dod
+    attributes:
+      label: Definition of Done
+      options:
+        - label: Change linked here (SDD change or direct PR)
+        - label: Tests or checks written first (Strict TDD) and green
+        - label: Local hooks green, and CodeQL and secret-scan green in CI
+        - label: Verified in dev and recorded in a comment
+        - label: "`qa:approved` label added and promoted to staging"
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: Informative only; the area label is applied by hand.
+      options:
+        - app
+        - backend
+        - infra
