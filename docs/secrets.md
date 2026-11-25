@@ -22,12 +22,12 @@ Single inventory of every secret and credential of the project: who owns it, whe
 | `NEON_HOST_CREDENTIALS` | Database host account | `SergioLopez000` | Per environment | Provider console | Operators | 180 days or on leak | planned: created by #8 |
 | `ANDROID_RELEASE_KEYSTORE` | Signing keystore | `SergioLopez000` | Release builds | Offline backup plus encrypted store | Release pipeline | Never rotated; compromise procedure below | planned: created by #26 |
 | `GOOGLE_BOOKS_SERVER_API_KEY` | Provider API key | `SergioLopez000` | Books API, server side | Environment store of the host | Backend | 365 days or on leak | planned: created by #29 |
-| `JWT_SIGNING_SECRET` | Signing secret | `SergioLopez000` | Per environment | Environment store of the host | Backend | 180 days | planned: created by #8 |
 
 ## Environments
 
 - Repository-scoped secrets are used only for CI automation (today `PROJECT_TOKEN`).
 - Runtime secrets are scoped per environment: `dev` (created by #8) and `staging`, with required reviewers on `staging`.
+- `GOOGLE_OAUTH_WEB_CLIENT_ID` (the Google Web client ID the backend validates ID tokens against) is public configuration, not a secret, so it is not inventoried. The backend refuses to start without it.
 - If the hosting provider changes, keep the same model: one store per environment, no shared values between `dev` and `staging`.
 
 ## Rotation cadence

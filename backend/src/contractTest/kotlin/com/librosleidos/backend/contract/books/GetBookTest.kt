@@ -35,4 +35,13 @@ class GetBookTest : ContractTestBase() {
         api().get("/api/books/{id}", foreignBook().id.value).then().statusCode(404)
             .body("status", equalTo(404))
     }
+
+    @Test
+    fun `another user token reads 404 and none of the data`() {
+        val book = ownBook()
+        val body =
+            api(sub = OTHER_SUB).get("/api/books/{id}", book.id.value).then().statusCode(404)
+                .body("status", equalTo(404)).extract().asString()
+        org.junit.jupiter.api.Assertions.assertFalse(body.contains("Dune"), body)
+    }
 }

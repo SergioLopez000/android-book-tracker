@@ -31,4 +31,18 @@ class DeleteBookTest : ContractTestBase() {
         api().delete("/api/books/{id}", foreignBook().id.value).then().statusCode(404)
             .body("status", equalTo(404))
     }
+
+    @Test
+    fun `another user token cannot delete a book and it stays`() {
+        val book = ownBook()
+        api(sub = OTHER_SUB).delete("/api/books/{id}", book.id.value).then().statusCode(404)
+        org.junit.jupiter.api.Assertions.assertNotNull(
+            repository.findById(
+                com.librosleidos.backend.domain.model.OwnerId(
+                    com.librosleidos.testsupport.TestJwks.SUB
+                ),
+                book.id
+            )
+        )
+    }
 }

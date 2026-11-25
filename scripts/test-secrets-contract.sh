@@ -243,6 +243,15 @@ if [ "$status" -ne 0 ] || grep -q '^FAIL:' <<<"$out"; then
   fail "real repository passes the contract ($out)"
 fi
 
+# --- Google Sign-In (#26): no signing secret, no OAuth client IDs in the real inventory ---
+# Inventory rows start with a backticked name; prose may still mention client IDs.
+if grep -Eq '^\| `JWT_SIGNING_SECRET`' "$root/docs/secrets.md"; then
+  fail "real inventory still has a JWT_SIGNING_SECRET row (the backend holds no signing secret)"
+fi
+if grep -Eq '^\| `[A-Z0-9_]*CLIENT_ID[A-Z0-9_]*`' "$root/docs/secrets.md"; then
+  fail "real inventory lists an OAuth client ID (client IDs are not secrets)"
+fi
+
 if [ "$failures" -ne 0 ]; then
   echo "$failures check(s) failed"
   exit 1

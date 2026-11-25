@@ -10,7 +10,8 @@ import com.librosleidos.backend.domain.model.OwnerId
 import com.librosleidos.backend.domain.model.Rating
 import com.librosleidos.backend.domain.port.BookRepository
 import com.librosleidos.testsupport.ContractPostgresConfig
-import com.librosleidos.testsupport.ContractTestAuthentication
+import com.librosleidos.testsupport.TestJwks
+import com.librosleidos.testsupport.TestJwtSupport
 import io.restassured.RestAssured
 import io.restassured.http.ContentType
 import io.restassured.specification.RequestSpecification
@@ -27,45 +28,57 @@ import org.springframework.jdbc.core.simple.JdbcClient
  * response is checked against `openapi.yaml`; assertions use JSON paths only.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Import(ContractTestAuthentication::class, ContractPostgresConfig::class)
+@Import(TestJwtSupport::class, ContractPostgresConfig::class)
 abstract class ContractTestBase {
     @LocalServerPort private var port: Int = 0
 
-    @Autowired private lateinit var jdbc: JdbcClient
+    @Autowired protected lateinit var jdbc: JdbcClient
 
     @Autowired protected lateinit var repository: BookRepository
+
+    @Autowired protected lateinit var jwks: TestJwks
 
     @BeforeEach
     fun cleanDatabase() {
         jdbc.sql("DELETE FROM books").update()
     }
 
-    /** Validates request and response. Unauthenticated requests carry no credentials. */
-    protected fun api(authenticated: Boolean = true): RequestSpecification = base(authenticated)
-        .filter(OpenApiValidationFilter(SPEC))
+    /**
+     * Validates request and response. Unauthenticated requests carry no credentials, so the
+     * validator's "security missing" finding is the only request finding ignored for them;
+     * their responses are still validated. [sub] picks the identity of the bearer token.
+     */
+    protected fun api(
+        authenticated: Boolean = true,
+        sub: String = TestJwks.SUB
+    ): RequestSpecification = base(if (authenticated) jwks.token(sub = sub) else null).filter(
+        if (authenticated) {
+            OpenApiValidationFilter(SPEC)
+        } else {
+            filterIgnoring(SECURITY_MISSING)
+        }
+    )
 
     /**
      * For requests that deliberately break the contract (400 cases): the request
      * is not validated, the response still is.
      */
-    protected fun invalidApi(): RequestSpecification = base(true).filter(
-        OpenApiValidationFilter(
-            OpenApiInteractionValidator.createFor(SPEC)
-                .withLevelResolver(
-                    LevelResolver.create().withLevel(
-                        "validation.request",
-                        ValidationReport.Level.IGNORE
-                    ).build()
-                )
-                .build()
-        )
+    protected fun invalidApi(): RequestSpecification =
+        base(jwks.token()).filter(filterIgnoring("validation.request"))
+
+    private fun filterIgnoring(key: String) = OpenApiValidationFilter(
+        OpenApiInteractionValidator.createFor(SPEC)
+            .withLevelResolver(
+                LevelResolver.create().withLevel(key, ValidationReport.Level.IGNORE).build()
+            )
+            .build()
     )
 
     protected fun bookJson(title: String = "Dune", extra: String = ""): String =
         """{"title":"$title","author":"Frank Herbert","rating":4.5,"review":"Great","dateFinished":"2026-01-02"$extra}"""
 
     protected fun ownBook(title: String = "Dune"): Book =
-        repository.create(owner(ContractTestAuthentication.OWNER), draft(title))
+        repository.create(owner(TestJwks.SUB), draft(title))
 
     protected fun foreignBook(): Book = repository.create(owner(FOREIGN_OWNER), draft("Foreign"))
 
@@ -74,21 +87,16 @@ abstract class ContractTestBase {
     private fun draft(title: String) =
         BookDraft(title, "Frank Herbert", null, Rating(4.5f), "Great", LocalDate.of(2026, 1, 2))
 
-    private fun base(authenticated: Boolean): RequestSpecification {
+    private fun base(token: String?): RequestSpecification {
         val spec =
             RestAssured.given().baseUri("http://localhost").port(port).contentType(ContentType.JSON)
-        return if (authenticated) {
-            spec.auth().preemptive().basic(
-                ContractTestAuthentication.OWNER,
-                ContractTestAuthentication.PASSWORD
-            )
-        } else {
-            spec
-        }
+        return if (token != null) spec.header("Authorization", "Bearer $token") else spec
     }
 
     companion object {
         const val FOREIGN_OWNER = "another-owner"
+        const val OTHER_SUB = "google-sub-other-user"
         const val SPEC = "openapi.yaml"
+        private const val SECURITY_MISSING = "validation.request.security.missing"
     }
 }
