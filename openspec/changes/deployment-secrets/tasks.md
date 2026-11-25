@@ -137,11 +137,24 @@ Start: no reminder. End: parser script and harness green, workflow validated by 
 
 ## Post-merge verification (user steps)
 
-- [ ] V.1 **[USER]** First manual `workflow_dispatch` of `token-expiry.yml` (after it reaches the default branch) to confirm the real `github-authentication-token-expiration` header format; the run output must show whether the header was found. If the format differs, adjust the parser through a new RED fixture first. Confirm the repository default branch for the `schedule` trigger. Spec: IW (Manual first run); design Open Questions 2 and 3.
-- [ ] V.2 **[USER]** Run a real promote (`promote.yml`) after the narrowed permissions merge, to confirm the workflow works with `contents: read` at workflow level and `contents: write`/`checks: read` on the job. If it fails, report the missing scope before changing anything. Spec: CI Workflow Triggers and Runner (Least privilege).
+- [x] V.1 (2026-11-25, run 45597007631 on main: header found, parsed `state=ok`, `days=82`, `expires=2027-02-15 12:52:01 UTC`; default branch is `main`) **[USER]** First manual `workflow_dispatch` of `token-expiry.yml` (after it reaches the default branch) to confirm the real `github-authentication-token-expiration` header format; the run output must show whether the header was found. If the format differs, adjust the parser through a new RED fixture first. Confirm the repository default branch for the `schedule` trigger. Spec: IW (Manual first run); design Open Questions 2 and 3.
+- [x] V.2 (2026-11-25, run 45595404774: image check, fast-forward main and retag to staging all passed with the narrowed permissions) **[USER]** Run a real promote (`promote.yml`) after the narrowed permissions merge, to confirm the workflow works with `contents: read` at workflow level and `contents: write`/`checks: read` on the job. If it fails, report the missing scope before changing anything. Spec: CI Workflow Triggers and Runner (Least privilege).
 - [x] V.3 **[USER]** N/A (2026-11-25), see 9.4. Original: Google Books key restriction in Google Cloud Console (see task 9.4). Rotation remains gated on #29.
-- [ ] V.4 Jar-scan regex proof recorded (task 5.4): failing planted-credential run attached to the apply evidence.
-- [ ] V.5 Run a second manual dispatch with the reminder issue already open (if one exists) to confirm that the same issue is edited and no duplicate is created. Spec: IW (No duplicate issues).
+- [x] V.4 (recorded in apply-progress.md, unit 2, tasks 5.2 to 5.4) Jar-scan regex proof recorded (task 5.4): failing planted-credential run attached to the apply evidence.
+- [x] V.5 N/A (2026-11-25): the first run returned `ok`, so no reminder issue exists to re-dispatch against; duplicate handling is exercised when the token is within 14 days of expiry. Original: Run a second manual dispatch with the reminder issue already open (if one exists) to confirm that the same issue is edited and no duplicate is created. Spec: IW (No duplicate issues).
+
+---
+
+## Remediation (verify 2026-11-25)
+
+Scope approved by the owner after the final verify found 8 PARTIAL scenarios (the `notify` job never ran; spec text stale).
+
+- [x] R.1 RED: create `scripts/test-token-expiry-notify.sh` (fake `gh` and `curl` on PATH, real `jq`): create-vs-edit without duplicates, distinct warning title, ok/skipped gating, never close or comment, always `--repo` and `--body-file`, label `--force`, hostile `EXPIRES`, empty-token skip and token off argv. Run before the scripts exist: expected failure (exit 127). Spec: IW (Expiry is near, No duplicate issues, Already expired, Missing secret, Header missing, Header unparseable, Warning issue is not duplicated).
+- [x] R.2 GREEN: extract the notify logic into `scripts/token-expiry-notify.sh` and the read-expiry step into `scripts/token-expiry-read.sh`; wire `.github/workflows/token-expiry.yml` (notify gets a sparse checkout of `scripts` with `persist-credentials: false`, hence `contents: read` next to `issues: write`; still no `PROJECT_TOKEN`). `actionlint`, `test-secrets-contract.sh` and `check-secrets-contract.sh` pass.
+- [x] R.3 TRIANGULATE: mutate the script (drop `--repo`, add `issue close`, break the dedupe lookup, drop label `--force`, drop `--body-file`, warning shares the reminder title, ungated state; token on curl argv in the reader): each fails a named case; reverted.
+- [x] R.4 Spec text: delta scenario "Google Books key gated" now states no client key exists, superseded by `GOOGLE_BOOKS_SERVER_API_KEY` (#29), and the Android-app restriction warning; inventory row `PROJECT_TOKEN` consumers list `board-sync.yml` and `token-expiry.yml`.
+- [x] R.5 Docs and hooks: README script table (Spanish), `openspec/config.yaml` verify rule, new lefthook job `token-expiry-notify`.
+- [x] R.6 Commit with a conventional message; lefthook hooks run (never `--no-verify`).
 
 ---
 

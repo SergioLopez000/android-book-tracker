@@ -60,3 +60,21 @@ Files: `scripts/token-expiry.sh`, `scripts/test-token-expiry.sh`, `.github/workf
 - RED (11.1): new fixtures failed before the checker change: `PROJECT_TOKEN job with a write permission fails`, `pull_request trigger fails`, `pull_request_target fails` (3 failures). Then GREEN: `All secrets-contract checks passed`.
 - Real-file mutations of `token-expiry.yml` (11.4): removed job permissions, `issues: write` on the token job, `pull_request` trigger, unlisted secret: each failed naming the check; reverted. `actionlint` clean; `ci-gate` does not depend on the workflow.
 - Learned: the first real run must be a `workflow_dispatch` (V.1) to confirm the header format; `curl` network failure fails the job (pipefail) instead of opening a warning issue.
+
+## Remediation (verify 2026-11-25): done
+Tasks R.1 to R.6. Extracted the notify logic and the read-expiry step into `scripts/token-expiry-notify.sh` and `scripts/token-expiry-read.sh`; new harness `scripts/test-token-expiry-notify.sh` (fake `gh` and `curl`, real `jq`). The notify job now needs `contents: read` for the sparse checkout of `scripts` (no `PROJECT_TOKEN` in that job; contract checks pass). Spec wording for "Google Books key gated" and the `PROJECT_TOKEN` inventory consumers updated.
+- RED: before the scripts existed, the harness failed every notify case with `exit 127: ... token-expiry-notify.sh: No such file or directory`.
+- GREEN: `All token-expiry notify checks passed`; `shellcheck`, `actionlint`, `test-secrets-contract.sh`, `test-token-expiry.sh` clean.
+- TRIANGULATE: dropping `--repo` on create, adding `issue close`, inverting the dedupe title match, dropping label `--force`, replacing `--body-file`, giving the warning the reminder title, removing the state gate, and putting the token on curl argv each failed named cases; all reverted.
+
+## TDD Cycle Evidence
+
+Earlier units summarize the evidence recorded in the prose above; no new evidence was invented.
+
+| Unit / tasks | Test file | Layer | RED | GREEN | TRIANGULATE | Refactor |
+|--------------|-----------|-------|-----|-------|-------------|----------|
+| 1 (1.1 to 3.5) | `scripts/test-secrets-contract.sh` | Static contract | fixtures failed before the checker existed | `All secrets-contract checks passed` | multiple planted violations per rule | env-var overrides in `new_root` |
+| 2 (4.1 to 6.4) | `DataSourceCredentialsValidatorTest.kt`, `scripts/test-image-smoke.sh` | Unit, integration, Docker smoke | smoke failed with the validator moved aside; planted jar credentials failed `verifyPackagedArtifact` (5.2 to 5.4) | 10 tests pass; smoke all cases | four planted jar patterns; blank-password and no-datasource cases | none |
+| 3 (7.1 to 9.5) | `scripts/test-secrets-contract.sh` (drift cases) | Static contract | 8 drift cases failed (`expected failure, got success`) | `All secrets-contract checks passed` | removing the row and the heading each failed; reverted | none |
+| 4 (10.1 to 11.6) | `scripts/test-token-expiry.sh`, `scripts/test-secrets-contract.sh` | Parser unit, static contract | every case exit 127; 3 contract fixtures failed | `All token-expiry checks passed` | 13 vs 14 days, leap years, offsets, real-file mutations | portable awk date arithmetic |
+| Remediation (R.1 to R.6) | `scripts/test-token-expiry-notify.sh` | Script harness with fake `gh` and `curl` | every case exit 127 (scripts missing) | `All token-expiry notify checks passed` | 8 mutations each failed named cases; reverted | extracted workflow steps into scripts |

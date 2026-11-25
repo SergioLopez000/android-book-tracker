@@ -19,6 +19,9 @@ pre-commit:
     - name: secrets-contract
       glob: "{.github/workflows/*.{yml,yaml},backend/Dockerfile,docs/secrets.md,scripts/*secrets-contract*.sh}"
       run: bash scripts/test-secrets-contract.sh
+    - name: token-expiry-notify
+      glob: "{.github/workflows/token-expiry.yml,scripts/*token-expiry*.sh}"
+      run: bash scripts/test-token-expiry-notify.sh
     - name: shellcheck
       glob: "*.sh"
       run: command -v shellcheck >/dev/null || { echo "brew install shellcheck"; exit 1; }; shellcheck {staged_files} && scripts/test-check-commit-msg.sh
