@@ -158,7 +158,7 @@ brew install lefthook gitleaks actionlint shellcheck detekt
 lefthook install
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
-`lefthook install` activa los hooks locales (pre-commit): `spotlessCheck`, Android Lint (`:app:lintDebug`, solo si tocas fuentes/recursos Android), `detekt` (solo sobre los `.kt` en el índice), `gitleaks` (secretos en el índice), `actionlint`, `secrets-contract` (lista de secretos permitidos y bloques `permissions:`, solo sobre workflows, `backend/Dockerfile` y sus scripts), `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
+`lefthook install` activa los hooks locales (pre-commit): `spotlessCheck`, Android Lint (`:app:lintDebug`, solo si tocas fuentes/recursos Android), `detekt` (solo sobre los `.kt` en el índice), `gitleaks` (secretos en el índice), `actionlint`, `secrets-contract` (lista de secretos permitidos, bloques `permissions:` e inventario `docs/secrets.md`, solo sobre workflows, `backend/Dockerfile`, el inventario y sus scripts), `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
 
 Versiones: el CI fija gitleaks 8.30.1 y la configuración se probó con detekt 1.23.8. Las versiones de `brew` pueden diferir del CI; si un hook local y el CI discrepan, alinea la versión local.
 
@@ -280,6 +280,15 @@ Rotación: antes de que expire, genera un PAT nuevo con las mismas condiciones, 
    - **Item closed**: déjalo activado.
    - **Auto-close issue**: déjalo desactivado.
 3. Archiva los PRs que ya estaban en el tablero (`gh project item-archive 2 --owner SergioLopez000 --id <id>`; es reversible con `--undo`).
+
+### Secretos y rotación
+
+Los secretos viven solo en sus almacenes: secretos del repositorio para la automatización de CI (hoy únicamente `PROJECT_TOKEN`), almacenes por entorno (`dev`, `staging`) del proveedor de alojamiento para el backend y `local.properties` para el desarrollo local. Nunca en el repositorio, en el `Dockerfile` ni en los logs.
+
+- Inventario, propietario, ubicación y procedimiento de rotación: [`docs/secrets.md`](docs/secrets.md) (punto de entrada para rotar cualquier secreto, sección `Runbook`).
+- Aviso de caducidad de `PROJECT_TOKEN`: un workflow programado abre un issue recordatorio antes de que expire (se añade en la unidad 4 de este cambio).
+- Cadencia: PAT clásico como máximo 90 días; contraseñas de base de datos 180 días o ante una fuga; claves de API de proveedores 365 días o ante una fuga; secretos de firma 180 días; el keystore de release no se rota; `GITHUB_TOKEN` es automático.
+- `bash scripts/test-secrets-contract.sh` falla si un `secrets.*` de los workflows no está en el inventario (solo local, hook de lefthook).
 
 ### Contrato de artefactos
 

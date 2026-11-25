@@ -40,3 +40,11 @@ Blocker: Rancher Desktop is not running (`docker` fails to connect to `/var/run/
 - 4.5: `./gradlew test integrationTest contractTest` BUILD SUCCESSFUL (integrationTest failed first only for lack of DOCKER_HOST).
 - 6.1 RED: with the validator moved aside, `test-image-smoke.sh` failed: `FAIL (no-datasource): logs lack the missing-configuration message naming SPRING_DATASOURCE_URL`.
 - 6.2 GREEN: all cases pass (no-datasource, blank-password, health 200, /api/books 401); `shellcheck` clean.
+
+## Unit 3 (done, commit pending sha in report)
+Done: 7.1, 7.2, 8.1 to 8.5, 9.1, 9.2, 9.3, 9.5. Open: 9.4 [USER] (manual Google Cloud Console restriction; steps are in `docs/secrets.md`, section Runbook).
+Files: `scripts/check-secrets-contract.sh` (check 4 drift guard), `scripts/test-secrets-contract.sh` (default inventory fixture plus drift cases), `docs/secrets.md`, `README.md` (section "Secretos y rotación", lefthook note), `openspec/config.yaml` (verify rule).
+- RED (7.1): after adding drift fixtures, 8 cases failed (`expected failure, got success`: omitted PROJECT_TOKEN, allow-list entry, missing file, four missing headings, owner).
+- GREEN (7.2/8.x): only the real-repo case failed until `docs/secrets.md` existed; then `All secrets-contract checks passed`. PROJECT_TOKEN is the only `secrets.*` name.
+- TRIANGULATE (8.5): removing the PROJECT_TOKEN row gave `FAIL: inventory: secret PROJECT_TOKEN is missing...`; removing `## Runbook` gave `lacks the heading ## Runbook`; both reverted.
+- Learned: shellcheck (lefthook) rejects `$heading[` (SC1087) and backticks in single quotes (SC2016); the pre-commit glob matches `docs/secrets.md`.

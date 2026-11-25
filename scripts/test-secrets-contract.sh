@@ -18,13 +18,32 @@ fail() {
 
 DIGEST="gcr.io/distroless/java21-debian13:nonroot@sha256:$(printf 'a%.0s' {1..64})"
 
+# A complete fixture inventory (headings, table, owner on every row).
+DEFAULT_INV='# Secrets
+## Inventory
+| Secret | Class | Owner | Scope | Location | Consumers | Rotation | Status |
+|---|---|---|---|---|---|---|---|
+| `PROJECT_TOKEN` | PAT | `SergioLopez000` | project | repository secret | board-sync | 90 days | active |
+| `GITHUB_TOKEN` | automatic | `SergioLopez000` | job | runner | ci | automatic | active |
+| `SPRING_DATASOURCE_URL` | db | `SergioLopez000` | dev | host | backend | 180 days | planned: created by #8 |
+## Environments
+text
+## Rotation cadence
+text
+## Runbook
+text'
+
 # Creates a fixture root and prints its path. Overridable pieces (portable, no sed -i):
 #   TOP      top-level permissions block   UNIT_PERMS  permissions block of unit-tests
 #   UNIT_RUN step of unit-tests            E2E_RUN     step of e2e-tests
+#   INVENTORY content of docs/secrets.md (unset: DEFAULT_INV; empty: file absent)
 new_root() {
   local dir
   dir="$(mktemp -d "$tmp/root.XXXXXX")"
-  mkdir -p "$dir/.github/workflows" "$dir/backend"
+  mkdir -p "$dir/.github/workflows" "$dir/backend" "$dir/docs"
+  if [ -n "${INVENTORY-$DEFAULT_INV}" ]; then
+    printf '%s\n' "${INVENTORY-$DEFAULT_INV}" >"$dir/docs/secrets.md"
+  fi
   {
     echo "name: CI"
     echo "on: push"
@@ -133,6 +152,31 @@ expect_fail "two FROM lines fail" "$d" 'Dockerfile.*FROM'
 d="$(new_root)"
 rm "$d/backend/Dockerfile"
 expect_fail "missing Dockerfile fails" "$d" 'Dockerfile.*FROM'
+
+# --- Inventory drift guard ---
+d="$(new_root)"
+expect_pass "complete inventory passes (GITHUB_TOKEN excluded from workflows)" "$d"
+
+d="$(INVENTORY="$(grep -v 'PROJECT_TOKEN' <<<"$DEFAULT_INV")" UNIT_RUN='- run: echo "${{ secrets.PROJECT_TOKEN }}"' new_root)"
+expect_fail "inventory omitting PROJECT_TOKEN fails naming it" "$d" 'inventory.*PROJECT_TOKEN'
+
+d="$(INVENTORY="$(grep -v 'PROJECT_TOKEN' <<<"$DEFAULT_INV")" new_root)"
+expect_fail "allow-list entry absent from the inventory fails" "$d" 'inventory.*PROJECT_TOKEN'
+
+d="$(INVENTORY='' new_root)"
+expect_fail "missing docs/secrets.md fails" "$d" 'inventory.*docs/secrets\.md'
+
+for heading in 'Inventory' 'Environments' 'Rotation cadence' 'Runbook'; do
+  d="$(INVENTORY="$(grep -v "^## $heading\$" <<<"$DEFAULT_INV")" new_root)"
+  expect_fail "missing heading $heading fails" "$d" "inventory.*## $heading"
+done
+
+d="$(INVENTORY="${DEFAULT_INV//\`SergioLopez000\` | project/other | project}" new_root)"
+expect_fail "active row without owner SergioLopez000 fails" "$d" 'inventory.*PROJECT_TOKEN.*owner'
+
+d="$(INVENTORY="$DEFAULT_INV
+| \`EXTRA_NAME\` | x | \`SergioLopez000\` | x | x | x | x | planned: created by #8 |" new_root)"
+expect_pass "extra inventory rows are allowed" "$d"
 
 # --- Real repository ---
 run_checker "$root"

@@ -5,12 +5,15 @@
 #      GITHUB_TOKEN is written `github.token`; the e2e-tests job stays secret-free
 #   2. every workflow and job declares `permissions:`; no write-all / read-all
 #   3. backend/Dockerfile has no secret-like ENV/ARG and a single digest-pinned FROM
+#   4. drift guard: docs/secrets.md lists every secrets.* name used by workflows and
+#      every ALLOWED_SECRETS entry, has the required headings and owner SergioLopez000
 # Prints one `FAIL: ...` line per violation and exits non-zero. Never prints a secret value.
 set -euo pipefail
 
 root="${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 workflows="$root/.github/workflows"
 dockerfile="$root/backend/Dockerfile"
+inventory_doc="$root/docs/secrets.md"
 
 ALLOWED_SECRETS=(PROJECT_TOKEN)
 
@@ -52,6 +55,7 @@ job_names() {
 }
 
 shopt -s nullglob
+used_secrets=("${ALLOWED_SECRETS[@]}")
 files=("$workflows"/*.yml "$workflows"/*.yaml)
 
 for file in "${files[@]}"; do
@@ -68,6 +72,7 @@ for file in "${files[@]}"; do
   while IFS= read -r name; do
     [ -z "$name" ] || [ "$name" = "GITHUB_TOKEN" ] && continue
     is_allowed "$name" || fail "allow-list: $wf references unlisted secret $name"
+    used_secrets+=("$name")
   done < <(grep -Eo 'secrets\.[A-Za-z0-9_]+' <<<"$content" | sed 's/^secrets\.//' | sort -u)
 
   if [ "$wf" = "ci.yml" ]; then
@@ -113,6 +118,32 @@ if [ -f "$dockerfile" ]; then
       }
     }
   ' "$dockerfile")
+fi
+
+# 4. Inventory drift guard
+if [ ! -f "$inventory_doc" ]; then
+  fail "inventory: docs/secrets.md is missing"
+else
+  for heading in Inventory Environments "Rotation cadence" Runbook; do
+    grep -Eq "^## ${heading}[[:space:]]*$" "$inventory_doc" || fail "inventory: docs/secrets.md lacks the heading ## $heading"
+  done
+  # Table rows of the ## Inventory section, minus the header and separator.
+  rows="$(awk '
+    /^## / { in_inv = ($0 ~ /^## Inventory[[:space:]]*$/); next }
+    in_inv && /^\|/ && $0 !~ /^\| *Secret *\|/ && $0 !~ /^\|[-| :]+\|?$/ { print }
+  ' "$inventory_doc")"
+  listed="$(awk -F'|' '{ n = $2; gsub(/[ `]/, "", n); print n }' <<<"$rows")"
+  for name in $(printf '%s\n' "${used_secrets[@]}" | sort -u); do
+    grep -Fxq "$name" <<<"$listed" || fail "inventory: secret $name is missing from the docs/secrets.md inventory"
+  done
+  # shellcheck disable=SC2016
+  owner_token='`SergioLopez000`'
+  while IFS= read -r row; do
+    [ -z "$row" ] && continue
+    owner="$(awk -F'|' '{ print $4 }' <<<"$row")"
+    name="$(awk -F'|' '{ n = $2; gsub(/[ `]/, "", n); print n }' <<<"$row")"
+    grep -Fq "$owner_token" <<<"$owner" || fail "inventory: row $name lacks the owner \`SergioLopez000\`"
+  done <<<"$rows"
 fi
 
 if [ "$failures" -ne 0 ]; then
