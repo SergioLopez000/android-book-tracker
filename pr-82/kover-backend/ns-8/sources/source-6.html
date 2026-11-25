@@ -1,0 +1,209 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>backend Coverage Report > BooksController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope: backend<span class="separator">|</span>    <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.librosleidos.backend.web</a>
+</div>
+
+<h1>Coverage Summary for Class: BooksController (com.librosleidos.backend.web)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+<th class="coverageStat 
+">
+  Instruction, %
+</th>
+</tr>
+<tr>
+  <td class="name">BooksController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (8/8)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (12/12)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (21/21)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (166/166)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.librosleidos.backend.web
+&nbsp;
+&nbsp;import com.librosleidos.backend.domain.model.BookId
+&nbsp;import com.librosleidos.backend.domain.model.OwnerId
+&nbsp;import com.librosleidos.backend.domain.usecase.CreateBookUseCase
+&nbsp;import com.librosleidos.backend.domain.usecase.DeleteBookOutcome
+&nbsp;import com.librosleidos.backend.domain.usecase.DeleteBookUseCase
+&nbsp;import com.librosleidos.backend.domain.usecase.GetBookOutcome
+&nbsp;import com.librosleidos.backend.domain.usecase.GetBookUseCase
+&nbsp;import com.librosleidos.backend.domain.usecase.ListBooksUseCase
+&nbsp;import com.librosleidos.backend.domain.usecase.UpdateBookOutcome
+&nbsp;import com.librosleidos.backend.domain.usecase.UpdateBookUseCase
+&nbsp;import org.springframework.http.HttpStatus
+&nbsp;import org.springframework.http.ResponseEntity
+&nbsp;import org.springframework.security.core.Authentication
+&nbsp;import org.springframework.web.bind.annotation.DeleteMapping
+&nbsp;import org.springframework.web.bind.annotation.GetMapping
+&nbsp;import org.springframework.web.bind.annotation.PathVariable
+&nbsp;import org.springframework.web.bind.annotation.PostMapping
+&nbsp;import org.springframework.web.bind.annotation.PutMapping
+&nbsp;import org.springframework.web.bind.annotation.RequestBody
+&nbsp;import org.springframework.web.bind.annotation.RequestMapping
+&nbsp;import org.springframework.web.bind.annotation.RestController
+&nbsp;
+&nbsp;/** Implements `openapi.yaml`. The owner always comes from the authenticated principal, never from the request. */
+<b class="fc">&nbsp;@RestController</b>
+&nbsp;@RequestMapping(&quot;/api/books&quot;)
+&nbsp;class BooksController(
+<b class="fc">&nbsp;    private val createBook: CreateBookUseCase,</b>
+<b class="fc">&nbsp;    private val listBooks: ListBooksUseCase,</b>
+<b class="fc">&nbsp;    private val getBook: GetBookUseCase,</b>
+<b class="fc">&nbsp;    private val updateBook: UpdateBookUseCase,</b>
+<b class="fc">&nbsp;    private val deleteBook: DeleteBookUseCase</b>
+&nbsp;) {
+&nbsp;    @PostMapping
+&nbsp;    fun create(
+&nbsp;        authentication: Authentication,
+&nbsp;        @RequestBody request: BookRequest
+<b class="fc">&nbsp;    ): ResponseEntity&lt;BookResponse&gt; = ResponseEntity.status(HttpStatus.CREATED)</b>
+<b class="fc">&nbsp;        .body(createBook(owner(authentication), request.toDraft()).toResponse())</b>
+&nbsp;
+&nbsp;    @GetMapping
+&nbsp;    fun list(authentication: Authentication): List&lt;BookResponse&gt; =
+<b class="fc">&nbsp;        listBooks(owner(authentication)).map { it.toResponse() }</b>
+&nbsp;
+&nbsp;    @GetMapping(&quot;/{id}&quot;)
+&nbsp;    fun get(authentication: Authentication, @PathVariable id: Long): ResponseEntity&lt;BookResponse&gt; =
+<b class="fc">&nbsp;        when (val outcome = getBook(owner(authentication), bookId(id))) {</b>
+<b class="fc">&nbsp;            is GetBookOutcome.Found -&gt; ResponseEntity.ok(outcome.book.toResponse())</b>
+<b class="fc">&nbsp;            GetBookOutcome.NotFound -&gt; throw BookNotFoundException()</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    @PutMapping(&quot;/{id}&quot;)
+&nbsp;    fun update(
+&nbsp;        authentication: Authentication,
+&nbsp;        @PathVariable id: Long,
+&nbsp;        @RequestBody request: BookRequest
+&nbsp;    ): ResponseEntity&lt;BookResponse&gt; =
+<b class="fc">&nbsp;        when (val outcome = updateBook(owner(authentication), bookId(id), request.toDraft())) {</b>
+<b class="fc">&nbsp;            is UpdateBookOutcome.Updated -&gt; ResponseEntity.ok(outcome.book.toResponse())</b>
+<b class="fc">&nbsp;            UpdateBookOutcome.NotFound -&gt; throw BookNotFoundException()</b>
+&nbsp;        }
+&nbsp;
+&nbsp;    @DeleteMapping(&quot;/{id}&quot;)
+&nbsp;    fun delete(authentication: Authentication, @PathVariable id: Long): ResponseEntity&lt;Void&gt; =
+<b class="fc">&nbsp;        when (deleteBook(owner(authentication), bookId(id))) {</b>
+<b class="fc">&nbsp;            DeleteBookOutcome.Deleted -&gt; ResponseEntity.noContent().build()</b>
+<b class="fc">&nbsp;            DeleteBookOutcome.NotFound -&gt; throw BookNotFoundException()</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;    private fun owner(authentication: Authentication) = OwnerId(authentication.name)</b>
+&nbsp;
+&nbsp;    private fun bookId(id: Long) = try {
+<b class="fc">&nbsp;        BookId(id)</b>
+&nbsp;    } catch (e: IllegalArgumentException) {
+<b class="fc">&nbsp;        throw InvalidBookRequestException(e)</b>
+&nbsp;    }
+&nbsp;}
+&nbsp;
+&nbsp;/** A missing book and another owner&#39;s book are indistinguishable by design. */
+&nbsp;class BookNotFoundException : RuntimeException()
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2026-11-25 10:22</div>
+</div>
+</body>
+</html>
