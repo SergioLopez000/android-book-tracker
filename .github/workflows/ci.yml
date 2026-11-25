@@ -25,6 +25,8 @@ env:
 jobs:
   unit-tests:
     name: unit-tests
+    permissions:
+      contents: read
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
@@ -55,6 +57,8 @@ jobs:
 
   backend-tests:
     name: backend-tests
+    permissions:
+      contents: read
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -71,7 +75,7 @@ jobs:
           # The backend is an independent build; its wrapper and settings live in backend/.
           build-root-directory: backend
       # Testcontainers talks to the runner's own Docker daemon; no service containers.
-      - run: ./gradlew test integrationTest koverXmlReport koverHtmlReport --continue
+      - run: ./gradlew test integrationTest verifyPackagedArtifact koverXmlReport koverHtmlReport --continue
       - name: Upload test results
         if: ${{ always() }}
         uses: actions/upload-artifact@v7
@@ -93,6 +97,8 @@ jobs:
 
   contract-tests:
     name: contract-tests
+    permissions:
+      contents: read
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -137,6 +143,8 @@ jobs:
 
   secret-scan:
     name: secret-scan
+    permissions:
+      contents: read
     runs-on: ubuntu-24.04
     env:
       GITLEAKS_VERSION: "8.30.1"
@@ -409,6 +417,8 @@ jobs:
 
   ci-gate:
     name: ci-gate
+    permissions:
+      contents: read
     needs: [unit-tests, backend-tests, contract-tests, secret-scan]
     if: always()
     runs-on: ubuntu-24.04

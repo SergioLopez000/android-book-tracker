@@ -29,6 +29,39 @@ case "$user" in
 esac
 echo "ok: image user is '$user'"
 
+# Fail-closed cases: the image must refuse to start without usable credentials,
+# name the missing variable, and never echo a secret value.
+expect_startup_failure() {
+  local label="$1" variable="$2"
+  shift 2
+  local name="smoke-fail-$suffix-$label" state="" code logs
+  docker run -d --name "$name" "$@" "$image" >/dev/null
+  for _ in $(seq 1 60); do
+    state="$(docker inspect -f '{{.State.Status}}' "$name")"
+    [[ "$state" == "exited" ]] && break
+    sleep 1
+  done
+  code="$(docker inspect -f '{{.State.ExitCode}}' "$name")"
+  logs="$(docker logs "$name" 2>&1)"
+  docker rm -f "$name" >/dev/null 2>&1 || true
+  if [[ "$state" != "exited" || "$code" == "0" ]]; then
+    echo "FAIL ($label): container state '$state', exit code '$code'"; exit 1
+  fi
+  if ! grep -q "Missing required database configuration" <<<"$logs" || ! grep -q "$variable" <<<"$logs"; then
+    echo "FAIL ($label): logs lack the missing-configuration message naming $variable"; exit 1
+  fi
+  if grep -q "smoke-dummy" <<<"$logs"; then
+    echo "FAIL ($label): logs contain a secret value"; exit 1
+  fi
+  echo "ok: image fails without credentials ($label)"
+}
+
+expect_startup_failure no-datasource SPRING_DATASOURCE_URL
+expect_startup_failure blank-password SPRING_DATASOURCE_PASSWORD \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://unreachable.invalid:5432/smoke \
+  -e SPRING_DATASOURCE_USERNAME=smoke \
+  -e SPRING_DATASOURCE_PASSWORD=
+
 docker network create "$net" >/dev/null
 docker run -d --name "$db" --network "$net" \
   -e POSTGRES_DB=smoke -e POSTGRES_USER=smoke -e POSTGRES_PASSWORD=smoke-dummy \

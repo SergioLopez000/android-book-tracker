@@ -116,11 +116,13 @@ pitest {
     useClasspathFile = true
 }
 
-// Packaged-artifact guard: the jar must hold no test-only authentication and no
-// property that could relax security. Anything found here fails `check`.
+// Packaged-artifact guard: the jar must hold no test-only authentication, no property
+// that could relax security and no credential. Anything found here fails `check`.
+// Credential findings name the entry, line and rule, never the matched value.
 val verifyPackagedArtifact by tasks.registering {
     group = "verification"
-    description = "Fails if the boot jar contains test-only users or a security bypass property."
+    description =
+        "Fails if the boot jar has test-only users, a security bypass property or a credential."
     val jar = tasks.bootJar.flatMap { it.archiveFile }
     dependsOn(tasks.bootJar)
     doLast {
@@ -129,6 +131,22 @@ val verifyPackagedArtifact by tasks.registering {
             Regex(
                 """(?i)(spring\.security\.user|security\.(enabled|disabled|ignored)|permit-?all|disable-?security|management\.security)"""
             )
+        // Text entries only, and only the application's own classes: BOOT-INF/lib is third-party.
+        val scannedEntry = Regex("""BOOT-INF/classes/.+\.(ya?ml|properties|json|xml|sql)""")
+        val credentialKey =
+            Regex(
+                """(?i)^\s*[\w.-]*(password|secret|token|api[-_.]?key|credential)[\w.-]*\s*[:=]\s*(?!\$\{[A-Z0-9_]+\}\s*$)\S"""
+            )
+        val jdbcEmbedded =
+            listOf(
+                Regex("""(?i)jdbc:[a-z0-9]+://[^/\s:@]+:[^@\s]+@"""),
+                Regex("""(?i)jdbc:[^\s]*[?&;]password=""")
+            )
+        val datasourceKey = Regex("""^(\s*)(spring\.)?datasource:\s*$""")
+        val datasourceLiteral =
+            Regex(
+                """(?i)^\s*(spring\.datasource\.|datasource\.)?(url|username|password)\s*[:=]\s*(?!\$\{[A-Z0-9_]+\}\s*$)\S"""
+            )
         val violations = mutableListOf<String>()
         zipTree(jar).visit {
             if (isDirectory) return@visit
@@ -136,6 +154,32 @@ val verifyPackagedArtifact by tasks.registering {
             if (forbiddenClasses.containsMatchIn(entry)) {
                 violations +=
                     "test-only class packaged: $entry"
+            }
+            if (scannedEntry.matches(entry)) {
+                var datasourceIndent = -1
+                file.readLines().forEachIndexed { index, line ->
+                    val at = "$entry:${index + 1}"
+                    if (credentialKey.containsMatchIn(line)) {
+                        violations += "credential-like key with a literal value in $at"
+                    }
+                    if (jdbcEmbedded.any { it.containsMatchIn(line) }) {
+                        violations += "jdbc URL with embedded credentials in $at"
+                    }
+                    if (entry.substringAfterLast('/').startsWith("application")) {
+                        val indent = line.length - line.trimStart().length
+                        datasourceKey.find(line)?.let {
+                            datasourceIndent = it.groupValues[1].length
+                        }
+                        val inBlock = datasourceIndent >= 0 && indent > datasourceIndent
+                        if (line.isNotBlank() && !inBlock && datasourceKey.find(line) == null) {
+                            datasourceIndent = -1
+                        }
+                        val direct = line.trimStart().startsWith("spring.datasource.")
+                        if ((inBlock || direct) && datasourceLiteral.containsMatchIn(line)) {
+                            violations += "datasource literal (url, username or password) in $at"
+                        }
+                    }
+                }
             }
             if (Regex("""BOOT-INF/classes/application[^/]*\.(ya?ml|properties)""").matches(entry)) {
                 file.useLines { lines ->

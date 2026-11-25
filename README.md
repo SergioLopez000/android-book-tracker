@@ -158,7 +158,7 @@ brew install lefthook gitleaks actionlint shellcheck detekt
 lefthook install
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
-`lefthook install` activa los hooks locales (pre-commit): `spotlessCheck`, Android Lint (`:app:lintDebug`, solo si tocas fuentes/recursos Android), `detekt` (solo sobre los `.kt` en el índice), `gitleaks` (secretos en el índice), `actionlint`, `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
+`lefthook install` activa los hooks locales (pre-commit): `spotlessCheck`, Android Lint (`:app:lintDebug`, solo si tocas fuentes/recursos Android), `detekt` (solo sobre los `.kt` en el índice), `gitleaks` (secretos en el índice), `actionlint`, `secrets-contract` (lista de secretos permitidos, bloques `permissions:` e inventario `docs/secrets.md`, solo sobre workflows, `backend/Dockerfile`, el inventario y sus scripts), `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
 
 Versiones: el CI fija gitleaks 8.30.1 y la configuración se probó con detekt 1.23.8. Las versiones de `brew` pueden diferir del CI; si un hook local y el CI discrepan, alinea la versión local.
 
@@ -178,6 +178,8 @@ Versiones: el CI fija gitleaks 8.30.1 y la configuración se probó con detekt 1
 | Pruebas del validador de commits | `scripts/test-check-commit-msg.sh` |
 | Pruebas del resumen de cobertura | `scripts/test-kover-summary.sh` |
 | Pruebas del rango del escaneo de secretos | `scripts/test-secret-scan-range.sh` |
+| Contrato estático de secretos y permisos (solo local, hook de lefthook) | `scripts/test-secrets-contract.sh` (ejecuta `scripts/check-secrets-contract.sh`) |
+| Analizador de la caducidad de `PROJECT_TOKEN` (solo local) | `scripts/test-token-expiry.sh` (ejecuta `scripts/token-expiry.sh`) |
 
 Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas existentes viven en el baseline. detekt usa `config/detekt/detekt.yml` (solo sobrescrituras sobre la configuración por defecto; el estilo y el formato los cubre Spotless) y falla ante cualquier problema nuevo; los existentes viven en `config/detekt/baseline.xml`. `--input` de detekt separa las rutas con comas. Kover es solo informativo: no hay umbral de cobertura.
 
@@ -279,6 +281,15 @@ Rotación: antes de que expire, genera un PAT nuevo con las mismas condiciones, 
    - **Item closed**: déjalo activado.
    - **Auto-close issue**: déjalo desactivado.
 3. Archiva los PRs que ya estaban en el tablero (`gh project item-archive 2 --owner SergioLopez000 --id <id>`; es reversible con `--undo`).
+
+### Secretos y rotación
+
+Los secretos viven solo en sus almacenes: secretos del repositorio para la automatización de CI (hoy únicamente `PROJECT_TOKEN`), almacenes por entorno (`dev`, `staging`) del proveedor de alojamiento para el backend y `local.properties` para el desarrollo local. Nunca en el repositorio, en el `Dockerfile` ni en los logs.
+
+- Inventario, propietario, ubicación y procedimiento de rotación: [`docs/secrets.md`](docs/secrets.md) (punto de entrada para rotar cualquier secreto, sección `Runbook`).
+- Aviso de caducidad de `PROJECT_TOKEN`: el workflow [`token-expiry.yml`](.github/workflows/token-expiry.yml) se ejecuta cada lunes (y a mano con `workflow_dispatch`), lee la fecha de caducidad del token y abre o actualiza un único issue con la etiqueta `secret-rotation` cuando quedan menos de 14 días, el token ya caducó o GitHub lo rechaza. Si no puede determinar la fecha, abre un issue de aviso distinto. Tras fusionarlo a la rama por defecto, lánzalo una vez a mano para confirmar el formato de la cabecera. Al rotar el token, actualiza la fecha en el inventario y cierra el issue a mano.
+- Cadencia: PAT clásico como máximo 90 días; contraseñas de base de datos 180 días o ante una fuga; claves de API de proveedores 365 días o ante una fuga; secretos de firma 180 días; el keystore de release no se rota; `GITHUB_TOKEN` es automático.
+- `bash scripts/test-secrets-contract.sh` falla si un `secrets.*` de los workflows no está en el inventario (solo local, hook de lefthook).
 
 ### Contrato de artefactos
 
