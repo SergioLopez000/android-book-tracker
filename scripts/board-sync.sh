@@ -80,8 +80,18 @@ add_item='mutation($p:ID!,$c:ID!){addProjectV2ItemById(input:{projectId:$p,conte
 set_status='mutation($p:ID!,$i:ID!,$f:ID!,$o:String!){updateProjectV2ItemFieldValue(input:{
   projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){projectV2Item{id}}}'
 
-response="$(gh api graphql -f query="$lookup" -f owner="${GITHUB_REPOSITORY%%/*}" \
-  -f name="${GITHUB_REPOSITORY#*/}" -F number="$issue")"
+# gh exits 1 on a GraphQL error but still prints the body. A number that is a
+# pull request answers only NOT_FOUND on repository.issue: that is the
+# "not an issue" no-op below. Any other error fails the job (#100).
+not_an_issue='([.errors[]? | select(.type == "NOT_FOUND" and .path == ["repository", "issue"])] | length) as $n
+  | $n > 0 and $n == (.errors | length)'
+if ! response="$(gh api graphql -f query="$lookup" -f owner="${GITHUB_REPOSITORY%%/*}" \
+  -f name="${GITHUB_REPOSITORY#*/}" -F number="$issue")"; then
+  if ! jq -e "$not_an_issue" <<<"$response" >/dev/null 2>&1; then
+    echo "board-sync: issue lookup failed for #$issue" >&2
+    exit 1
+  fi
+fi
 
 content_id="$(jq -r '.data.repository.issue.id // empty' <<<"$response")"
 if [[ -z "$content_id" ]]; then
