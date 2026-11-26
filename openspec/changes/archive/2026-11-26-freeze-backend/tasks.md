@@ -57,7 +57,7 @@ Start: no guard; workflows still build, publish and promote the backend. End: `b
 - [x] 3.6 RED then GREEN (lefthook): with the job missing, stage a workflow containing the word `backend` and run `lefthook run pre-commit`: expected exit 0 (gate missing), record it. Then add the pre-commit job `backend-frozen` to `lefthook.yml`, glob `{.github/workflows/*.{yml,yaml},.github/dependabot.yml,scripts/*backend-frozen*.sh}`, command `bash scripts/test-backend-frozen.sh`, same style as the `secrets-contract` job; re-run: expected non-zero. Not added to any workflow ("No Static Analysis in CI"). Files: `lefthook.yml`. Spec: CI Static Contract Checks Self-Tested and Run Locally (Not a CI job); CI No Static Analysis in CI (unchanged).
 - [x] 3.7 TRIANGULATE: against the real files, plant in turn a `# backend` comment in `ci.yml`, a `needs: [check-image]` in `promote.yml`, `packages: write` in `codeql.yml`, a backend directory entry and a quoted `docker` ecosystem in `dependabot.yml`, and an empty `ci-gate`-less `ci.yml`; the checker fails each naming the rule; revert every mutation. Files: none committed. Spec: CI Backend Frozen in CI.
 - [x] 3.8 GREEN: run and record: `bash scripts/test-backend-frozen.sh` (all fixtures and the real-repo case pass); `actionlint` exits 0 (no dangling `needs`); `bash scripts/test-e2e-ci-config.sh`; `bash scripts/test-pit-summary.sh`; `bash scripts/test-kover-summary.sh`; `bash scripts/test-secrets-contract.sh` and `bash scripts/check-secrets-contract.sh` still pass (Dockerfile section is untouched until unit 2); the spec grep returns nothing: `grep -rEn 'backend|contract-tests|publish-image|check-image|retag-image|ghcr\.io|docker/login-action|packages: *write' .github/workflows/`; `grep -En '/backend|package-ecosystem: *"?docker' .github/dependabot.yml` returns nothing; `grep -En 'backend|java-version: *"?21' .github/workflows/codeql.yml` returns nothing; `shellcheck` on the new scripts. If `test-e2e-ci-config.sh` fails, keep the `ci-gate` and `report` wiring it expects and fix its expectation only through a RED case first. Spec: CI Workflows stay valid; No workflow touches the backend; Report needs only unit and e2e; No removed job in needs.
-- [ ] 3.9 Commit unit 1, for example `ci: freeze the backend and add the freeze guard (#91)`. Conventional commit message; lefthook pre-commit and commit-msg MUST run; report the summary.
+- [x] 3.9 Commit unit 1, for example `ci: freeze the backend and add the freeze guard (#91)`. Conventional commit message; lefthook pre-commit and commit-msg MUST run; report the summary.
 
 ---
 
@@ -73,7 +73,7 @@ Start: `check-secrets-contract.sh` still requires and scans `backend/Dockerfile`
 - [x] 4.4 GREEN: in `lefthook.yml` drop `backend/Dockerfile` from the `secrets-contract` glob; keep `.github/workflows/*.{yml,yaml}`, `docs/secrets.md`, `scripts/*secrets-contract*.sh`. Files: `lefthook.yml`. Spec: CI Static Contract Checks (Runs in local hooks).
 - [x] 4.5 TRIANGULATE: `grep -in 'dockerfile' scripts/check-secrets-contract.sh scripts/test-secrets-contract.sh` returns nothing; `grep -n 'Dockerfile' lefthook.yml` returns nothing; a staged `backend/Dockerfile` edit alone does not trigger `secrets-contract` while a staged workflow still does; the other rules (allow-list, permissions, drift guard) still fail on their violating fixtures (mutate one rule and revert); `ci.yml` still has no step running either script. Files: none. Spec: CI Static Contract Checks (No Dockerfile checks or fixtures, Runs in local hooks, Not a CI job).
 - [x] 4.6 REFACTOR and verify: `shellcheck` on both scripts, `bash scripts/test-secrets-contract.sh`, `bash scripts/check-secrets-contract.sh`.
-- [ ] 4.7 Commit unit 2, for example `ci(secrets): drop the frozen Dockerfile checks from the secrets contract (#91)`. lefthook hooks MUST run; report the summary.
+- [x] 4.7 Commit unit 2, for example `ci(secrets): drop the frozen Dockerfile checks from the secrets contract (#91)`. lefthook hooks MUST run; report the summary.
 
 ---
 
@@ -87,7 +87,7 @@ Start: docs still describe backend CI, GHCR and image promotion. End: README (Sp
 - [x] 5.2 GREEN: edit `docs/secrets.md`: prefix the status of the `SPRING_DATASOURCE_*`, `NEON_HOST_CREDENTIALS`, `GOOGLE_BOOKS_SERVER_API_KEY` and `JWT_SIGNING_SECRET` rows with `frozen with the backend (#91); `. The `GOOGLE_BOOKS_API_KEY` row stays byte-identical. Run `bash scripts/test-secrets-contract.sh` and `bash scripts/check-secrets-contract.sh`: the drift guard and the pinned Google Books wording pass. Files: `docs/secrets.md`. Spec: CI Frozen state documented; CI Inventory Drift Guard and Secret Inventory Document (unchanged, must still hold).
 - [x] 5.3 GREEN: edit `openspec/config.yaml`: context 10-15 states the backend is frozen since #91, revert to reactivate, no image publication; remove the `backend` testing project and set `contract` and `mutation` to `available: false` (frozen); in the verify rules delete line 56, drop "secret-like Dockerfile ENV/ARG" from line 57 and add `bash scripts/test-backend-frozen.sh`; remove any `test-image-config` reference. Files: `openspec/config.yaml`. Spec: CI Frozen state documented; CI Static Contract Checks.
 - [x] 5.4 TRIANGULATE: `grep -Eil 'frozen|congelad' README.md docs/secrets.md openspec/config.yaml` lists all three files; `grep -rn 'test-image-config' . --exclude-dir=.git --exclude-dir=openspec --exclude-dir=node_modules` matches nothing; `bash scripts/test-backend-frozen.sh` and `bash scripts/test-secrets-contract.sh` still pass; staged docs run through `lefthook run pre-commit` cleanly. Files: none. Spec: CI Frozen state documented; CI Backend Frozen in CI (Image-config harness retired).
-- [ ] 5.5 Commit unit 3, for example `docs: mark the backend frozen in README, secrets inventory and config (#91)`. lefthook hooks MUST run; report the summary.
+- [x] 5.5 Commit unit 3, for example `docs: mark the backend frozen in README, secrets inventory and config (#91)`. lefthook hooks MUST run; report the summary.
 
 ---
 
@@ -100,15 +100,15 @@ Start: docs still describe backend CI, GHCR and image promotion. End: README (Sp
 - [x] V.5 `git diff --stat origin/dev...HEAD -- backend/ app/` prints nothing (compare against `dev`, since `main` lags it).
 - [x] V.6 `./gradlew :app:testDebugUnitTest` is still green.
 - [x] V.7 `test -e scripts/test-image-config.sh` fails and the `test-image-config` grep (excluding `.git`, `openspec`, `node_modules`) matches nothing; `ci.yml` jobs are exactly `unit-tests`, `e2e-tests`, `secret-scan`, `report`, `ci-gate`.
-- [ ] V.8 Open the PR to `dev` with the `size:exception` label, body linking #91 and stating D7; do not use `--no-verify`.
+- [x] V.8 Open the PR to `dev` with the `size:exception` label, body linking #91 and stating D7; do not use `--no-verify`.
 
 ## Post-merge steps ([USER] / orchestrator)
 
-- [ ] P.1 **[USER]** Verify CI on the PR: `ci-gate` green (it depends only on `unit-tests` and `secret-scan`), `report` published, no backend job present. Spec: CI Single Required Check (Everything green, Report outage).
-- [ ] P.2 **[USER]** After the merge, promote `dev` to `main` and staging with the new `promote.yml` (one `workflow_dispatch` on `dev`); the owner approves the `staging` environment. Confirm the job resolves the SHA without `check-image` or `retag-image` and fast-forwards `main`. Spec: CI Promotion Requires Green ci-gate; CI Workflow Triggers and Runner (Least privilege).
-- [ ] P.3 **[USER]** Close Dependabot PRs #66, #67 and #69 with a comment linking #91 (D5). Issue #84 stays open (D4).
-- [ ] P.4 **[USER]** Watch for backend security-update PRs (D6): close any by hand with a comment linking #91; do not add an `ignore` entry.
-- [ ] P.5 Archive phase: append the frozen sentence from the delta spec "Notes for archive" to the Purpose paragraph of `openspec/specs/backend-api/spec.md`; leave `code-quality-gates` unchanged.
+- [x] P.1 **[USER]** Verify CI on the PR: `ci-gate` green (it depends only on `unit-tests` and `secret-scan`), `report` published, no backend job present. Spec: CI Single Required Check (Everything green, Report outage).
+- [x] P.2 **[USER]** After the merge, promote `dev` to `main` and staging with the new `promote.yml` (one `workflow_dispatch` on `dev`); the owner approves the `staging` environment. Confirm the job resolves the SHA without `check-image` or `retag-image` and fast-forwards `main`. Spec: CI Promotion Requires Green ci-gate; CI Workflow Triggers and Runner (Least privilege).
+- [x] P.3 **[USER]** Close Dependabot PRs #66, #67 and #69 with a comment linking #91 (D5). Issue #84 stays open (D4).
+- [x] P.4 **[USER]** Watch for backend security-update PRs (D6): close any by hand with a comment linking #91; do not add an `ignore` entry.
+- [x] P.5 Archive phase: append the frozen sentence from the delta spec "Notes for archive" to the Purpose paragraph of `openspec/specs/backend-api/spec.md`; leave `code-quality-gates` unchanged.
 
 ---
 
@@ -159,3 +159,13 @@ Start: docs still describe backend CI, GHCR and image promotion. End: README (Sp
 - Inside each unit: RED tasks first, then GREEN, then TRIANGULATE or REFACTOR, then the commit task.
 - Bottleneck: unit 1 carries about 70% of the changed lines and cannot be split without breaking D1 (one revertible commit on squash). Reviewers should read it in the order 1 (guard), 3.1 to 3.4 (deletions).
 - Total estimate: about 765 authored lines, 900-1000 with specs and artifacts; over the 800 budget by design, covered by the approved `size:exception` (D7).
+
+## Completion evidence (2026-11-26)
+
+- 3.9, 4.7 and 5.5: the three units were committed as one commit, `28b7671` (`ci: freeze the backend and disable its automation`). That commit is the single revertible change required by D1. The lefthook pre-commit and commit-msg hooks ran green: gitleaks, actionlint, shellcheck, backend-frozen, secrets-contract and conventional-commit.
+- V.8: PR #92 into `dev`, labelled `type:chore`, `area:infra` and `size:exception` (D7). Its body links #91 and was squash-merged as `4979faf`. That squash commit, not the branch commit `28b7671`, is the one to revert to reactivate the backend.
+- P.1: every check on PR #92 passed: `unit-tests`, `e2e-tests`, `secret-scan`, `report`, `ci-gate`, CodeQL `analyze (java-kotlin)` and `sync`. No backend job ran. The `dev` push run `45784298363` also passed.
+- P.2: promote run `45784872454` succeeded after the owner approved `staging`. Its only job was "Fast-forward main", with no image check or retag. `main` is now `4979faf`, the same commit as `dev`, and the `staging` deployment points at `4979faf`.
+- P.3: Dependabot PRs #66, #67 and #69 were closed, each with a comment linking #91 and #92. #84 stays open and deferred (D4).
+- P.4: the README records the rule for closing backend security PRs by hand (D6). No such PR was open on 2026-11-26. This is an ongoing watch, not a one-off task.
+- P.5: the frozen sentence was appended to the Purpose of `openspec/specs/backend-api/spec.md` on branch `docs/91-close-freeze-backend`. `code-quality-gates` is unchanged.
