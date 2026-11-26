@@ -63,7 +63,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (6/6)
+    (4/4)
   </span>
 </td>
     <td class="coverageStat"/>
@@ -72,7 +72,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (17/17)
+    (11/11)
   </span>
 </td>
 <td class="coverageStat">
@@ -80,7 +80,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
     100%
   </span>
   <span class="absValue">
-    (215/215)
+    (93/93)
   </span>
 </td>
 </tr>
@@ -96,7 +96,6 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 &nbsp;
 &nbsp;import com.librosleidos.backend.contract.ContractTestBase
 &nbsp;import org.hamcrest.Matchers.contains
-&nbsp;import org.hamcrest.Matchers.containsInAnyOrder
 &nbsp;import org.hamcrest.Matchers.equalTo
 &nbsp;import org.hamcrest.Matchers.hasSize
 &nbsp;import org.junit.jupiter.api.Test
@@ -123,20 +122,6 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 &nbsp;    fun `list without credentials returns 401`() {
 <b class="fc">&nbsp;        api(authenticated = false).get(&quot;/api/books&quot;).then().statusCode(401)</b>
 &nbsp;    }
-&nbsp;
-&nbsp;    @Test
-&nbsp;    fun `another user token lists none of the owner books`() {
-<b class="fc">&nbsp;        ownBook()</b>
-<b class="fc">&nbsp;        api(sub = OTHER_SUB).get(&quot;/api/books&quot;).then().statusCode(200).body(&quot;&quot;, hasSize&lt;Any&gt;(0))</b>
-&nbsp;    }
-&nbsp;
-&nbsp;    @Test
-&nbsp;    fun `a fresh token for the same sub lists the existing books`() {
-<b class="fc">&nbsp;        api().body(bookJson(&quot;Dune&quot;)).post(&quot;/api/books&quot;).then().statusCode(201)</b>
-<b class="fc">&nbsp;        api().body(bookJson(&quot;Messiah&quot;)).post(&quot;/api/books&quot;).then().statusCode(201)</b>
-<b class="fc">&nbsp;        api().get(&quot;/api/books&quot;).then().statusCode(200)</b>
-<b class="fc">&nbsp;            .body(&quot;title&quot;, containsInAnyOrder(&quot;Dune&quot;, &quot;Messiah&quot;))</b>
-&nbsp;    }
 &nbsp;}
 </code>
 </pre>
@@ -161,7 +146,7 @@ Current scope: backend<span class="separator">|</span>    <a href="../../index.h
 
 <div class="footer">
     
-    <div style="float:right;">generated on 2026-11-25 15:16</div>
+    <div style="float:right;">generated on 2026-11-26 07:33</div>
 </div>
 </body>
 </html>
