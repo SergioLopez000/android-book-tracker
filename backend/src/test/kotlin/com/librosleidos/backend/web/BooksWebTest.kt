@@ -3,8 +3,7 @@ package com.librosleidos.backend.web
 import com.librosleidos.backend.domain.model.OwnerId
 import com.librosleidos.backend.domain.port.BookRepository
 import com.librosleidos.testsupport.FakeRepositoryConfig
-import com.librosleidos.testsupport.TestJwks
-import com.librosleidos.testsupport.TestJwtSupport
+import com.librosleidos.testsupport.TestApiAuthentication
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -17,36 +16,30 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.put
 import org.springframework.test.web.servlet.request
-import org.springframework.test.web.servlet.request.RequestPostProcessor
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestJwtSupport::class, FakeRepositoryConfig::class)
+@Import(TestApiAuthentication::class, FakeRepositoryConfig::class)
 class BooksWebTest {
     @Autowired lateinit var mockMvc: MockMvc
 
     @Autowired lateinit var repository: BookRepository
 
-    @Autowired lateinit var jwks: TestJwks
-
-    private val owner = OwnerId(TestJwks.SUB)
-
-    private fun bearer() = RequestPostProcessor {
-        it.apply { addHeader("Authorization", "Bearer ${jwks.token()}") }
-    }
+    private val owner = OwnerId(TestApiAuthentication.OWNER)
 
     private fun valid(extra: String = "") =
         """{"title":"Dune","author":"Frank Herbert","rating":4.5,"review":"Great","dateFinished":"2026-01-02"$extra}"""
 
     private fun postBook(body: String, authenticated: Boolean = true) = mockMvc.post("/api/books") {
         if (authenticated) {
-            with(bearer())
+            with(httpBasic(TestApiAuthentication.OWNER, TestApiAuthentication.PASSWORD))
         }
         contentType = MediaType.APPLICATION_JSON
         content = body
@@ -116,7 +109,7 @@ class BooksWebTest {
                 java.time.LocalDate.of(2026, 1, 1)
             )
         ).id.value
-        val auth = bearer()
+        val auth = httpBasic(TestApiAuthentication.OWNER, TestApiAuthentication.PASSWORD)
         assertEquals(200, mockMvc.get("/api/books/$id") { with(auth) }.andReturn().response.status)
         assertEquals(
             200,
@@ -147,7 +140,7 @@ class BooksWebTest {
     fun `list returns only the owner books as an array`() {
         val response =
             mockMvc.get("/api/books") {
-                with(bearer())
+                with(httpBasic(TestApiAuthentication.OWNER, TestApiAuthentication.PASSWORD))
             }.andReturn().response
         assertEquals(200, response.status)
         assertEquals('[', response.contentAsString.first())
@@ -157,7 +150,7 @@ class BooksWebTest {
     fun `a non numeric id is 400`() {
         val response =
             mockMvc.get("/api/books/abc") {
-                with(bearer())
+                with(httpBasic(TestApiAuthentication.OWNER, TestApiAuthentication.PASSWORD))
             }.andReturn().response
         assertEquals(400, response.status)
         Companion.assertConstantProblem(
@@ -169,7 +162,7 @@ class BooksWebTest {
 
     @Test
     fun `unknown routes are 404 for the authenticated user and 401 for anonymous`() {
-        val auth = bearer()
+        val auth = httpBasic(TestApiAuthentication.OWNER, TestApiAuthentication.PASSWORD)
         val api = mockMvc.get("/api/nope") { with(auth) }.andReturn().response
         assertEquals(404, api.status)
         Companion.assertConstantProblem(api.contentAsString, 404, "Resource not found")
@@ -181,7 +174,7 @@ class BooksWebTest {
     fun `an unsupported method is a constant 405`() {
         val response =
             mockMvc.request(HttpMethod.PATCH, "/api/books") {
-                with(bearer())
+                with(httpBasic(TestApiAuthentication.OWNER, TestApiAuthentication.PASSWORD))
             }.andReturn().response
         assertEquals(405, response.status)
         Companion.assertConstantProblem(response.contentAsString, 405, "Method not allowed")

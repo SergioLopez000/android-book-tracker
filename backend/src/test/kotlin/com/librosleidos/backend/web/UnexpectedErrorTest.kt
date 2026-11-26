@@ -1,8 +1,7 @@
 package com.librosleidos.backend.web
 
 import com.librosleidos.testsupport.FailingRepositoryConfig
-import com.librosleidos.testsupport.TestJwks
-import com.librosleidos.testsupport.TestJwtSupport
+import com.librosleidos.testsupport.TestApiAuthentication
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -11,22 +10,21 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.context.annotation.Import
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(TestJwtSupport::class, FailingRepositoryConfig::class)
+@Import(TestApiAuthentication::class, FailingRepositoryConfig::class)
 class UnexpectedErrorTest {
     @Autowired lateinit var mockMvc: MockMvc
-
-    @Autowired lateinit var jwks: TestJwks
 
     @Test
     fun `an unexpected failure is a generic 500 with the same problem shape and no internals`() {
         val response =
             mockMvc.get("/api/books") {
-                header("Authorization", "Bearer ${jwks.token()}")
+                with(httpBasic(TestApiAuthentication.OWNER, TestApiAuthentication.PASSWORD))
             }.andReturn().response
         assertEquals(500, response.status)
         val body = response.contentAsString

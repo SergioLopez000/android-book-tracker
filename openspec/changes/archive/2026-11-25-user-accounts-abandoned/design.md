@@ -113,13 +113,5 @@ No data migration. `owner_id` already stores opaque strings, and `sub` fits in 2
 ## Open Questions
 
 - [x] Closed: the debug fake applies only while the Web client ID is blank. The spec now says the same.
-- [x] Closed by spike 1.4: with no key cached, a 401 during a JWKS outage is followed by an accepted request as soon as the JWKS is back. Rate-limiting does not lock out recovery (`JwksOutageTest`).
-- [x] Closed by spike 1.4: the default builder does not validate `typ` (a `typ: at+jwt` token was accepted). The decoder sets `validateType(true)`, which rejects `at+jwt` and accepts `JWT` or no `typ`.
-
-## Accepted Deviations (S1 apply)
-
-- The dependency is `spring-boot-starter-security-oauth2-resource-server`, the Spring Boot 4 starter name (Spring Security 7.1.2, Nimbus 10.9.1).
-- `TestJwks` and `TestJwtSupport` live once in `backend/src/testSupport/kotlin`. That directory is added as a source directory to the `test` and `contractTest` suites instead of keeping two copies. It never reaches the jar, and `verifyPackagedArtifact` also rejects `TestJwks` and `TestJwt` class names, `jwks.json` and PEM private-key headers.
-- An explicit exp-present validator was added, because `JwtTimestampValidator` accepts tokens without `exp`.
-- `openapi.yaml` declares `bearerAuth` on every books operation as well as globally, because swagger-request-validator 3.0.0 enforces only operation-level `security` (spike 1.2, key `validation.request.security.missing`).
-- Test tokens carry a random `jti`, so two tokens minted for the same `sub` are always distinct (the new-install contract test).
+- [ ] Confirm that Nimbus JWKS refetch rate-limiting does not break "recovery after outage". If it does, configure the cache or refresh in the factory.
+- [ ] Whether Spring Security 7 adds a default `typ` header validator (test tokens set `typ: JWT`).
