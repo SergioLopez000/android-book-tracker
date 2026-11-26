@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@types/mocha": "10.0.10",
-    "@types/node": "24.19.2",
+    "@types/node": "26.6.6",
     "@wdio/allure-reporter": "10.2.0",
     "@wdio/appium-service": "10.2.0",
     "@wdio/cli": "10.2.0",
