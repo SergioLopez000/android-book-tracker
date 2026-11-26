@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Table-driven harness for scripts/board-sync.sh. `gh` is replaced by a stub on
 # PATH that logs the variables of every `gh api graphql` call (sorted, one line
-# per call) and answers with canned JSON, so no network is used.
+# per call) and answers with canned JSON, so no network is used. A "<op>.fail"
+# fixture makes the call exit 1 after printing its JSON, if any, as real `gh`
+# does for a GraphQL error response.
 # Each case expects "<stdout>|<exit>|<ordered gh calls>". Exit "nz" = non-zero.
 # Bash 3.2 safe (macOS): no associative arrays, no mapfile, no case conversion.
 # The injection-like ISSUE literal is deliberately unexpanded.
@@ -38,6 +40,7 @@ case "$q" in
 esac
 echo "$op $(printf '%s\n' "$vars" | sed '/^$/d' | sort | tr '\n' ' ' | sed 's/ $//')" >>"$STUB_DIR/log"
 if [[ -e "$STUB_DIR/$op.fail" ]]; then
+  if [[ -e "$STUB_DIR/$op.json" ]]; then cat "$STUB_DIR/$op.json"; fi
   echo "stub: $op failed" >&2
   exit 1
 fi
@@ -183,6 +186,20 @@ check other-issue-and-repo "moved: #42 Ready -> In review" 0 \
 # --- not an issue / unknown status -----------------------------------------
 q1 null; mutations_ok
 check issue-null "noop: #5 is not an issue" 0 "$Q" opened false false
+# Real `gh` exits 1 on a GraphQL error and prints the body (#100): a pull
+# request number answers NOT_FOUND on repository.issue.
+gql_error() { # <type> <path json>
+  echo "{\"data\":{\"repository\":{\"issue\":null}},\"errors\":[{\"type\":\"$1\",\"path\":$2,\"message\":\"m\"}]}" >"$stub/Q1.json"
+  : >"$stub/Q1.fail"
+}
+gql_error NOT_FOUND '["repository","issue"]'; mutations_ok
+check issue-not-found "noop: #5 is not an issue" 0 "$Q" opened false false
+gql_error NOT_FOUND '["repository","issue"]'; mutations_ok
+check issue-not-found-merged "noop: #5 is not an issue" 0 "$Q" closed false true
+gql_error NOT_FOUND '["repository"]'; mutations_ok
+check repository-not-found "" nz "$Q" opened false false
+gql_error FORBIDDEN '["repository","issue"]'; mutations_ok
+check issue-forbidden "" nz "$Q" opened false false
 on_board unknown; mutations_ok
 check unknown-option "noop: #5 has an unknown status option" 0 "$Q" opened false false
 if ! grep -q '^::warning::' "$tmp/err"; then
