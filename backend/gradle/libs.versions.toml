@@ -1,5 +1,5 @@
 [versions]
-springBoot = "4.1.2"
+springBoot = "4.2.0"
 # Kotlin is the version managed by Spring Boot 4.1 (2.3.21); the app stays on 2.4.21.
 kotlin = "2.3.21"
 kover = "0.9.11"
