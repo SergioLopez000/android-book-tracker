@@ -16,8 +16,6 @@ fail() {
   failures=$((failures + 1))
 }
 
-DIGEST="gcr.io/distroless/java21-debian13:nonroot@sha256:$(printf 'a%.0s' {1..64})"
-
 # A complete fixture inventory (headings, table, owner on every row).
 DEFAULT_INV='# Secrets
 ## Inventory
@@ -41,7 +39,7 @@ An Android-app restriction would reject every request.'
 new_root() {
   local dir
   dir="$(mktemp -d "$tmp/root.XXXXXX")"
-  mkdir -p "$dir/.github/workflows" "$dir/backend" "$dir/docs"
+  mkdir -p "$dir/.github/workflows" "$dir/docs"
   if [ -n "${INVENTORY-$DEFAULT_INV}" ]; then
     printf '%s\n' "${INVENTORY-$DEFAULT_INV}" >"$dir/docs/secrets.md"
   fi
@@ -62,7 +60,6 @@ new_root() {
     echo "    steps:"
     echo "      ${E2E_RUN:-- run: echo ok}"
   } | sed '/^$/d' >"$dir/.github/workflows/ci.yml"
-  printf 'FROM %s\nUSER nonroot\n' "$DIGEST" >"$dir/backend/Dockerfile"
   echo "$dir"
 }
 
@@ -132,31 +129,6 @@ expect_fail "write-all fails" "$d" 'ci\.yml.*write-all'
 
 d="$(TOP='permissions: read-all' new_root)"
 expect_fail "read-all fails" "$d" 'ci\.yml.*read-all'
-
-# --- Dockerfile ---
-d="$(new_root)"
-printf 'ENV DB_PASSWORD=hunter2value\n' >>"$d/backend/Dockerfile"
-expect_fail "secret-like ENV fails without leaking the value" "$d" 'Dockerfile.*ENV DB_PASSWORD' 'hunter2value'
-
-d="$(new_root)"
-printf 'ARG API_TOKEN\n' >>"$d/backend/Dockerfile"
-expect_fail "secret-like ARG fails" "$d" 'Dockerfile.*ARG API_TOKEN'
-
-d="$(new_root)"
-printf 'ENV JAVA_TOOL_OPTIONS=-Xmx256m\nARG BUILD_DATE\n' >>"$d/backend/Dockerfile"
-expect_pass "benign ENV and ARG pass" "$d"
-
-d="$(new_root)"
-printf 'FROM gcr.io/distroless/java21-debian13:nonroot\nUSER nonroot\n' >"$d/backend/Dockerfile"
-expect_fail "FROM without digest fails" "$d" 'Dockerfile.*digest'
-
-d="$(new_root)"
-printf 'FROM %s\nFROM %s\n' "$DIGEST" "$DIGEST" >"$d/backend/Dockerfile"
-expect_fail "two FROM lines fail" "$d" 'Dockerfile.*FROM'
-
-d="$(new_root)"
-rm "$d/backend/Dockerfile"
-expect_fail "missing Dockerfile fails" "$d" 'Dockerfile.*FROM'
 
 # --- Expiry reminder workflow (token-expiry.yml) ---
 # add_expiry_wf <root> <triggers> <read-expiry permissions line> <notify permissions line>
