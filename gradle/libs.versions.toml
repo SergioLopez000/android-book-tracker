@@ -18,7 +18,7 @@ turbine = "1.2.1"
 coil = "3.6.3"
 spotless = "8.11.0"
 ktlint = "1.8.0"
-composeLints = "1.5.4"
+composeLints = "1.6.1"
 kover = "0.9.11"
 
 [libraries]
