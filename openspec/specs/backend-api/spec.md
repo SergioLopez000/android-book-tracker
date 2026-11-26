@@ -4,6 +4,8 @@
 
 A secure, tested Kotlin and Spring Boot backend base under `/backend`: separate build, hexagonal domain, owner-isolated PostgreSQL persistence, deny-by-default security, an OpenAPI-first books CRUD contract, contract tests, mutation testing, and a hardened container image. Authentication (#26), deployment and secrets (#54), and package visibility (#8) are out of scope.
 
+Frozen since 2026-11-26 (#91): the code is kept as is but CI no longer builds, tests, scans, publishes or promotes it, and the app does not use it; revert the `freeze-backend` squash commit to reactivate.
+
 ## Requirements
 
 ### Requirement: Separate Backend Build
