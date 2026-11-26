@@ -66,20 +66,35 @@ export abstract class BasePage {
    * Replaces the content of a text field with `text`. Compose fields sometimes keep the previous text when
    * cleared through the accessibility API (the new text was appended), and an element handle keeps reporting
    * the old text, so the field is looked up again for every check and the replacement is retried.
+   * Every attempt reveals the field again, before and after the click: the click can open the soft keyboard,
+   * which pushes the field off screen, and Compose only exposes on-screen nodes (#98). A field lost mid-attempt
+   * counts as a failed attempt, not as a test failure.
    */
   protected async typeText(locate: () => Element, text: string, timeout = DEFAULT_TIMEOUT_MS): Promise<void> {
-    await this.reveal(locate);
-    await locate().waitForDisplayed({ timeout });
+    let lastError: unknown;
     for (let attempt = 1; attempt <= TYPE_ATTEMPTS; attempt++) {
-      const field = locate();
-      await field.click();
-      await field.clearValue();
-      await field.setValue(text);
+      try {
+        await this.revealDisplayed(locate, timeout);
+        await locate().click();
+        await this.revealDisplayed(locate, timeout);
+        await locate().clearValue();
+        await locate().setValue(text);
+      } catch (error) {
+        lastError = error;
+        continue;
+      }
       const typed = await browser
         .waitUntil(async () => (await locate().getText()) === text, { timeout: TYPE_SETTLE_MS, interval: 250 })
         .catch(() => false);
       if (typed) return;
     }
-    throw new Error(`The field did not end up with the typed text after ${TYPE_ATTEMPTS} attempts`);
+    throw new Error(`The field did not end up with the typed text after ${TYPE_ATTEMPTS} attempts`, {
+      cause: lastError,
+    });
+  }
+
+  private async revealDisplayed(locate: () => Element, timeout: number): Promise<void> {
+    await this.reveal(locate);
+    await locate().waitForDisplayed({ timeout });
   }
 }
