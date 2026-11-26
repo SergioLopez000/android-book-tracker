@@ -23,7 +23,11 @@ val googleBooksApiKey: String = localProperties.getProperty("GOOGLE_BOOKS_API_KE
 
 android {
     namespace = "com.librosleidos"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 1
+        }
+    }
 
     defaultConfig {
         applicationId = "com.sergiolopez.rincondelectura"
