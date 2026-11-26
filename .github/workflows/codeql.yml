@@ -1,4 +1,5 @@
-# CodeQL analysis for Kotlin. Gates through the dev ruleset ("Require code
+# CodeQL analysis for the Android app (Kotlin). The server module is frozen (#91)
+# and not compiled, see README. Gates through the dev ruleset ("Require code
 # scanning results"), not through ci-gate. See openspec/changes/security-quality-gates.
 name: CodeQL
 
@@ -30,10 +31,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          # Both JDKs are installed; each build below selects its own through JAVA_HOME_<n>_X64.
-          java-version: |
-            17
-            21
+          java-version: "17"
       - uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: true
@@ -46,11 +44,6 @@ jobs:
         env:
           JAVA_HOME: ${{ env.JAVA_HOME_17_X64 }}
         run: ./gradlew --no-daemon --no-build-cache -Pkotlin.compiler.execution.strategy=in-process :app:compileDebugKotlin
-      # Second traced build: the backend is an independent Gradle build on JDK 21.
-      - name: Build backend (JDK 21)
-        env:
-          JAVA_HOME: ${{ env.JAVA_HOME_21_X64 }}
-        run: ./gradlew --no-daemon --no-build-cache -Pkotlin.compiler.execution.strategy=in-process -p backend compileKotlin
       - uses: github/codeql-action/analyze@v4
         with:
           category: "/language:java-kotlin"

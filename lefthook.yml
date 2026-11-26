@@ -17,8 +17,11 @@ pre-commit:
       glob: ".github/workflows/*.{yml,yaml}"
       run: command -v actionlint >/dev/null || { echo "brew install actionlint shellcheck"; exit 1; }; actionlint
     - name: secrets-contract
-      glob: "{.github/workflows/*.{yml,yaml},backend/Dockerfile,docs/secrets.md,scripts/*secrets-contract*.sh}"
+      glob: "{.github/workflows/*.{yml,yaml},docs/secrets.md,scripts/*secrets-contract*.sh}"
       run: bash scripts/test-secrets-contract.sh
+    - name: backend-frozen
+      glob: "{.github/workflows/*.{yml,yaml},.github/dependabot.yml,scripts/*backend-frozen*.sh}"
+      run: bash scripts/test-backend-frozen.sh
     - name: token-expiry-notify
       glob: "{.github/workflows/token-expiry.yml,scripts/*token-expiry*.sh}"
       run: bash scripts/test-token-expiry-notify.sh

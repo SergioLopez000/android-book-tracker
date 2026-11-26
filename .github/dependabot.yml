@@ -1,4 +1,4 @@
-# Version updates target dev (root and /backend are separate Gradle builds). Security updates are enabled in the repo settings
+# Version updates target dev. Security updates are enabled in the repo settings
 # and target main; retarget them to dev (see README). Dependabot uses the first
 # matching group, so test-tooling comes before the broader androidx pattern.
 version: 2
@@ -22,43 +22,6 @@ updates:
         patterns: ["org.jetbrains.kotlinx*"]
       androidx-compose:
         patterns: ["androidx.*"]
-  - package-ecosystem: gradle
-    directory: /backend
-    target-branch: dev
-    schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 5
-    commit-message:
-      prefix: build
-      include: scope
-    # Kotlin follows the version managed by Spring Boot, so only patch bumps are proposed.
-    ignore:
-      - dependency-name: "org.jetbrains.kotlin*"
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-    groups:
-      spring:
-        patterns: ["org.springframework*"]
-      testcontainers:
-        patterns: ["org.testcontainers*"]
-      pitest:
-        patterns: ["org.pitest*", "info.solidsoft*"]
-      contract:
-        patterns: ["io.rest-assured*", "com.atlassian.oai*"]
-  # Digest bumps for the pinned distroless base image (spike SP6 proved they are proposed).
-  - package-ecosystem: docker
-    directory: /backend
-    target-branch: dev
-    schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 3
-    commit-message:
-      prefix: build
-      include: scope
-    groups:
-      base-image:
-        patterns: ["*"]
   # The e2e suite pins exact versions; majors of the Appium and WebdriverIO stack are bumped by hand.
   - package-ecosystem: npm
     directory: /e2e

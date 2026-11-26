@@ -4,19 +4,17 @@
 #   1. workflows reference only allow-listed secrets; no `secrets: inherit`;
 #      GITHUB_TOKEN is written `github.token`; the e2e-tests job stays secret-free
 #   2. every workflow and job declares `permissions:`; no write-all / read-all
-#   3. backend/Dockerfile has no secret-like ENV/ARG and a single digest-pinned FROM
-#   4. drift guard: docs/secrets.md lists every secrets.* name used by workflows and
+#   3. drift guard: docs/secrets.md lists every secrets.* name used by workflows and
 #      every ALLOWED_SECRETS entry, has the required headings and owner SergioLopez000;
 #      the GOOGLE_BOOKS_API_KEY row says not provisioned / superseded by
 #      GOOGLE_BOOKS_SERVER_API_KEY (#29) and the runbook keeps the Android-app warning
-#   5. a job that uses PROJECT_TOKEN holds no write permission; token-expiry.yml has no
+#   4. a job that uses PROJECT_TOKEN holds no write permission; token-expiry.yml has no
 #      pull_request / pull_request_target trigger
 # Prints one `FAIL: ...` line per violation and exits non-zero. Never prints a secret value.
 set -euo pipefail
 
 root="${1:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 workflows="$root/.github/workflows"
-dockerfile="$root/backend/Dockerfile"
 inventory_doc="$root/docs/secrets.md"
 
 ALLOWED_SECRETS=(PROJECT_TOKEN)
@@ -106,7 +104,7 @@ for file in "${files[@]}"; do
     if ! job_body "$file" "$job" | grep -Eq '^    permissions:'; then
       fail "permissions: $wf job $job has no permissions block"
     fi
-    # 5. PROJECT_TOKEN and a write-capable token never share a job.
+    # 4. PROJECT_TOKEN and a write-capable token never share a job.
     if job_body "$file" "$job" | grep -Eq 'secrets\.PROJECT_TOKEN([^A-Za-z0-9_]|$)' &&
       [ -n "$(job_write_permissions "$file" "$job")" ]; then
       fail "permissions: $wf job $job uses PROJECT_TOKEN and also has a write permission"
@@ -118,31 +116,7 @@ for file in "${files[@]}"; do
   fi
 done
 
-# 3. Dockerfile
-if [ ! -f "$dockerfile" ] ||
-  [ "$(grep -c '^FROM ' "$dockerfile" || true)" != 1 ] ||
-  ! grep -Eq '^FROM [^[:space:]]+@sha256:[0-9a-f]{64}([[:space:]]+AS[[:space:]]+[A-Za-z0-9_-]+)?$' "$dockerfile"; then
-  fail "Dockerfile: expected a single digest-pinned FROM in backend/Dockerfile"
-fi
-if [ -f "$dockerfile" ]; then
-  # Prints "<INSTRUCTION> <NAME>" for every ENV/ARG variable whose name looks secret-like.
-  while IFS= read -r hit; do
-    [ -n "$hit" ] && fail "Dockerfile: $hit has a secret-like name"
-  done < <(awk '
-    /^(ENV|ARG)[[:space:]]/ {
-      instr = $1
-      for (i = 2; i <= NF; i++) {
-        name = $i
-        if (instr == "ENV" && i > 2 && index(name, "=") == 0) continue
-        sub(/=.*/, "", name)
-        if (tolower(name) ~ /(pass|secret|token|key|credential|datasource)/) print instr " " name
-        if (instr == "ENV" && index($2, "=") == 0) break
-      }
-    }
-  ' "$dockerfile")
-fi
-
-# 4. Inventory drift guard
+# 3. Inventory drift guard
 if [ ! -f "$inventory_doc" ]; then
   fail "inventory: docs/secrets.md is missing"
 else

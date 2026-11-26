@@ -119,36 +119,27 @@ npm run e2e                     # con un emulador o dispositivo conectado
 
 ---
 
-## 🧩 Backend (Spring Boot)
+## 🧩 Backend (congelado)
 
-API REST independiente en `backend/` (Kotlin, Spring Boot, PostgreSQL). Es un build de Gradle aparte del de la app: tiene su propio wrapper y se ejecuta desde `backend/`. El contrato vive en `backend/src/main/resources/openapi.yaml`.
+El módulo del servidor (`backend/`: Kotlin, Spring Boot, PostgreSQL) está **congelado** desde #91. El código se conserva intacto, pero nada lo ejecuta: ningún workflow lo compila ni lo prueba, CodeQL solo analiza la app, Dependabot ya no lo vigila y no se publica ninguna imagen en GHCR. `promote.yml` solo avanza `main` por fast-forward.
 
-**Requisitos**: JDK 21 y Docker en ejecución (las pruebas de integración y de contrato levantan PostgreSQL 17 con Testcontainers; no hay base de datos que instalar).
+Para trabajar en él a mano (es un build de Gradle aparte, con su propio wrapper; requiere JDK 21 y Docker en ejecución para PostgreSQL 17 con Testcontainers):
 
 ```bash
 cd backend
 ./gradlew build            # compila, pruebas unitarias y de integración, verifica el jar empaquetado
-./gradlew integrationTest  # PostgreSQL real vía Testcontainers
 ./gradlew contractTest     # REST Assured contra openapi.yaml (request y response)
-./gradlew pitest           # mutation testing del dominio; falla por debajo de 80 %
-./gradlew koverHtmlReport  # cobertura en build/reports/kover
 ```
 
-Capas de pruebas: `test` (unitarias, sin base de datos), `integrationTest` (persistencia), `contractTest` (HTTP completo contra la especificación OpenAPI). El CI las corre en `backend-tests` y `contract-tests`.
+`scripts/test-image-smoke.sh` también es solo manual: construye el jar y la imagen, comprueba el usuario no root, arranca con un PostgreSQL desechable y espera 200 en `/actuator/health`. Ninguna automatización lo invoca.
 
-**Postura de seguridad**: denegado por defecto y sin estado. Solo `/actuator/health` es público; todo lo demás (incluida `/api/books`) responde 401 hasta que el issue #26 añada autenticación real. Cada operación filtra por propietario en SQL.
+**Reactivar el backend**: haz `git revert` del commit squash de #91 en un PR hacia `dev`. Eso restaura los jobs, CodeQL, Dependabot y la promoción de imagen, y retira también la guarda `scripts/check-backend-frozen.sh` (por eso la guarda y las eliminaciones van en el mismo commit). El revert no restaura:
 
-### Imagen del backend (GHCR)
-
-`backend/Dockerfile` es de una sola etapa sobre `gcr.io/distroless/java21-debian13:nonroot` fijada por digest, corre como `nonroot` y no lleva variables ni secretos; la configuración llega al arrancar (`SPRING_DATASOURCE_*`). El jar se compila en el runner.
-
-| Evento | Resultado en `ghcr.io/<owner>/<repo>/backend` |
-|---|---|
-| Push a `dev` con `ci-gate` en verde (`publish-image`) | Etiquetas `sha-<commit>` y `dev` |
-| Pull request o fork | No se publica nada |
-| `promote.yml` | `check-image` exige que exista `sha-<commit>` **antes** de mover `main`; `retag-image` etiqueta ese mismo digest como `staging` con `crane` y comprueba que coincide |
-
-El paquete queda privado. Prueba local: `scripts/test-image-smoke.sh` (construye el jar y la imagen, comprueba el usuario no root, arranca con un PostgreSQL desechable y espera 200 en `/actuator/health`). Las comprobaciones estáticas están en `scripts/test-image-config.sh`.
+- Los PRs de Dependabot cerrados (#66, #67 y #69): siguen cerrados y llegan nuevos en la siguiente ejecución semanal.
+- Imágenes de los commits hechos durante el congelamiento: la promoción necesita un push a `dev` posterior al revert.
+- La etiqueta `:staging`: conserva el último digest previo al congelamiento.
+- Las alertas de CodeQL del backend cerradas por el análisis más estrecho: reaparecen en el siguiente análisis.
+- Las cachés de Gradle expiradas.
 
 ## 🛠️ Calidad de Código y Hooks Locales
 
@@ -158,7 +149,7 @@ brew install lefthook gitleaks actionlint shellcheck detekt
 lefthook install
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
-`lefthook install` activa los hooks locales (pre-commit): `spotlessCheck`, Android Lint (`:app:lintDebug`, solo si tocas fuentes/recursos Android), `detekt` (solo sobre los `.kt` en el índice), `gitleaks` (secretos en el índice), `actionlint`, `secrets-contract` (lista de secretos permitidos, bloques `permissions:` e inventario `docs/secrets.md`, solo sobre workflows, `backend/Dockerfile`, el inventario y sus scripts), `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
+`lefthook install` activa los hooks locales (pre-commit): `spotlessCheck`, Android Lint (`:app:lintDebug`, solo si tocas fuentes/recursos Android), `detekt` (solo sobre los `.kt` en el índice), `gitleaks` (secretos en el índice), `actionlint`, `secrets-contract` (lista de secretos permitidos, bloques `permissions:` e inventario `docs/secrets.md`, solo sobre workflows, el inventario y sus scripts), `backend-frozen` (comprueba que ningún workflow ni entrada de Dependabot toque el backend congelado), `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
 
 Versiones: el CI fija gitleaks 8.30.1 y la configuración se probó con detekt 1.23.8. Las versiones de `brew` pueden diferir del CI; si un hook local y el CI discrepan, alinea la versión local.
 
@@ -177,6 +168,7 @@ Versiones: el CI fija gitleaks 8.30.1 y la configuración se probó con detekt 1
 | Pruebas unitarias | `./gradlew :app:testDebugUnitTest` |
 | Pruebas del validador de commits | `scripts/test-check-commit-msg.sh` |
 | Pruebas del resumen de cobertura | `scripts/test-kover-summary.sh` |
+| Guarda del backend congelado (solo local, hook de lefthook) | `scripts/test-backend-frozen.sh` (ejecuta `scripts/check-backend-frozen.sh`) |
 | Pruebas del rango del escaneo de secretos | `scripts/test-secret-scan-range.sh` |
 | Contrato estático de secretos y permisos (solo local, hook de lefthook) | `scripts/test-secrets-contract.sh` (ejecuta `scripts/check-secrets-contract.sh`) |
 | Analizador de la caducidad de `PROJECT_TOKEN` (solo local) | `scripts/test-token-expiry.sh` (ejecuta `scripts/token-expiry.sh`) |
@@ -200,11 +192,8 @@ Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas exis
 | actionlint / shellcheck | Sí | No |
 | Mensaje de commit (Conventional Commits) | Sí | No |
 | Pruebas unitarias + Kover | No | `unit-tests` |
-| Backend: pruebas, integración, Kover | No | `backend-tests` |
-| Backend: contrato (REST Assured) + PIT | No | `contract-tests` |
 | E2E Appium en emulador (no bloquea) | No | `e2e-tests` |
 | Verificación de TypeScript de `e2e/` (`tsc --noEmit`) | Sí (si hay `.ts` en el commit) | No |
-| Imagen del backend a GHCR | No | `publish-image` (solo push a `dev`) |
 | Secretos (gitleaks) | Solo el índice | `secret-scan` (rango de commits del evento, no se puede saltar con `--no-verify`) |
 | CodeQL (Kotlin) | No | `codeql.yml`, bloquea por el ruleset |
 | Actualizaciones de dependencias | No | Dependabot |
@@ -212,26 +201,22 @@ Lint falla ante cualquier warning nuevo (`warningsAsErrors`); los problemas exis
 > **Riesgo aceptado**: los controles de calidad (formato, lint, detekt, shell, workflows y mensaje de commit) no se repiten en CI, así que un commit hecho con `--no-verify`, desde la web de GitHub o sin `lefthook install` se los salta. Decisión explícita del proyecto: la calidad es solo local. Los secretos sí se detectan en CI aunque el hook local se omita.
 
 ```text
-unit-tests     ─┐
-backend-tests  ─┼─> ci-gate  (check requerido) ──> publish-image (solo push a dev)
-contract-tests ─┤
-secret-scan    ─┘
+unit-tests ─┐
+secret-scan ┴─> ci-gate  (check requerido)
 e2e-tests      ──> (no bloquea: ci-gate no lo necesita)
-unit-tests, backend-tests, contract-tests, e2e-tests ──> report (informativo, no bloquea)
+unit-tests, e2e-tests ──> report (informativo, no bloquea)
 codeql.yml: analyze ──> alertas de code scanning ──> regla del ruleset de dev
 ```
 
 - **`unit-tests`**: `:app:testDebugUnitTest` + Kover XML/HTML.
 - **`secret-scan`**: gitleaks 8.30.1 (fijado por sha256) sobre el rango de commits del evento, calculado por `scripts/secret-scan-range.sh`. PR: `BASE..HEAD`; push a `dev`: `BEFORE..AFTER`; rama nueva (`BEFORE` todo ceros): solo el commit final. Un SHA mal formado o un `BEFORE` que no existe en el clon hace fallar el job (nunca escanea menos de lo debido). La salida va con `--redact`.
-- **`backend-tests`** y **`contract-tests`**: JDK 21; el segundo corre `contractTest` y el gate de mutación `pitest`. Suben `allure-results-*`, `coverage-*` y `pit-*`.
 - **`e2e-tests`**: no bloquea (`ci-gate` no lo necesita y su fallo no lo hace fallar). Corre en cada PR y push a `dev`, sin secretos y con `permissions: contents: read`: compila el APK de depuración, comprueba con `scripts/test-release-no-test-tags.sh` que el release no expone tags de prueba, arranca un emulador (API 34, target `default`, x86_64, con KVM; el AVD se cachea y solo se guarda en pushes a `dev`) y ejecuta `npm run e2e` en modo avión. Sube `allure-results-e2e` (JSON, 7 días) siempre, incluso si falla. `scripts/test-e2e-ci-config.sh` revisa esta configuración de forma estática.
-- **`publish-image`**: compila el jar y publica la imagen en GHCR (ver arriba). Necesita `ci-gate`, pero `ci-gate` no la necesita, así que nunca bloquea un merge. Es el único job de `ci.yml` con `packages: write`.
-- **`ci-gate`**: único check requerido. Falla si `unit-tests`, `backend-tests`, `contract-tests` o `secret-scan` no terminan en éxito (un job omitido cuenta como fallo). `report` y CodeQL no lo afectan.
+- **`ci-gate`**: único check requerido. Falla si `unit-tests` o `secret-scan` no terminan en éxito (un job omitido cuenta como fallo). `report` y CodeQL no lo afectan.
 - **`codeql.yml`**: análisis CodeQL de Kotlin (`build-mode: manual`) en PRs hacia `dev`, pushes a `dev` y un cron semanal. Bloquea mediante la regla "Require code scanning results" del ruleset (alertas High o superiores), no mediante `ci-gate`.
-- **Dependabot** (`.github/dependabot.yml`): actualizaciones de versión semanales de Gradle (raíz y `/backend`), de la imagen base Docker de `/backend` (bump del digest) y de npm de `/e2e` (grupos `wdio`, `appium` y `typescript`; las versiones mayores de Appium, el driver, WebdriverIO y `@wdio/*` se ignoran y se suben a mano) y de GitHub Actions hacia `dev` (`build(deps):` / `ci(deps):`), agrupadas. En PRs de Dependabot `report` no publica ni comenta (su token es de solo lectura).
-- **`report`**: espera a `unit-tests`, `backend-tests`, `contract-tests` y `e2e-tests`, genera Allure 2.46.2 desde el JUnit XML y el JSON de e2e (con la captura de las pruebas fallidas) y publica Allure + Kover en la rama `gh-pages` (`pr-<N>/` en PRs, `dev/` en pushes a `dev`), y deja un único comentario sticky en el PR con los enlaces y la cobertura de líneas y ramas. Solo PRs del mismo repositorio; los PRs desde forks solo suben el artefacto `report-site`.
+- **Dependabot** (`.github/dependabot.yml`): actualizaciones de versión semanales de Gradle (solo la raíz; el backend congelado no se vigila) y de npm de `/e2e` (grupos `wdio`, `appium` y `typescript`; las versiones mayores de Appium, el driver, WebdriverIO y `@wdio/*` se ignoran y se suben a mano) y de GitHub Actions hacia `dev` (`build(deps):` / `ci(deps):`), agrupadas. En PRs de Dependabot `report` no publica ni comenta (su token es de solo lectura).
+- **`report`**: espera a `unit-tests` y `e2e-tests`, genera Allure 2.46.2 desde el JUnit XML y el JSON de e2e (con la captura de las pruebas fallidas) y publica Allure + Kover en la rama `gh-pages` (`pr-<N>/` en PRs, `dev/` en pushes a `dev`), y deja un único comentario sticky en el PR con los enlaces y la cobertura de líneas y ramas. Solo PRs del mismo repositorio; los PRs desde forks solo suben el artefacto `report-site`.
 - **`pr-cleanup.yml`**: borra `pr-<N>/` de `gh-pages` al cerrar el PR.
-- **`promote.yml`**: exige que el último check-run `ci-gate` del SHA (emitido por GitHub Actions) sea `success` (es decir, que las pruebas y el escaneo de secretos pasaron); si falta o no es exitoso, la promoción falla. Antes de mover `main`, `check-image` exige que la imagen `sha-<commit>` exista en GHCR; después de moverla, `retag-image` la etiqueta como `staging` (mismo digest, sin reconstruir). Es el único otro job con `packages: write`.
+- **`promote.yml`**: exige que el último check-run `ci-gate` del SHA (emitido por GitHub Actions) sea `success` (es decir, que las pruebas y el escaneo de secretos pasaron); si falta o no es exitoso, la promoción falla. Avanza `main` por fast-forward al SHA ya probado en `dev`, sin reconstruir nada ni publicar imágenes.
 
 Reportes publicados: `https://<usuario>.github.io/android-book-tracker/pr-<N>/allure/` y `.../kover/` (o `dev/` para la rama `dev`).
 
@@ -297,9 +282,8 @@ Los secretos viven solo en sus almacenes: secretos del repositorio para la autom
 
 | Artefacto | Contenido |
 |---|---|
-| `allure-results-<suite>` | JUnit XML de la suite (`unit`, `backend`, `contract`); `allure-results-e2e` contiene JSON de Allure y se conserva 7 días. El job `report` fusiona todos los `allure-results-*`. |
+| `allure-results-<suite>` | JUnit XML de la suite (`unit`); `allure-results-e2e` contiene JSON de Allure y se conserva 7 días. El job `report` fusiona todos los `allure-results-*`. |
 | `coverage-<suite>` | Reportes Kover (`reportDebug.xml` + `htmlDebug/`). |
-| `pit-<suite>` | Reservado para mutation testing (#6). |
 
 Las suites futuras se adjuntan con estos nombres sin cambiar el job `report`.
 
@@ -314,7 +298,7 @@ Las suites futuras se adjuntan con estos nombres sin cambiar el job `report`.
 
 ### PRs de seguridad de Dependabot
 
-Las actualizaciones de seguridad apuntan a `main`. Para que CodeQL y `ci-gate` corran contra `dev`: cambia la base del PR a `dev` y **ciérralo y reábrelo** (cambiar la base solo dispara `edited`, que no inicia los workflows). Si `@dependabot rebase` demuestra rebasar sobre `dev`, también sirve.
+Las actualizaciones de seguridad apuntan a `main`. Para que CodeQL y `ci-gate` corran contra `dev`: cambia la base del PR a `dev` y **ciérralo y reábrelo** (cambiar la base solo dispara `edited`, que no inicia los workflows). Si `@dependabot rebase` demuestra rebasar sobre `dev`, también sirve. Los PRs de seguridad del backend congelado se cierran a mano con un comentario que enlace #91; no se añade ninguna entrada `ignore`.
 
 ### Reversión
 
