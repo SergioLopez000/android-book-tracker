@@ -113,6 +113,6 @@ Order: B independent; 0 → 1a → 1b → 2a → 2b → 3a → 3b → 3c → 4a 
 
 ## Open Questions
 
-- [ ] Spike: google-services 4.6.0 on AGP 9.5.3; offline `set()` returns without ack.
-- [ ] Emulator: `list` rule on `invites` with `resource.data.listId`; fallback `lists/{listId}/invites/{code}` + lookup doc.
+- [x] Spike: google-services 4.6.0 on AGP 9.5.3; offline `set()` returns without ack. Resolved in slice 0: the plugin applies on AGP 9.5.3 (debug and release, `assembleDebug`/`assembleRelease` green); against the emulator an offline `set()` returns an incomplete Task, is readable from cache at once and is acknowledged after `enableNetwork()` (`FirestoreOfflineSpikeTest`). Firebase BoM 35.2.0. Emulator needs JDK 21 (firebase-tools 15.x); Gradle stays on JDK 17.
+- [x] Emulator: `list` rule on `invites` with `resource.data.listId`; fallback `lists/{listId}/invites/{code}` + lookup doc. Resolved in slice 0: no fallback needed. With `allow list: if isMember(resource.data.listId)` (membership via `exists(.../lists/$(listId)/members/$(uid))`), a member query `where listId == X` is allowed and returns only that list's invites; a non-member, a member querying another list, and an unconstrained query are denied; `get` by code works for any signed-in user and is denied unauthenticated. 6/6 cases passed with `@firebase/rules-unit-testing` on the Firestore emulator (throwaway test, not committed).
 - [x] `displayName` limit 1–100 adopted; aligned with spec firestore-security-rules.

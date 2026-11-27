@@ -83,20 +83,20 @@ Start: no Firebase dependency. End: `./gradlew :app:assembleDebug :app:testDebug
 
 ### 0.1 RED: spikes as failing proofs
 
-- [ ] 0.1.1 RED: add `app/src/test/java/com/librosleidos/data/firebase/FirebaseSpikeTest.kt` asserting `FirebaseApp.initializeApp` reads the placeholder project id `demo-libros` under Robolectric. Run: fails (no dependency, no config). Spec: CI Placeholder Firebase Configuration in CI (CI builds without secrets); D10.
-- [ ] 0.1.2 RED: add a spike test, against the Firestore emulator via `firebase emulators:exec --only firestore --project demo-libros`, asserting that an offline (network disabled) `set()` returns its Task without waiting for server ack and that a read-after-write from cache returns the value. Fails until wired. Spec: CBS Offline Read and Non-Blocking Write; D4.
+- [x] 0.1.1 RED: add `app/src/test/java/com/librosleidos/data/firebase/FirebaseSpikeTest.kt` asserting `FirebaseApp.initializeApp` reads the placeholder project id `demo-libros` under Robolectric. Run: fails (no dependency, no config). Spec: CI Placeholder Firebase Configuration in CI (CI builds without secrets); D10.
+- [x] 0.1.2 RED: add a spike test, against the Firestore emulator via `firebase emulators:exec --only firestore --project demo-libros`, asserting that an offline (network disabled) `set()` returns its Task without waiting for server ack and that a read-after-write from cache returns the value. Fails until wired. Spec: CBS Offline Read and Non-Blocking Write; D4.
 
 ### 0.2 GREEN
 
-- [ ] 0.2.1 GREEN: add Firebase BoM, `firebase-auth`, `firebase-firestore`, `firebase-appcheck-playintegrity`, `firebase-appcheck-debug`, `androidx.credentials`, `googleid`, `kotlinx-coroutines-play-services` and the `com.google.gms.google-services` 4.6.0 plugin to `gradle/libs.versions.toml`, `build.gradle.kts`, `app/build.gradle.kts`. Spec: CI Placeholder Firebase Configuration in CI; D10.
-- [ ] 0.2.2 GREEN: commit placeholder `app/google-services.json` (project `demo-libros`, non-`AIza` key so `secret-scan` passes); `.gitignore` the real files in `app/src/{debug,release}/google-services.json`. Spec: CI Placeholder Firebase Configuration in CI (CI builds without secrets, Placeholder is inert); D10.
-- [ ] 0.2.3 GREEN: make 0.1.1 pass; run `./gradlew :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest` on AGP 9.5.3. Record the output.
+- [x] 0.2.1 GREEN: add Firebase BoM, `firebase-auth`, `firebase-firestore`, `firebase-appcheck-playintegrity`, `firebase-appcheck-debug`, `androidx.credentials`, `googleid`, `kotlinx-coroutines-play-services` and the `com.google.gms.google-services` 4.6.0 plugin to `gradle/libs.versions.toml`, `build.gradle.kts`, `app/build.gradle.kts`. Spec: CI Placeholder Firebase Configuration in CI; D10.
+- [x] 0.2.2 GREEN: commit placeholder `app/google-services.json` (project `demo-libros`, non-`AIza` key so `secret-scan` passes); `.gitignore` the real files in `app/src/{debug,release}/google-services.json`. Spec: CI Placeholder Firebase Configuration in CI (CI builds without secrets, Placeholder is inert); D10.
+- [x] 0.2.3 GREEN: make 0.1.1 pass; run `./gradlew :app:assembleDebug :app:assembleRelease :app:testDebugUnitTest` on AGP 9.5.3. Record the output.
 
 ### 0.3 STOP gate (spike verification)
 
-- [ ] 0.3.1 Verify and record: (a) google-services 4.6.0 applies on AGP 9.5.3 for debug and release; (b) offline `set()` does not block (0.1.2 passes); (c) real-config variant lookup: place a dummy `app/src/debug/google-services.json` and confirm it wins over the root file, then remove it; (d) `secret-scan` (gitleaks) passes on the placeholder. Spec: CI Placeholder Firebase Configuration in CI; CBS Offline Read and Non-Blocking Write.
-- [ ] 0.3.2 Emulator spike: write a throwaway rules test (not committed to `main`; kept only as evidence) proving a `list` query on `invites` constrained by `where listId == X` is allowed for a member under a rule using `resource.data.listId` (design Open Question 2). If it fails, record the fallback `lists/{listId}/invites/{code}` plus lookup doc and flag slices 3a/4a/4c for re-plan. Spec: FSR Invite Code Enforcement; D14.
-- [ ] 0.3.3 **STOP/re-plan**: if any of 0.3.1 (a)(b)(c) fails, stop and report `blocked`. If 0.3.2 fails, update the design and tasks for 4a/4c before continuing. Update design Open Questions to resolved with evidence.
+- [x] 0.3.1 Verify and record: (a) google-services 4.6.0 applies on AGP 9.5.3 for debug and release; (b) offline `set()` does not block (0.1.2 passes); (c) real-config variant lookup: place a dummy `app/src/debug/google-services.json` and confirm it wins over the root file, then remove it; (d) `secret-scan` (gitleaks) passes on the placeholder. Spec: CI Placeholder Firebase Configuration in CI; CBS Offline Read and Non-Blocking Write.
+- [x] 0.3.2 Emulator spike: write a throwaway rules test (not committed to `main`; kept only as evidence) proving a `list` query on `invites` constrained by `where listId == X` is allowed for a member under a rule using `resource.data.listId` (design Open Question 2). If it fails, record the fallback `lists/{listId}/invites/{code}` plus lookup doc and flag slices 3a/4a/4c for re-plan. Spec: FSR Invite Code Enforcement; D14.
+- [x] 0.3.3 **STOP/re-plan**: if any of 0.3.1 (a)(b)(c) fails, stop and report `blocked`. If 0.3.2 fails, update the design and tasks for 4a/4c before continuing. Update design Open Questions to resolved with evidence.
 - [ ] 0.3.4 Commit: `build: add the Firebase BoM and google-services plugin with a placeholder config`. Open the PR.
 
 ---
