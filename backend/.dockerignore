@@ -1,3 +1,0 @@
-# Only build/libs/backend.jar is needed in the build context.
-*
-!build/libs/backend.jar

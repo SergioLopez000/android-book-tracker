@@ -2,13 +2,11 @@ schema: spec-driven
 
 context: |
   Rincon de Lectura: native Android, local-first, single-user book tracker (rate + review).
-  Two independent Gradle builds, both package com.librosleidos, Gradle 9.9.1 (wrapper in each); the backend build is frozen (#91) and nothing in CI builds it.
+  Single Gradle build, package com.librosleidos, Gradle 9.9.1.
   App (root, module :app): Kotlin 2.4.21, AGP 9.1.1 (built-in Kotlin), JDK 17, Jetpack Compose (Material3, BOM 2026.08.00), Room 2.8.4 + KSP, Coil 3.
   Hexagonal architecture (ports and adapters): domain/{model,port,usecase}, data/{local,remote}, ui/*, di.
   Remote metadata: Open Library with Google Books fallback (optional API key in local.properties).
   Tests: JUnit4 + Robolectric + Compose UI test + Turbine + coroutines-test under app/src/test.
-  Backend (backend/): frozen since #91. The code is kept byte-identical but no workflow, CodeQL run or
-  Dependabot entry touches it and no image is published. Revert the #91 squash commit to reactivate it.
 
 strict_tdd: true
 
@@ -22,8 +20,6 @@ testing:
   layers:
     unit: { available: true, tool: "JUnit4 + Robolectric + coroutines-test + Turbine" }
     integration: { available: true, tool: "Robolectric + Room (room-testing) in app/src/test" }
-    contract: { available: false, tool: "frozen with the backend (#91)" }
-    mutation: { available: false, tool: "frozen with the backend (#91)" }
     e2e: { available: true, tool: "Appium 3.9.1 + WebdriverIO 10.2.0 (e2e/)" }
   coverage: { available: true, command: "./gradlew koverHtmlReportDebug" }
   quality:
@@ -46,7 +42,6 @@ rules:
   verify:
     - Run ./gradlew :app:testDebugUnitTest; also ./gradlew spotlessCheck :app:lintDebug koverHtmlReportDebug.
     - Run bash scripts/test-secrets-contract.sh (local-only, via lefthook; never in CI); it checks the secrets allow-list, job permissions and the inventory drift guard (every secrets.* name and allow-list entry must be in docs/secrets.md, with its required headings and owner) through scripts/check-secrets-contract.sh.
-    - Run bash scripts/test-backend-frozen.sh (local-only, via lefthook; never in CI); it checks that no workflow or Dependabot entry touches the frozen backend (#91) through scripts/check-backend-frozen.sh.
     - Run bash scripts/test-token-expiry.sh (local-only, never in CI); it checks the PROJECT_TOKEN expiry parser scripts/token-expiry.sh (states, header casing, CRLF, hostile values) used by .github/workflows/token-expiry.yml.
     - Run bash scripts/test-token-expiry-notify.sh (local-only, never in CI); it drives scripts/token-expiry-notify.sh and scripts/token-expiry-read.sh with a fake gh and curl on PATH (issue open/edit without duplicates, never close or comment, hostile values, empty-token skip) used by .github/workflows/token-expiry.yml.
     - Run detekt (quality.static_analysis.command); it must report no new issues beyond config/detekt/baseline.xml.

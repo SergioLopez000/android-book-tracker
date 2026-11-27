@@ -16,13 +16,8 @@ Single inventory of every secret and credential of the project: who owns it, whe
 | `PROJECT_TOKEN` | Classic PAT | `SergioLopez000` | `project` | Repository secret | `board-sync.yml`, `token-expiry.yml` | At most 90 days; expiry date: 2027-02-15 (record here on every rotation) | active |
 | `GITHUB_TOKEN` | Automatic token | `SergioLopez000` | Per job `permissions:` | Provided by GitHub Actions (referenced as `github.token`) | All workflows | Automatic, per run | active |
 | `GOOGLE_BOOKS_API_KEY` | Provider API key | `SergioLopez000` | Books API | `local.properties` (local); would ship inside the APK | Android app (Google Books fallback, disabled while blank) | None while not provisioned; see the runbook before creating one | not provisioned; superseded by `GOOGLE_BOOKS_SERVER_API_KEY` (#29), which removes this client key |
-| `SPRING_DATASOURCE_URL` | Database connection | `SergioLopez000` | Per environment (`dev`, `staging`) | Environment store of the host | Backend | 180 days or on leak | frozen with the backend (#91); planned: created by #8 |
-| `SPRING_DATASOURCE_USERNAME` | Database credential | `SergioLopez000` | Per environment | Environment store of the host | Backend | 180 days or on leak | frozen with the backend (#91); planned: created by #8 |
-| `SPRING_DATASOURCE_PASSWORD` | Database credential | `SergioLopez000` | Per environment | Environment store of the host | Backend | 180 days or on leak | frozen with the backend (#91); planned: created by #8 |
-| `NEON_HOST_CREDENTIALS` | Database host account | `SergioLopez000` | Per environment | Provider console | Operators | 180 days or on leak | frozen with the backend (#91); planned: created by #8 |
 | `ANDROID_RELEASE_KEYSTORE` | Signing keystore | `SergioLopez000` | Release builds | Offline backup plus encrypted store | Release pipeline | Never rotated; compromise procedure below | planned: created by #26 |
-| `GOOGLE_BOOKS_SERVER_API_KEY` | Provider API key | `SergioLopez000` | Books API, server side | Environment store of the host | Backend | 365 days or on leak | frozen with the backend (#91); planned: created by #29 |
-| `JWT_SIGNING_SECRET` | Signing secret | `SergioLopez000` | Per environment | Environment store of the host | Backend | 180 days | frozen with the backend (#91); planned: created by #8 |
+| `GOOGLE_BOOKS_SERVER_API_KEY` | Provider API key | `SergioLopez000` | Books API, server side | Environment store of the host | Backend | 365 days or on leak | retired; the backend was removed |
 
 ## Environments
 

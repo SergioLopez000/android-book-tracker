@@ -54,5 +54,4 @@ body:
       description: Informative only; the area label is applied by hand.
       options:
         - app
-        - backend
         - infra
