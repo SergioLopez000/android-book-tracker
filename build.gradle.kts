@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.ksp) apply false
     alias(libs.plugins.spotless)
     alias(libs.plugins.kover) apply false
+    alias(libs.plugins.google.services) apply false
 }
 
 spotless {
