@@ -1,0 +1,12 @@
+{
+  "name": "libros-leidos-firebase",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Firebase emulator tooling for the Libros Leidos Android app",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "devDependencies": {
+    "firebase-tools": "15.37.0"
+  }
+}

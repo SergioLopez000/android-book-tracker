@@ -17,7 +17,15 @@
 
 # e2e (Appium) generated output
 /e2e/node_modules/
+/firebase/node_modules/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
 /e2e/allure-results/
 /e2e/allure-report/
 /e2e/logs/
 /e2e/test-results/
+
+# Real Firebase configuration (the committed app/google-services.json is an inert placeholder)
+app/src/debug/google-services.json
+app/src/release/google-services.json
