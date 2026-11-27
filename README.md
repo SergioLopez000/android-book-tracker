@@ -119,28 +119,6 @@ npm run e2e                     # con un emulador o dispositivo conectado
 
 ---
 
-## 🧩 Backend (congelado)
-
-El módulo del servidor (`backend/`: Kotlin, Spring Boot, PostgreSQL) está **congelado** desde #91. El código se conserva intacto, pero nada lo ejecuta: ningún workflow lo compila ni lo prueba, CodeQL solo analiza la app, Dependabot ya no lo vigila y no se publica ninguna imagen en GHCR. `promote.yml` solo avanza `main` por fast-forward.
-
-Para trabajar en él a mano (es un build de Gradle aparte, con su propio wrapper; requiere JDK 21 y Docker en ejecución para PostgreSQL 17 con Testcontainers):
-
-```bash
-cd backend
-./gradlew build            # compila, pruebas unitarias y de integración, verifica el jar empaquetado
-./gradlew contractTest     # REST Assured contra openapi.yaml (request y response)
-```
-
-`scripts/test-image-smoke.sh` también es solo manual: construye el jar y la imagen, comprueba el usuario no root, arranca con un PostgreSQL desechable y espera 200 en `/actuator/health`. Ninguna automatización lo invoca.
-
-**Reactivar el backend**: haz `git revert` del commit squash de #91 en un PR hacia `dev`. Eso restaura los jobs, CodeQL, Dependabot y la promoción de imagen, y retira también la guarda `scripts/check-backend-frozen.sh` (por eso la guarda y las eliminaciones van en el mismo commit). El revert no restaura:
-
-- Los PRs de Dependabot cerrados (#66, #67 y #69): siguen cerrados y llegan nuevos en la siguiente ejecución semanal.
-- Imágenes de los commits hechos durante el congelamiento: la promoción necesita un push a `dev` posterior al revert.
-- La etiqueta `:staging`: conserva el último digest previo al congelamiento.
-- Las alertas de CodeQL del backend cerradas por el análisis más estrecho: reaparecen en el siguiente análisis.
-- Las cachés de Gradle expiradas.
-
 ## 🛠️ Calidad de Código y Hooks Locales
 
 ### Configuración inicial (una sola vez)
@@ -149,7 +127,7 @@ brew install lefthook gitleaks actionlint shellcheck detekt
 lefthook install
 git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
-`lefthook install` activa los hooks locales (pre-commit): `spotlessCheck`, Android Lint (`:app:lintDebug`, solo si tocas fuentes/recursos Android), `detekt` (solo sobre los `.kt` en el índice), `gitleaks` (secretos en el índice), `actionlint`, `secrets-contract` (lista de secretos permitidos, bloques `permissions:` e inventario `docs/secrets.md`, solo sobre workflows, el inventario y sus scripts), `backend-frozen` (comprueba que ningún workflow ni entrada de Dependabot toque el backend congelado), `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
+`lefthook install` activa los hooks locales (pre-commit): `spotlessCheck`, Android Lint (`:app:lintDebug`, solo si tocas fuentes/recursos Android), `detekt` (solo sobre los `.kt` en el índice), `gitleaks` (secretos en el índice), `actionlint`, `secrets-contract` (lista de secretos permitidos, bloques `permissions:` e inventario `docs/secrets.md`, solo sobre workflows, el inventario y sus scripts), `shellcheck` y la validación de mensajes de commit (Conventional Commits, `scripts/check-commit-msg.sh`). El ajuste de `blame.ignoreRevsFile` oculta del `git blame` el commit de reformateo masivo.
 
 Versiones: el CI fija gitleaks 8.30.1 y la configuración se probó con detekt 1.23.8. Las versiones de `brew` pueden diferir del CI; si un hook local y el CI discrepan, alinea la versión local.
 
@@ -168,7 +146,6 @@ Versiones: el CI fija gitleaks 8.30.1 y la configuración se probó con detekt 1
 | Pruebas unitarias | `./gradlew :app:testDebugUnitTest` |
 | Pruebas del validador de commits | `scripts/test-check-commit-msg.sh` |
 | Pruebas del resumen de cobertura | `scripts/test-kover-summary.sh` |
-| Guarda del backend congelado (solo local, hook de lefthook) | `scripts/test-backend-frozen.sh` (ejecuta `scripts/check-backend-frozen.sh`) |
 | Pruebas del rango del escaneo de secretos | `scripts/test-secret-scan-range.sh` |
 | Contrato estático de secretos y permisos (solo local, hook de lefthook) | `scripts/test-secrets-contract.sh` (ejecuta `scripts/check-secrets-contract.sh`) |
 | Analizador de la caducidad de `PROJECT_TOKEN` (solo local) | `scripts/test-token-expiry.sh` (ejecuta `scripts/token-expiry.sh`) |
@@ -213,7 +190,7 @@ codeql.yml: analyze ──> alertas de code scanning ──> regla del ruleset d
 - **`e2e-tests`**: no bloquea (`ci-gate` no lo necesita y su fallo no lo hace fallar). Corre en cada PR y push a `dev`, sin secretos y con `permissions: contents: read`: compila el APK de depuración, comprueba con `scripts/test-release-no-test-tags.sh` que el release no expone tags de prueba, arranca un emulador (API 34, target `default`, x86_64, con KVM; el AVD se cachea y solo se guarda en pushes a `dev`) y ejecuta `npm run e2e` en modo avión. Sube `allure-results-e2e` (JSON, 7 días) siempre, incluso si falla. `scripts/test-e2e-ci-config.sh` revisa esta configuración de forma estática.
 - **`ci-gate`**: único check requerido. Falla si `unit-tests` o `secret-scan` no terminan en éxito (un job omitido cuenta como fallo). `report` y CodeQL no lo afectan.
 - **`codeql.yml`**: análisis CodeQL de Kotlin (`build-mode: manual`) en PRs hacia `dev`, pushes a `dev` y un cron semanal. Bloquea mediante la regla "Require code scanning results" del ruleset (alertas High o superiores), no mediante `ci-gate`.
-- **Dependabot** (`.github/dependabot.yml`): actualizaciones de versión semanales de Gradle (solo la raíz; el backend congelado no se vigila) y de npm de `/e2e` (grupos `wdio`, `appium` y `typescript`; las versiones mayores de Appium, el driver, WebdriverIO y `@wdio/*` se ignoran y se suben a mano) y de GitHub Actions hacia `dev` (`build(deps):` / `ci(deps):`), agrupadas. En PRs de Dependabot `report` no publica ni comenta (su token es de solo lectura).
+- **Dependabot** (`.github/dependabot.yml`): actualizaciones de versión semanales de Gradle y de npm de `/e2e` (grupos `wdio`, `appium` y `typescript`; las versiones mayores de Appium, el driver, WebdriverIO y `@wdio/*` se ignoran y se suben a mano) y de GitHub Actions hacia `dev` (`build(deps):` / `ci(deps):`), agrupadas. En PRs de Dependabot `report` no publica ni comenta (su token es de solo lectura).
 - **`report`**: espera a `unit-tests` y `e2e-tests`, genera Allure 2.46.2 desde el JUnit XML y el JSON de e2e (con la captura de las pruebas fallidas) y publica Allure + Kover en la rama `gh-pages` (`pr-<N>/` en PRs, `dev/` en pushes a `dev`), y deja un único comentario sticky en el PR con los enlaces y la cobertura de líneas y ramas. Solo PRs del mismo repositorio; los PRs desde forks solo suben el artefacto `report-site`.
 - **`pr-cleanup.yml`**: borra `pr-<N>/` de `gh-pages` al cerrar el PR.
 - **`promote.yml`**: exige que el último check-run `ci-gate` del SHA (emitido por GitHub Actions) sea `success` (es decir, que las pruebas y el escaneo de secretos pasaron); si falta o no es exitoso, la promoción falla. Avanza `main` por fast-forward al SHA ya probado en `dev`, sin reconstruir nada ni publicar imágenes.
@@ -271,7 +248,7 @@ Rotación: antes de que expire, genera un PAT nuevo con las mismas condiciones, 
 
 ### Secretos y rotación
 
-Los secretos viven solo en sus almacenes: secretos del repositorio para la automatización de CI (hoy únicamente `PROJECT_TOKEN`), almacenes por entorno (`dev`, `staging`) del proveedor de alojamiento para el backend y `local.properties` para el desarrollo local. Nunca en el repositorio, en el `Dockerfile` ni en los logs.
+Los secretos viven solo en sus almacenes: secretos del repositorio para la automatización de CI (hoy únicamente `PROJECT_TOKEN`) y `local.properties` para el desarrollo local. Nunca en el repositorio ni en los logs.
 
 - Inventario, propietario, ubicación y procedimiento de rotación: [`docs/secrets.md`](docs/secrets.md) (punto de entrada para rotar cualquier secreto, sección `Runbook`).
 - Aviso de caducidad de `PROJECT_TOKEN`: el workflow [`token-expiry.yml`](.github/workflows/token-expiry.yml) se ejecuta cada lunes (y a mano con `workflow_dispatch`), lee la fecha de caducidad del token y abre o actualiza un único issue con la etiqueta `secret-rotation` cuando quedan menos de 14 días, el token ya caducó o GitHub lo rechaza. Si no puede determinar la fecha, abre un issue de aviso distinto. Tras fusionarlo a la rama por defecto, lánzalo una vez a mano para confirmar el formato de la cabecera. Al rotar el token, actualiza la fecha en el inventario y cierra el issue a mano.
@@ -298,7 +275,7 @@ Las suites futuras se adjuntan con estos nombres sin cambiar el job `report`.
 
 ### PRs de seguridad de Dependabot
 
-Las actualizaciones de seguridad apuntan a `main`. Para que CodeQL y `ci-gate` corran contra `dev`: cambia la base del PR a `dev` y **ciérralo y reábrelo** (cambiar la base solo dispara `edited`, que no inicia los workflows). Si `@dependabot rebase` demuestra rebasar sobre `dev`, también sirve. Los PRs de seguridad del backend congelado se cierran a mano con un comentario que enlace #91; no se añade ninguna entrada `ignore`.
+Las actualizaciones de seguridad apuntan a `main`. Para que CodeQL y `ci-gate` corran contra `dev`: cambia la base del PR a `dev` y **ciérralo y reábrelo** (cambiar la base solo dispara `edited`, que no inicia los workflows). Si `@dependabot rebase` demuestra rebasar sobre `dev`, también sirve. 
 
 ### Reversión
 

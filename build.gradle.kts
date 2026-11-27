@@ -17,7 +17,7 @@ spotless {
         ktlint(libs.versions.ktlint.get())
     }
     kotlinGradle {
-        target("*.gradle.kts", "app/*.gradle.kts", "backend/*.gradle.kts")
+        target("*.gradle.kts", "app/*.gradle.kts")
         ktlint(libs.versions.ktlint.get())
     }
 }
